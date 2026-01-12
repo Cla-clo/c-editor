@@ -156,10 +156,24 @@
     .pane {
         flex: 1; display: flex; flex-direction: column;
         background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px;
-        min-width: 0; min-height: 0; overflow: hidden; position: relative;
+        min-width: 100px; min-height: 0; overflow: hidden; position: relative;
     }
     .pane.hidden { display: none !important; }
     body.scroll-mode .pane { flex: none; height: 90vh; margin-bottom: 20px; }
+
+    /* Pane Resizer */
+    .pane-resizer {
+        width: 6px; background: transparent; cursor: col-resize;
+        position: relative; flex-shrink: 0; z-index: 10;
+    }
+    .pane-resizer:hover, .pane-resizer.resizing { background: #3b82f6; }
+    .pane-resizer::before {
+        content: ''; position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%); width: 2px; height: 30px;
+        background: var(--border-color); border-radius: 1px;
+    }
+    .pane-resizer:hover::before { background: white; }
+    body.scroll-mode .pane-resizer { display: none; }
 
     .pane-header {
         background: var(--pane-header-bg); padding: 0 10px; color: var(--text-muted); height: 28px;
@@ -202,6 +216,23 @@
         pointer-events: none; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .selection-overlay.show { display: block; }
+
+    /* Quick Insert Popup */
+    .quick-insert-popup {
+        position: fixed; display: none; z-index: 1000;
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 4px; gap: 2px;
+    }
+    .quick-insert-popup.show { display: flex; }
+    .quick-insert-popup button {
+        padding: 6px 12px; border: none; background: transparent;
+        cursor: pointer; font-size: 0.8rem; border-radius: 4px;
+        color: var(--text-color); white-space: nowrap;
+    }
+    .quick-insert-popup button:hover { background: #e0f2fe; }
+    .quick-insert-popup .qip-ruby { color: #dc2626; }
+    .quick-insert-popup .qip-bouten { color: #7c3aed; }
 
     textarea {
         width: 100%; height: 100%; border: none; outline: none; resize: none;
@@ -428,7 +459,7 @@
         </div>
         <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
         <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
-        <button class="btn btn-update" onclick="updatePreview()">🔄 プレビュー更新</button>
+        <button class="btn btn-update" onclick="updatePreviewAndShow()">🔄 プレビュー更新</button>
         <button class="btn btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
         <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
@@ -457,33 +488,66 @@
     
     <div id="help-bar" class="control-panel">
         <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
-        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-            <div class="help-section" style="flex: 1; min-width: 200px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+            <div class="help-section" style="flex: 1; min-width: 180px;">
                 <div class="help-title">【基本操作】</div>
-                ・<b>入力エリア</b>：左側に文章を入力<br>
-                ・<b>プレビュー</b>：「🔄 更新」で整形表示<br>
-                ・<b>📲 同期</b>：カーソル位置に移動<br>
-                ・<b>Ctrl+G</b>：行番号ジャンプ
+                ・<b>入力エリア</b>：文章を入力<br>
+                ・<b>🔄 プレビュー更新</b>：整形表示（非表示時は自動表示）<br>
+                ・<b>📲 同期</b>：カーソル位置にプレビュー移動<br>
+                ・<b>縦横切替</b>：レイアウト変更<br>
+                ・<b>入替</b>：ペインの順序を入れ替え
             </div>
-            <div class="help-section" style="flex: 1; min-width: 200px;">
-                <div class="help-title">【記法】</div>
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【ショートカットキー】</div>
+                ・<b>Ctrl+S</b>：保存ダイアログ<br>
+                ・<b>Ctrl+F</b>：検索パネル<br>
+                ・<b>Ctrl+G</b>：行番号ジャンプ<br>
+                ・<b>Ctrl+Z</b>：元に戻す<br>
+                ・<b>Ctrl+Y</b>：やり直し<br>
+                ・<b>ESC</b>：集中モード解除/ダイアログ閉じる
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【記法（小説向け）】</div>
                 ・<b>ルビ</b>：｜漢字《かんじ》<br>
                 ・<b>傍点</b>：《《強調》》<br>
                 ・<b>傍線</b>：__下線__<br>
-                ・<b>蛍光ペン</b>：==強調==
+                ・<b>蛍光ペン</b>：==強調==<br>
+                <small>※テキスト選択時、ポップアップからワンクリックでルビ・傍点挿入可能</small>
             </div>
-            <div class="help-section" style="flex: 1; min-width: 200px;">
+            <div class="help-section" style="flex: 1; min-width: 180px;">
                 <div class="help-title">【執筆支援】</div>
-                ・<b>🧘 集中</b>：UIを隠す（ESCで解除）<br>
-                ・<b>タイプライター</b>：カーソル中央固定<br>
-                ・<b>執筆時間</b>：自動計測<br>
-                ・<b>📊 分析</b>：統計情報表示
+                ・<b>🧘 集中モード</b>：UIを隠して執筆に集中<br>
+                ・<b>タイプライター</b>：カーソル位置を中央に固定<br>
+                ・<b>執筆時間トラッカー</b>：自動計測<br>
+                ・<b>📊 分析</b>：文字種・文長・頻出語を分析
             </div>
-            <div class="help-section" style="flex: 1; min-width: 200px;">
-                <div class="help-title">【設定管理】</div>
-                ・設定の📤エクスポート/📥インポート可能<br>
-                ・JSONファイルで保存・復元<br>
-                ・テーマ切替対応
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【目標機能】</div>
+                ・<b>全体目標</b>：作品全体の目標文字数<br>
+                ・<b>今日の目標</b>：1日の執筆目標<br>
+                ・目標達成時に🎉お祝いアニメーション表示<br>
+                ・進捗に応じて色が変化
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【目次・ブックマーク】</div>
+                ・<b>📑 目次</b>：見出し（■□▲など）を自動検出<br>
+                ・<b>🔖 ブックマーク</b>：任意の位置を保存<br>
+                ・クリックでその位置にジャンプ<br>
+                ・📌固定で常に表示
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【保存・読込】</div>
+                ・<b>💾 保存</b>：テキスト/HTML形式で保存<br>
+                ・<b>📂 開く</b>：テキストファイルを読込<br>
+                ・<b>自動保存</b>：30秒ごとにブラウザに保存<br>
+                ・設定の📤エクスポート/📥インポート
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 180px;">
+                <div class="help-title">【設定】</div>
+                ・<b>フォント</b>：明朝・ゴシック・筆文字など<br>
+                ・<b>縦書き/横書き</b>：切替可能<br>
+                ・<b>テーマ</b>：ライト・ダーク・セピアなど<br>
+                ・<b>原稿用紙換算</b>：枚数を自動計算
             </div>
         </div>
     </div>
@@ -633,6 +697,8 @@
         </div>
     </div>
 
+    <div class="pane-resizer" id="resizer-input-preview"></div>
+
     <div class="pane" id="pane-preview">
         <div class="pane-header"><h2>プレビュー</h2><button class="pane-close-btn" onclick="hidePane('preview')">✕</button></div>
         <div class="pane-subheader" id="preview-pos-bar">位置: 0%</div>
@@ -691,6 +757,11 @@
     <span class="emoji">🎉</span>
     <span id="celebration-text">やったね！</span>
     <span class="sub" id="celebration-sub"></span>
+</div>
+
+<div id="quick-insert-popup" class="quick-insert-popup">
+    <button class="qip-ruby" onclick="quickInsertRuby()">🔤ルビ</button>
+    <button class="qip-bouten" onclick="quickInsertBouten()">⚫傍点</button>
 </div>
 
 <div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
@@ -973,11 +1044,83 @@
     }
     function updateCursorLineDisplay() { const p = inputArea.selectionStart, c = (inputArea.value.substring(0, p).match(/\n/g) || []).length + 1; inputPosBar.innerText = `現在: ${c} 行目`; }
 
+    const quickInsertPopup = document.getElementById('quick-insert-popup');
+    let lastSelectionRange = { start: 0, end: 0 };
+
+    function showQuickInsertPopup() {
+        const s = inputArea.selectionStart, e = inputArea.selectionEnd;
+        if (s === e) { quickInsertPopup.classList.remove('show'); return; }
+        lastSelectionRange = { start: s, end: e };
+        // Position popup near cursor
+        const rect = inputArea.getBoundingClientRect();
+        const lines = inputArea.value.substring(0, s).split('\n');
+        const lineHeight = parseFloat(getComputedStyle(inputArea).lineHeight) || 24;
+        const scrollTop = inputArea.scrollTop;
+        const approxY = rect.top + (lines.length * lineHeight) - scrollTop;
+        const approxX = rect.left + 100;
+        quickInsertPopup.style.top = Math.min(Math.max(approxY, rect.top), rect.bottom - 40) + 'px';
+        quickInsertPopup.style.left = Math.min(approxX, window.innerWidth - 150) + 'px';
+        quickInsertPopup.classList.add('show');
+    }
+
+    function hideQuickInsertPopup() { quickInsertPopup.classList.remove('show'); }
+
+    function quickInsertRuby() {
+        const s = lastSelectionRange.start, e = lastSelectionRange.end;
+        if (s === e) return;
+        const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e);
+        const rt = `｜${st}《》`;
+        inputArea.value = b + rt + a;
+        inputArea.setSelectionRange(s + st.length + 2, s + st.length + 2);
+        inputArea.focus();
+        updateInputStats();
+        hideQuickInsertPopup();
+    }
+
+    function quickInsertBouten() {
+        const s = lastSelectionRange.start, e = lastSelectionRange.end;
+        if (s === e) return;
+        const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e);
+        const bt = `《《${st}》》`;
+        inputArea.value = b + bt + a;
+        inputArea.setSelectionRange(s + bt.length, s + bt.length);
+        inputArea.focus();
+        updateInputStats();
+        hideQuickInsertPopup();
+    }
+
     document.addEventListener('selectionchange', () => {
         const a = document.activeElement;
-        if (a === inputArea) { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s !== e) { const t = inputArea.value.substring(s, e), c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1; inputSelOverlay.textContent = `選択: ${c}字 / ${l}行`; inputSelOverlay.classList.add('show'); } else { inputSelOverlay.classList.remove('show'); } previewSelOverlay.classList.remove('show'); }
-        else if (previewScroll.contains(window.getSelection()?.anchorNode)) { const t = window.getSelection().toString(); if (t.length > 0) { const c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1; previewSelOverlay.textContent = `選択: ${c}字 / ${l}行`; previewSelOverlay.classList.add('show'); } else { previewSelOverlay.classList.remove('show'); } inputSelOverlay.classList.remove('show'); }
-        else { inputSelOverlay.classList.remove('show'); previewSelOverlay.classList.remove('show'); }
+        if (a === inputArea) {
+            const s = inputArea.selectionStart, e = inputArea.selectionEnd;
+            if (s !== e) {
+                const t = inputArea.value.substring(s, e), c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1;
+                inputSelOverlay.textContent = `選択: ${c}字 / ${l}行`;
+                inputSelOverlay.classList.add('show');
+                showQuickInsertPopup();
+            } else {
+                inputSelOverlay.classList.remove('show');
+                hideQuickInsertPopup();
+            }
+            previewSelOverlay.classList.remove('show');
+        }
+        else if (previewScroll.contains(window.getSelection()?.anchorNode)) {
+            const t = window.getSelection().toString();
+            if (t.length > 0) {
+                const c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1;
+                previewSelOverlay.textContent = `選択: ${c}字 / ${l}行`;
+                previewSelOverlay.classList.add('show');
+            } else {
+                previewSelOverlay.classList.remove('show');
+            }
+            inputSelOverlay.classList.remove('show');
+            hideQuickInsertPopup();
+        }
+        else {
+            inputSelOverlay.classList.remove('show');
+            previewSelOverlay.classList.remove('show');
+            hideQuickInsertPopup();
+        }
     });
 
     previewScroll.addEventListener('scroll', () => {
@@ -1008,6 +1151,15 @@
     }
 
     function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
+
+    function updatePreviewAndShow() {
+        updatePreview();
+        const previewPane = document.getElementById('pane-preview');
+        if (previewPane.classList.contains('hidden')) {
+            previewPane.classList.remove('hidden');
+            document.getElementById('check-show-preview').checked = true;
+        }
+    }
 
     const fontMap = { 'font-gothic': '"Noto Sans JP", sans-serif', 'font-mincho': '"Shippori Mincho", serif', 'font-old': '"Zen Old Mincho", serif', 'font-round': '"M PLUS Rounded 1c", sans-serif', 'font-brush': '"Yuji Syuku", serif' };
     function applyInputSettings() { const s = document.getElementById('st-in-size').value + 'px', l = document.getElementById('st-in-line').value, f = fontMap[document.getElementById('st-in-font').value], v = document.getElementById('st-in-v').checked; inputArea.style.fontSize = s; inputArea.style.lineHeight = l; inputArea.style.fontFamily = f; inputMirror.style.fontSize = s; inputMirror.style.lineHeight = l; inputMirror.style.fontFamily = f; if (v) inputArea.parentElement.classList.add('vertical-mode'); else inputArea.parentElement.classList.remove('vertical-mode'); }
@@ -1140,6 +1292,48 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
     inputArea.addEventListener('keyup', updateCursorLineDisplay);
     inputArea.addEventListener('click', updateCursorLineDisplay);
+
+    // Pane Resizer
+    (function initResizer() {
+        const resizer = document.getElementById('resizer-input-preview');
+        const inputPane = document.getElementById('pane-input');
+        const previewPane = document.getElementById('pane-preview');
+        const mainContainer = document.getElementById('main-container');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', e => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!isResizing) return;
+            const containerRect = mainContainer.getBoundingClientRect();
+            const containerWidth = containerRect.width - 6; // resizer width
+            const mouseX = e.clientX - containerRect.left;
+            const ratio = Math.max(0.1, Math.min(0.9, mouseX / containerRect.width));
+
+            if (mainContainer.classList.contains('reverse-row')) {
+                previewPane.style.flex = `0 0 ${ratio * 100}%`;
+                inputPane.style.flex = `0 0 ${(1 - ratio) * 100}%`;
+            } else {
+                inputPane.style.flex = `0 0 ${ratio * 100}%`;
+                previewPane.style.flex = `0 0 ${(1 - ratio) * 100}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+    })();
 
     // 初期化
     loadAutoSave();

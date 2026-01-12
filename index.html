@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C-エディタ</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&family=Zen+Old+Mincho&family=M+PLUS+Rounded+1c&family=Yuji+Syuku&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --bg-color: #f3f4f6; --panel-bg: #ffffff; --border-color: #e5e7eb;
+        --preview-bg-color: #fdfcf0; --text-color: #1f2937; --text-muted: #6b7280;
+        --header-bg: #f3f4f6; --pane-header-bg: #f9fafb;
+        --col-zen-bg: #dbeafe; --col-zen-tx: #2563eb;
+        --col-han-bg: #d1fae5; --col-han-tx: #059669;
+        --col-mute-bg: transparent; --col-mute-tx: #d1d5db;
+        --col-sym-bg: #ede9fe; --col-sym-tx: #7c3aed;
+    }
+    body.theme-dark {
+        --bg-color: #1f2937; --panel-bg: #374151; --border-color: #4b5563;
+        --preview-bg-color: #2d3748; --text-color: #f3f4f6; --text-muted: #9ca3af;
+        --header-bg: #111827; --pane-header-bg: #4b5563;
+        --col-zen-bg: #1e3a5f; --col-zen-tx: #93c5fd;
+        --col-han-bg: #14532d; --col-han-tx: #86efac;
+        --col-mute-bg: transparent; --col-mute-tx: #6b7280;
+        --col-sym-bg: #4c1d95; --col-sym-tx: #c4b5fd;
+    }
+    body.theme-sepia {
+        --bg-color: #f5f0e1; --panel-bg: #faf6eb; --border-color: #d4c4a8;
+        --preview-bg-color: #fdf8e8; --text-color: #5c4b37; --text-muted: #8b7355;
+        --header-bg: #ebe3d0; --pane-header-bg: #f0e8d8;
+    }
+    body.theme-blue {
+        --bg-color: #e0f2fe; --panel-bg: #f0f9ff; --border-color: #7dd3fc;
+        --preview-bg-color: #f0f9ff; --text-color: #0c4a6e; --text-muted: #0369a1;
+        --header-bg: #bae6fd; --pane-header-bg: #e0f2fe;
+    }
+    body.theme-green {
+        --bg-color: #dcfce7; --panel-bg: #f0fdf4; --border-color: #86efac;
+        --preview-bg-color: #f0fdf4; --text-color: #14532d; --text-muted: #166534;
+        --header-bg: #bbf7d0; --pane-header-bg: #dcfce7;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; padding: 0; font-family: "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg-color); color: var(--text-color);
+        height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+    body.scroll-mode { height: auto; overflow-y: auto; display: block; }
+    body.focus-mode header, body.focus-mode .controls-wrapper, body.focus-mode .pane-header,
+    body.focus-mode .pane-subheader, body.focus-mode .pane-footer, body.focus-mode #outline-panel { display: none !important; }
+    body.focus-mode .main-container { padding: 0; }
+    body.focus-mode .pane { border-radius: 0; border: none; }
+    .focus-exit-hint {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.7); color: white; padding: 8px 16px;
+        border-radius: 20px; font-size: 0.8rem; z-index: 9999; display: none;
+    }
+    body.focus-mode .focus-exit-hint { display: block; }
+
+    header {
+        background: var(--header-bg); padding: 8px 10px;
+        display: flex; justify-content: space-between; align-items: center;
+        flex-shrink: 0; min-height: 46px; border-bottom: 1px solid var(--border-color);
+        z-index: 100; flex-wrap: wrap; gap: 4px;
+    }
+    body.scroll-mode header { position: sticky; top: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { margin: 0; font-size: 1.0rem; color: var(--text-color); margin-right: 15px; }
+    .header-left, .header-right { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+
+    .btn {
+        background: var(--panel-bg); border: 1px solid var(--border-color); padding: 4px 10px;
+        cursor: pointer; border-radius: 4px; font-size: 0.8rem; color: var(--text-color);
+        transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+        height: 28px; white-space: nowrap;
+    }
+    .btn:hover { background: var(--pane-header-bg); border-color: #9ca3af; }
+    .btn.active { background: #e5e7eb; font-weight: bold; border-color: #6b7280; }
+    body.theme-dark .btn.active { background: #4b5563; }
+    .btn-update { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; font-weight: bold; }
+    .btn-update:hover { background: #bae6fd; }
+    .btn-sync { background: #fef9c3; color: #854d0e; border-color: #fde047; font-weight: bold; }
+    .btn-sync:hover { background: #fef08a; }
+    .btn-save { background: #2563eb; color: white; border: 1px solid #1d4ed8; }
+    .btn-save:hover { background: #1d4ed8; color: white; }
+    .btn-undo { background: #f3e8ff; color: #7c3aed; border-color: #d8b4fe; }
+    .btn-undo:hover { background: #ede9fe; }
+    .btn-apply { background: #dcfce7; color: #166534; border-color: #86efac; font-size: 0.7rem; padding: 2px 6px; height: 22px; }
+    .btn-apply:hover { background: #bbf7d0; }
+    .btn-apply-all { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: bold; }
+    .btn-apply-all:hover { background: #fde68a; }
+    .btn-focus { background: #fce7f3; color: #be185d; border-color: #f9a8d4; }
+    .btn-focus:hover { background: #fbcfe8; }
+    .btn-focus.active { background: #be185d; color: white; }
+    .btn-analysis { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; font-weight: bold; }
+    .btn-analysis:hover { background: #bfdbfe; }
+    .btn-export { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-size: 0.7rem; padding: 2px 6px; }
+    .btn-import { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; font-size: 0.7rem; padding: 2px 6px; }
+    #file-input, #settings-file-input { display: none; }
+
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-btn { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .dropdown-content {
+        display: none; position: absolute; top: 100%; left: 0;
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 300; min-width: 160px;
+    }
+    .dropdown-content.show { display: block; }
+    .dropdown-content button {
+        display: block; width: 100%; padding: 8px 12px; border: none;
+        background: transparent; text-align: left; cursor: pointer;
+        font-size: 0.85rem; color: var(--text-color);
+    }
+    .dropdown-content button:hover { background: #e0f2fe; }
+
+    .controls-wrapper { padding: 10px 10px 0 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .control-panel {
+        background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px;
+        padding: 8px 12px; font-size: 0.85rem; display: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative;
+    }
+    .control-panel.open { display: flex; animation: slideDown 0.2s ease-out; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .panel-close-btn {
+        position: absolute; top: 4px; right: 8px; background: transparent; border: none;
+        color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; line-height: 1;
+    }
+    .panel-close-btn:hover { color: #dc2626; }
+
+    #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; }
+    body.theme-dark #search-bar { background: #14532d; border-color: #166534; }
+    #search-bar input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem; }
+    #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
+    .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
+
+    #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 30px; }
+    #help-bar.open { display: flex; }
+    body.theme-dark #help-bar { background: #451a03; border-color: #854d0e; color: #fcd34d; }
+    .help-section { margin-bottom: 12px; }
+    .help-section:last-child { margin-bottom: 0; }
+    .help-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; border-bottom: 1px dashed #fcd34d; padding-bottom: 2px; }
+
+    #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 30px; }
+    .setting-group { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 12px; }
+    .setting-group:last-child { border-right: none; }
+    .setting-title { font-weight: bold; color: var(--text-muted); margin-bottom: 2px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+    .setting-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    input[type="number"] { width: 50px; }
+
+    .main-container { display: flex; flex: 1; gap: 10px; overflow: hidden; padding: 10px; position: relative; }
+    .main-container.reverse-row { flex-direction: row-reverse; }
+    body.scroll-mode .main-container { flex-direction: column; overflow: visible; height: auto; }
+    body.scroll-mode .main-container.reverse-col { flex-direction: column-reverse; }
+
+    .pane {
+        flex: 1; display: flex; flex-direction: column;
+        background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px;
+        min-width: 0; min-height: 0; overflow: hidden; position: relative;
+    }
+    .pane.hidden { display: none !important; }
+    body.scroll-mode .pane { flex: none; height: 90vh; margin-bottom: 20px; }
+
+    .pane-header {
+        background: var(--pane-header-bg); padding: 0 10px; color: var(--text-muted); height: 28px;
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+    }
+    .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; }
+    .pane-close-btn {
+        background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+        font-size: 1rem; padding: 0 4px; line-height: 1;
+    }
+    .pane-close-btn:hover { color: #dc2626; }
+    .pane-subheader {
+        background: #f0f9ff; color: #0369a1; font-size: 0.75rem; padding: 2px 10px;
+        border-bottom: 1px solid #e0f2fe; text-align: right; font-family: monospace; flex-shrink: 0;
+    }
+    body.theme-dark .pane-subheader { background: #1e3a5f; color: #93c5fd; border-color: #1e40af; }
+    .pane-body { flex: 1; overflow: hidden; position: relative; min-height: 0; }
+    #pane-preview .pane-body { background-color: var(--preview-bg-color); }
+    .pane-footer {
+        padding: 0 8px; font-size: 0.7rem; color: var(--text-muted);
+        text-align: right; border-top: 1px solid var(--border-color); background: var(--panel-bg);
+        display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 24px;
+        flex-wrap: wrap; flex-shrink: 0;
+    }
+    .net-count { font-weight: bold; color: var(--text-color); background: var(--pane-header-bg); padding: 0 4px; border-radius: 3px; }
+    .timestamp { font-family: monospace; color: #059669; }
+    .goal-display { font-weight: bold; }
+    .goal-0-24 { color: #1f2937; } .goal-25-49 { color: #16a34a; } .goal-50-74 { color: #2563eb; }
+    .goal-75-99 { color: #ec4899; } .goal-100 { color: #06b6d4; }
+    body.theme-dark .goal-0-24 { color: #f3f4f6; }
+    .today-goal { font-weight: bold; color: #f97316; }
+    .today-goal.achieved { color: #10b981; }
+    .writing-time { color: #8b5cf6; font-weight: bold; }
+
+    .selection-overlay {
+        position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+        background: rgba(37, 99, 235, 0.9); color: white; padding: 6px 16px;
+        border-radius: 20px; font-size: 0.85rem; font-weight: bold; z-index: 50;
+        pointer-events: none; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .selection-overlay.show { display: block; }
+
+    textarea {
+        width: 100%; height: 100%; border: none; outline: none; resize: none;
+        padding: 20px; background: transparent; font-family: inherit; line-height: inherit; font-size: inherit;
+        white-space: pre-wrap; word-wrap: break-word; z-index: 2; position: relative; color: var(--text-color);
+        overflow-x: hidden; overflow-y: auto;
+    }
+    textarea::selection { background-color: #bae6fd; color: #000; }
+    .vertical-mode textarea { overflow-x: auto; overflow-y: hidden; }
+    #input-mirror-container {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        visibility: hidden; pointer-events: none;
+        white-space: pre-wrap; word-wrap: break-word; overflow: hidden; padding: 20px;
+    }
+    .vertical-mode textarea, .vertical-mode #input-mirror-container { writing-mode: vertical-rl; text-orientation: upright; }
+
+    #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: hidden; overflow-y: auto; }
+    #preview-scroll.vertical-mode { overflow-x: auto; overflow-y: hidden; }
+    #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; }
+    #preview-content { word-wrap: break-word; color: var(--text-color); }
+
+    ruby { ruby-align: space-between; ruby-position: over; }
+    rt { color: #555; user-select: none; font-size: 0.5em; }
+    body.theme-dark rt { color: #aaa; }
+    .bouten-ruby rt { font-size: 0.8em; font-weight: bold; color: #333; transform: translateY(10%); }
+    body.theme-dark .bouten-ruby rt { color: #eee; }
+    .space-zen, .space-han { display: inline-block; font-family: monospace; color: var(--col-mute-tx); background-color: var(--col-mute-bg); }
+    .space-han { min-width: 0.3em; text-align: center; }
+    .highlight-active .space-zen { background-color: var(--col-zen-bg); color: var(--col-zen-tx); }
+    .highlight-active .space-han { background-color: var(--col-han-bg); color: var(--col-han-tx); }
+    .symbol-hl { background-color: var(--col-sym-bg); color: var(--col-sym-tx); font-weight: bold; }
+    .bracket-blue { color: #2563eb; font-weight: bold; }
+    .bracket-green { color: #059669; font-weight: bold; }
+    .underline-text { text-decoration: underline; text-decoration-color: #dc2626; text-underline-offset: 2px; }
+    .highlight-text { background: linear-gradient(transparent 60%, #fef08a 60%); }
+    body.theme-dark .highlight-text { background: linear-gradient(transparent 60%, #854d0e 60%); }
+
+    #outline-panel {
+        position: fixed; top: 46px; right: 0; bottom: 0; width: 300px;
+        background: var(--panel-bg); border-left: 1px solid var(--border-color);
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    #outline-panel.open { transform: translateX(0); }
+    .main-container.outline-docked #outline-panel {
+        position: relative; top: auto; right: auto; bottom: auto;
+        transform: none; box-shadow: none; z-index: 1; display: none;
+        flex: none; resize: horizontal; overflow: auto;
+        min-width: 150px; max-width: 60vw; width: 300px;
+        border-left: 1px solid var(--border-color); border-right: none;
+    }
+    .main-container.outline-docked #outline-panel.open { display: flex; }
+    .main-container.outline-docked.outline-left { flex-direction: row-reverse; }
+    .main-container.outline-docked.outline-left #outline-panel { border-left: none; border-right: 1px solid var(--border-color); }
+
+    .outline-header {
+        padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color);
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+        font-size: 0.85rem; flex-wrap: wrap; gap: 4px;
+    }
+    .outline-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .outline-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+    .outline-tab {
+        flex: 1; padding: 8px; text-align: center; cursor: pointer;
+        background: var(--pane-header-bg); border: none; font-size: 0.8rem;
+        color: var(--text-muted); transition: all 0.2s;
+    }
+    .outline-tab:hover { background: var(--panel-bg); }
+    .outline-tab.active { background: var(--panel-bg); color: var(--text-color); font-weight: bold; border-bottom: 2px solid #2563eb; }
+    .outline-content { flex: 1; overflow-y: auto; padding: 10px; }
+    .outline-tab-content { display: none; }
+    .outline-tab-content.active { display: block; }
+    .outline-item {
+        padding: 6px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer;
+        color: var(--text-color); font-size: 0.85rem; display: flex; align-items: center;
+    }
+    .outline-item:hover { background: #e0f2fe; color: #0284c7; }
+    body.theme-dark .outline-item:hover { background: #1e3a5f; }
+    .outline-level-1 { font-weight: bold; background: var(--pane-header-bg); border-left: 4px solid #6b7280; }
+    .outline-level-2 { padding-left: 20px; border-left: 3px solid #9ca3af; }
+    .outline-level-3 { padding-left: 35px; border-left: 2px solid #d1d5db; font-size: 0.8rem; }
+    .outline-toggle { cursor: pointer; margin-right: 6px; font-size: 0.7rem; width: 14px; text-align: center; color: var(--text-muted); flex-shrink: 0; }
+    .outline-toggle:hover { color: #2563eb; }
+    .outline-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .outline-char-count { margin-left: auto; font-size: 0.7rem; color: var(--text-muted); background: var(--pane-header-bg); padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
+    .outline-empty { color: var(--text-muted); font-style: italic; }
+    .outline-hidden { display: none !important; }
+    .outline-summary { padding: 8px 10px; background: #f0f9ff; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: #0369a1; }
+    body.theme-dark .outline-summary { background: #1e3a5f; color: #93c5fd; }
+
+    .bookmark-item { padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+    .bookmark-item:hover { background: #fef3c7; }
+    .bookmark-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bookmark-delete { color: #dc2626; cursor: pointer; font-size: 0.8rem; }
+    .bookmark-delete:hover { color: #b91c1c; }
+    .bookmark-add-btn { width: 100%; padding: 8px; background: #fef3c7; border: 1px dashed #fcd34d; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-bottom: 10px; }
+    .bookmark-add-btn:hover { background: #fde68a; }
+
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        display: none; justify-content: center; align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-content {
+        background: var(--panel-bg); border-radius: 8px; padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 600px; width: 90%;
+        max-height: 80vh; overflow-y: auto; color: var(--text-color);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-header h3 { margin: 0; font-size: 1.2rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+    .modal-close:hover { color: #dc2626; }
+    .analysis-section { margin-bottom: 20px; padding: 15px; background: var(--pane-header-bg); border-radius: 6px; }
+    .analysis-section h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: #2563eb; }
+    .analysis-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted var(--border-color); }
+    .analysis-row:last-child { border-bottom: none; }
+    .analysis-bar { height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden; margin: 5px 0; }
+    .analysis-bar-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
+    .freq-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .freq-item { background: #dbeafe; color: #1d4ed8; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; }
+    .warning-text { color: #dc2626; font-size: 0.85rem; margin-top: 8px; }
+
+    .jump-dialog {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 8px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 1001; display: none;
+    }
+    .jump-dialog.show { display: block; }
+    .jump-dialog h4 { margin: 0 0 15px 0; }
+    .jump-dialog input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; margin-bottom: 10px; }
+    .jump-dialog-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .save-dialog-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        display: flex; justify-content: center; align-items: center;
+    }
+    .save-dialog {
+        background: var(--panel-bg); border-radius: 8px; padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 300px;
+    }
+    .save-dialog h3 { margin: 0 0 15px 0; color: var(--text-color); }
+    .save-dialog-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .save-dialog-buttons button { padding: 10px 20px; font-size: 1rem; }
+
+    @media print {
+        header, .controls-wrapper, .pane-subheader, .pane-footer, #outline-panel, #pane-input, .selection-overlay { display: none !important; }
+        body, body.scroll-mode { height: auto; overflow: visible; background: white; }
+        .main-container { padding: 0; display: block; }
+        .pane { border: none; box-shadow: none; height: auto !important; }
+        #pane-preview { display: block !important; }
+        #pane-preview .pane-header { display: none; }
+        #pane-preview .pane-body { overflow: visible; }
+        #preview-scroll { padding: 0; height: auto; overflow: visible; }
+        #preview-content { font-size: 10.5pt; line-height: 1.8; }
+        .vertical-mode #preview-content { writing-mode: horizontal-tb; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <h1>C-エディタ</h1>
+        <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
+        <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
+        <button class="btn" onclick="togglePanel('help-bar')">使い方</button>
+        <button class="btn" onclick="togglePanel('search-bar')">🔍 検索</button>
+        <button class="btn" onclick="togglePanel('settings-bar')">設定</button>
+        <div class="dropdown">
+            <button class="btn dropdown-btn" onclick="toggleDropdown('insert-dropdown')">📝 挿入</button>
+            <div id="insert-dropdown" class="dropdown-content">
+                <button onclick="insertText('――')">―― ダッシュ</button>
+                <button onclick="insertText('……')">…… 三点リーダー</button>
+                <button onclick="insertText('「」', 1)">「」 鉤括弧</button>
+                <button onclick="insertText('『』', 1)">『』 二重鉤括弧</button>
+                <button onclick="insertText('｜《》', 1)">｜《》 ルビ記法</button>
+                <button onclick="insertText('《《》》', 2)">《《》》 傍点記法</button>
+                <button onclick="insertRubyToSelection()">🔤 選択文字にルビ</button>
+                <button onclick="insertBoutenToSelection()">⚫ 選択文字に傍点</button>
+            </div>
+        </div>
+        <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
+        <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
+        <button class="btn btn-update" onclick="updatePreview()">🔄 プレビュー更新</button>
+        <button class="btn btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
+        <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
+        <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
+    </div>
+    <div class="header-right">
+        <button class="btn" onclick="toggleOutline()">📑 目次</button>
+        <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
+        <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
+        <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
+    </div>
+</header>
+
+<div class="controls-wrapper">
+    <div id="search-bar" class="control-panel">
+        <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
+        <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
+        <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
+        <button class="btn" onclick="findPrev()">▲ 前へ</button>
+        <button class="btn" onclick="findNext()">▼ 次へ</button>
+        <span id="search-match-info">0 / 0</span>
+        <div style="width:1px;height:20px;background:#ccc;margin:0 4px;"></div>
+        <input type="text" id="replace-input" placeholder="置換後...">
+        <button class="btn" onclick="replaceOne()">置換</button>
+        <button class="btn" onclick="replaceAll()">全置換</button>
+    </div>
+    
+    <div id="help-bar" class="control-panel">
+        <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <div class="help-section" style="flex: 1; min-width: 200px;">
+                <div class="help-title">【基本操作】</div>
+                ・<b>入力エリア</b>：左側に文章を入力<br>
+                ・<b>プレビュー</b>：「🔄 更新」で整形表示<br>
+                ・<b>📲 同期</b>：カーソル位置に移動<br>
+                ・<b>Ctrl+G</b>：行番号ジャンプ
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 200px;">
+                <div class="help-title">【記法】</div>
+                ・<b>ルビ</b>：｜漢字《かんじ》<br>
+                ・<b>傍点</b>：《《強調》》<br>
+                ・<b>傍線</b>：__下線__<br>
+                ・<b>蛍光ペン</b>：==強調==
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 200px;">
+                <div class="help-title">【執筆支援】</div>
+                ・<b>🧘 集中</b>：UIを隠す（ESCで解除）<br>
+                ・<b>タイプライター</b>：カーソル中央固定<br>
+                ・<b>執筆時間</b>：自動計測<br>
+                ・<b>📊 分析</b>：統計情報表示
+            </div>
+            <div class="help-section" style="flex: 1; min-width: 200px;">
+                <div class="help-title">【設定管理】</div>
+                ・設定の📤エクスポート/📥インポート可能<br>
+                ・JSONファイルで保存・復元<br>
+                ・テーマ切替対応
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-bar" class="control-panel">
+        <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
+        <div class="setting-group">
+            <div class="setting-title">入力エリア <button class="btn btn-apply" onclick="applyInputSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>文字: <input type="number" id="st-in-size" value="17" min="10" max="60"></label>
+                <label>行間: <input type="number" id="st-in-line" value="1.7" step="0.1" min="1.0" max="5.0"></label>
+                <label><input type="checkbox" id="st-in-v" checked> 縦書き</label>
+            </div>
+            <div class="setting-row">
+                <label>フォント: 
+                    <select id="st-in-font">
+                        <option value="font-gothic">ゴシック</option>
+                        <option value="font-mincho" selected>明朝体</option>
+                        <option value="font-old">アンティーク</option>
+                        <option value="font-round">丸ゴシック</option>
+                        <option value="font-brush">筆文字</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">プレビュー <button class="btn btn-apply" onclick="applyPreviewSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>文字: <input type="number" id="st-pv-size" value="17" min="10" max="60"></label>
+                <label>行間: <input type="number" id="st-pv-line" value="1.7" step="0.1" min="1.0" max="5.0"></label>
+                <label><input type="checkbox" id="st-pv-v" checked> 縦書き</label>
+            </div>
+            <div class="setting-row">
+                <label>フォント: 
+                    <select id="st-pv-font">
+                        <option value="font-gothic">ゴシック</option>
+                        <option value="font-mincho" selected>明朝体</option>
+                        <option value="font-old">アンティーク</option>
+                        <option value="font-round">丸ゴシック</option>
+                        <option value="font-brush">筆文字</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">表示オプション <button class="btn btn-apply" onclick="applyDisplaySettings()">適用</button></div>
+            <div class="setting-row">
+                <label><input type="checkbox" id="st-show-space" checked> スペース可視化</label>
+                <label><input type="checkbox" id="st-show-highlight" checked> ハイライト</label>
+            </div>
+            <div class="setting-row">
+                <label><input type="checkbox" id="check-show-input" checked> 入力表示</label>
+                <label><input type="checkbox" id="check-show-preview" checked> プレビュー表示</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">執筆支援 <button class="btn btn-apply" onclick="applyWritingSettings()">適用</button></div>
+            <div class="setting-row">
+                <label><input type="checkbox" id="st-typewriter-mode"> タイプライター</label>
+                <label><input type="checkbox" id="st-writing-tracker" checked> 時間トラッカー</label>
+            </div>
+            <div class="setting-row" id="writing-time-display" style="color: #8b5cf6; font-weight: bold;">執筆時間: 00:00:00</div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">目標・統計 <button class="btn btn-apply" onclick="applyGoalSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>全体目標: <input type="number" id="st-goal-chars" value="150000" min="0" max="999999" style="width:70px;"> 字</label>
+            </div>
+            <div class="setting-row">
+                <label>今日の目標: <input type="number" id="st-today-goal" value="2000" min="0" max="99999" style="width:60px;"> 字</label>
+                <button class="btn btn-apply" onclick="resetTodayStart()" style="font-size:0.65rem;">開始点リセット</button>
+            </div>
+            <div class="setting-row">
+                <label><input type="checkbox" id="st-show-reading-time" checked> 読み上げ時間</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">原稿用紙 <button class="btn btn-apply" onclick="applyManuscriptSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>行: <input type="number" id="st-manuscript-rows" value="34" min="1" max="100" style="width:50px;"></label>
+                <label>×文字: <input type="number" id="st-manuscript-cols" value="42" min="1" max="100" style="width:50px;"></label>
+            </div>
+            <div class="setting-row">
+                <label><input type="checkbox" id="st-show-manuscript" checked> 換算表示</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">テーマ <button class="btn btn-apply" onclick="applyThemeSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>プリセット:
+                    <select id="st-theme-preset">
+                        <option value="">ライト</option>
+                        <option value="theme-dark">ダーク</option>
+                        <option value="theme-sepia">セピア</option>
+                        <option value="theme-blue">ブルー</option>
+                        <option value="theme-green">グリーン</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">設定管理</div>
+            <div class="setting-row">
+                <button class="btn btn-export" onclick="exportSettings()">📤 エクスポート</button>
+                <input type="file" id="settings-file-input" accept=".json" onchange="importSettings(this)">
+                <button class="btn btn-import" onclick="document.getElementById('settings-file-input').click()">📥 インポート</button>
+            </div>
+        </div>
+
+        <div class="setting-group" style="border-right:none;">
+            <button class="btn btn-apply-all" onclick="applyAllSettings()">⚡ 全体適用</button>
+        </div>
+    </div>
+</div>
+
+<div class="main-container" id="main-container">
+    <div class="pane" id="pane-input">
+        <div class="pane-header"><h2>入力</h2><button class="pane-close-btn" onclick="hidePane('input')">✕</button></div>
+        <div class="pane-subheader" id="input-pos-bar">現在: 1 行目</div>
+        <div class="pane-body">
+            <div id="input-mirror-container"></div>
+            <textarea id="input-area" spellcheck="false"></textarea>
+            <div id="input-sel-overlay" class="selection-overlay"></div>
+        </div>
+        <div class="pane-footer">
+            <span id="char-count">全体: 0</span>
+            <span id="input-net-count" class="net-count">実質: 0</span>
+            <span id="line-count">0 行</span>
+            <span id="input-goal-display" class="goal-display"></span>
+            <span id="input-today-goal" class="today-goal"></span>
+            <span id="input-writing-time" class="writing-time"></span>
+            <span id="input-reading-time" class="reading-time"></span>
+            <span id="input-manuscript" class="manuscript-pages"></span>
+        </div>
+    </div>
+
+    <div class="pane" id="pane-preview">
+        <div class="pane-header"><h2>プレビュー</h2><button class="pane-close-btn" onclick="hidePane('preview')">✕</button></div>
+        <div class="pane-subheader" id="preview-pos-bar">位置: 0%</div>
+        <div class="pane-body">
+            <div id="preview-scroll"><div id="preview-content"></div></div>
+            <div id="preview-sel-overlay" class="selection-overlay"></div>
+        </div>
+        <div class="pane-footer">
+            <span id="pv-time" class="timestamp">未更新</span>
+            <span style="border-left:1px solid var(--border-color); height:12px; margin:0 5px;"></span>
+            <span id="pv-total-count">全体: 0</span>
+            <span id="pv-net-count" class="net-count">実質: 0</span>
+            <span id="pv-line-count">0 行</span>
+            <span id="pv-goal-display" class="goal-display"></span>
+            <span id="pv-today-goal" class="today-goal"></span>
+            <span id="pv-reading-time" class="reading-time"></span>
+            <span id="pv-manuscript" class="manuscript-pages"></span>
+        </div>
+    </div>
+
+    <div id="outline-panel">
+        <div class="outline-header">
+            <span>目次・ブックマーク</span>
+            <div class="outline-controls">
+                <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-outline-dock" onchange="toggleOutlineDock()"> 📌固定</label>
+                <button id="btn-outline-swap" class="btn" style="display:none; padding:2px 6px; font-size:0.7rem;" onclick="swapOutlineSide()">左右入替</button>
+                <button class="btn" onclick="toggleOutline()" style="border:none; background:transparent;">✕</button>
+            </div>
+        </div>
+        <div class="outline-tabs">
+            <button class="outline-tab active" onclick="switchOutlineTab('outline')">📑 目次</button>
+            <button class="outline-tab" onclick="switchOutlineTab('bookmark')">🔖 ブックマーク</button>
+        </div>
+        <div class="outline-content">
+            <div id="outline-tab-outline" class="outline-tab-content active">
+                <div style="margin-bottom:8px; display:flex; gap:4px; flex-wrap:wrap;">
+                    <button class="btn" style="padding:2px 6px; font-size:0.7rem;" onclick="generateOutline()">🔄更新</button>
+                    <button class="btn" style="padding:2px 6px; font-size:0.7rem;" onclick="expandAllOutline()">全展開</button>
+                    <button class="btn" style="padding:2px 6px; font-size:0.7rem;" onclick="collapseAllOutline()">全折畳</button>
+                </div>
+                <div id="outline-list"></div>
+            </div>
+            <div id="outline-tab-bookmark" class="outline-tab-content">
+                <button class="bookmark-add-btn" onclick="addBookmark()">＋ 現在位置にブックマークを追加</button>
+                <div id="bookmark-list"></div>
+            </div>
+        </div>
+        <div id="outline-summary" class="outline-summary"></div>
+    </div>
+</div>
+
+<div class="focus-exit-hint">ESCキーで集中モードを解除</div>
+
+<div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
+    <div class="save-dialog">
+        <h3>保存形式を選択</h3>
+        <div class="save-dialog-buttons">
+            <button class="btn" onclick="saveAsText()">📄 テキスト</button>
+            <button class="btn" onclick="saveAsHTML()">🌐 HTML</button>
+            <button class="btn" onclick="closeSaveDialog()">キャンセル</button>
+        </div>
+    </div>
+</div>
+
+<div id="analysis-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header"><h3>📊 テキスト分析</h3><button class="modal-close" onclick="closeAnalysis()">✕</button></div>
+        <div id="analysis-results"></div>
+    </div>
+</div>
+
+<div id="jump-dialog" class="jump-dialog">
+    <h4>行番号ジャンプ</h4>
+    <input type="number" id="jump-line-input" placeholder="行番号を入力..." min="1">
+    <div class="jump-dialog-buttons">
+        <button class="btn" onclick="executeJump()">ジャンプ</button>
+        <button class="btn" onclick="closeJumpDialog()">キャンセル</button>
+    </div>
+</div>
+
+<script>
+    const inputArea = document.getElementById('input-area');
+    const inputMirror = document.getElementById('input-mirror-container');
+    const previewContent = document.getElementById('preview-content');
+    const previewScroll = document.getElementById('preview-scroll');
+    const inputPosBar = document.getElementById('input-pos-bar');
+    const previewPosBar = document.getElementById('preview-pos-bar');
+    const charCountEl = document.getElementById('char-count');
+    const lineCountEl = document.getElementById('line-count');
+    const inputNetCountEl = document.getElementById('input-net-count');
+    const inputGoalEl = document.getElementById('input-goal-display');
+    const inputTodayGoalEl = document.getElementById('input-today-goal');
+    const inputWritingTimeEl = document.getElementById('input-writing-time');
+    const inputReadingEl = document.getElementById('input-reading-time');
+    const inputManuscriptEl = document.getElementById('input-manuscript');
+    const inputSelOverlay = document.getElementById('input-sel-overlay');
+    const pvTotalCountEl = document.getElementById('pv-total-count');
+    const pvNetCountEl = document.getElementById('pv-net-count');
+    const pvLineCountEl = document.getElementById('pv-line-count');
+    const pvTimeEl = document.getElementById('pv-time');
+    const pvGoalEl = document.getElementById('pv-goal-display');
+    const pvTodayGoalEl = document.getElementById('pv-today-goal');
+    const pvReadingEl = document.getElementById('pv-reading-time');
+    const pvManuscriptEl = document.getElementById('pv-manuscript');
+    const previewSelOverlay = document.getElementById('preview-sel-overlay');
+    const btnSwap = document.getElementById('btn-layout-swap');
+
+    let layoutAxis = 'row', layoutReversed = false;
+
+    let settingsCache = {
+        goalChars: 150000, todayGoal: 2000, manuscriptRows: 34, manuscriptCols: 42,
+        showReadingTime: true, showManuscript: true, showSpace: true, showHighlight: true,
+        typewriterMode: false, writingTracker: true
+    };
+
+    const TODAY_START_KEY = 'cc_editor_today_start';
+    const WRITING_TIME_KEY = 'cc_editor_writing_time';
+    const BOOKMARKS_KEY = 'cc_editor_bookmarks';
+    const SETTINGS_KEY = 'cc_editor_settings';
+    let todayStartChars = 0, writingSeconds = 0, lastInputTime = 0, writingTimerInterval = null, bookmarks = [];
+
+    function getTodayDateStr() { const n = new Date(); return `${n.getFullYear()}-${(n.getMonth()+1).toString().padStart(2,'0')}-${n.getDate().toString().padStart(2,'0')}`; }
+
+    function loadTodayStart() {
+        const s = localStorage.getItem(TODAY_START_KEY);
+        if (s) { try { const d = JSON.parse(s); if (d.date === getTodayDateStr()) { todayStartChars = d.startChars; return; } } catch (e) {} }
+        saveTodayStart();
+    }
+    function saveTodayStart() { const n = inputArea.value.replace(/[\n\s　]/g, '').length; todayStartChars = n; localStorage.setItem(TODAY_START_KEY, JSON.stringify({ date: getTodayDateStr(), startChars: n })); }
+    function resetTodayStart() { if (confirm('今日の開始点をリセットしますか？')) { saveTodayStart(); updateInputStats(); updatePreview(); } }
+
+    function loadWritingTime() {
+        const s = localStorage.getItem(WRITING_TIME_KEY);
+        if (s) { try { const d = JSON.parse(s); if (d.date === getTodayDateStr()) { writingSeconds = d.seconds; return; } } catch (e) {} }
+        writingSeconds = 0; saveWritingTime();
+    }
+    function saveWritingTime() { localStorage.setItem(WRITING_TIME_KEY, JSON.stringify({ date: getTodayDateStr(), seconds: writingSeconds })); }
+    function formatTime(s) { return `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+    function updateWritingTimeDisplay() {
+        const t = formatTime(writingSeconds);
+        document.getElementById('writing-time-display').textContent = `執筆時間: ${t}`;
+        inputWritingTimeEl.textContent = settingsCache.writingTracker ? `⏱${t}` : '';
+    }
+    function startWritingTimer() {
+        if (writingTimerInterval) return;
+        writingTimerInterval = setInterval(() => { if (Date.now() - lastInputTime < 5000) { writingSeconds++; updateWritingTimeDisplay(); if (writingSeconds % 30 === 0) saveWritingTime(); } }, 1000);
+    }
+
+    function loadBookmarks() { const s = localStorage.getItem(BOOKMARKS_KEY); if (s) { try { bookmarks = JSON.parse(s); } catch (e) { bookmarks = []; } } renderBookmarks(); }
+    function saveBookmarks() { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks)); }
+    function addBookmark() {
+        const pos = inputArea.selectionStart, text = inputArea.value;
+        const lineStart = text.lastIndexOf('\n', pos - 1) + 1, lineEnd = text.indexOf('\n', pos);
+        const lineText = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd).trim();
+        const preview = lineText.substring(0, 30) + (lineText.length > 30 ? '...' : '');
+        const lineNum = (text.substring(0, pos).match(/\n/g) || []).length + 1;
+        bookmarks.push({ pos, lineNum, preview, created: Date.now() }); saveBookmarks(); renderBookmarks();
+    }
+    function deleteBookmark(i) { bookmarks.splice(i, 1); saveBookmarks(); renderBookmarks(); }
+    function jumpToBookmark(pos) { inputArea.focus(); inputArea.setSelectionRange(pos, pos); setTimeout(() => scrollToCursorPosition(pos), 100); updateCursorLineDisplay(); }
+    function renderBookmarks() {
+        const l = document.getElementById('bookmark-list'); l.innerHTML = '';
+        if (bookmarks.length === 0) { l.innerHTML = '<div class="outline-empty">ブックマークがありません</div>'; return; }
+        bookmarks.forEach((b, i) => { const d = document.createElement('div'); d.className = 'bookmark-item'; d.innerHTML = `<span class="bookmark-text" onclick="jumpToBookmark(${b.pos})">📍 ${b.lineNum}行目: ${b.preview}</span><span class="bookmark-delete" onclick="deleteBookmark(${i})">✕</span>`; l.appendChild(d); });
+    }
+
+    // 設定エクスポート/インポート
+    function collectAllSettings() {
+        return {
+            version: '3.4',
+            input: { size: document.getElementById('st-in-size').value, line: document.getElementById('st-in-line').value, font: document.getElementById('st-in-font').value, vertical: document.getElementById('st-in-v').checked },
+            preview: { size: document.getElementById('st-pv-size').value, line: document.getElementById('st-pv-line').value, font: document.getElementById('st-pv-font').value, vertical: document.getElementById('st-pv-v').checked },
+            display: { showSpace: document.getElementById('st-show-space').checked, showHighlight: document.getElementById('st-show-highlight').checked, showInput: document.getElementById('check-show-input').checked, showPreview: document.getElementById('check-show-preview').checked },
+            writing: { typewriter: document.getElementById('st-typewriter-mode').checked, tracker: document.getElementById('st-writing-tracker').checked },
+            goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, showReading: document.getElementById('st-show-reading-time').checked },
+            manuscript: { rows: document.getElementById('st-manuscript-rows').value, cols: document.getElementById('st-manuscript-cols').value, show: document.getElementById('st-show-manuscript').checked },
+            theme: document.getElementById('st-theme-preset').value
+        };
+    }
+    function applyImportedSettings(s) {
+        if (s.input) { document.getElementById('st-in-size').value = s.input.size || 17; document.getElementById('st-in-line').value = s.input.line || 1.7; document.getElementById('st-in-font').value = s.input.font || 'font-mincho'; document.getElementById('st-in-v').checked = s.input.vertical !== false; }
+        if (s.preview) { document.getElementById('st-pv-size').value = s.preview.size || 17; document.getElementById('st-pv-line').value = s.preview.line || 1.7; document.getElementById('st-pv-font').value = s.preview.font || 'font-mincho'; document.getElementById('st-pv-v').checked = s.preview.vertical !== false; }
+        if (s.display) { document.getElementById('st-show-space').checked = s.display.showSpace !== false; document.getElementById('st-show-highlight').checked = s.display.showHighlight !== false; document.getElementById('check-show-input').checked = s.display.showInput !== false; document.getElementById('check-show-preview').checked = s.display.showPreview !== false; }
+        if (s.writing) { document.getElementById('st-typewriter-mode').checked = s.writing.typewriter || false; document.getElementById('st-writing-tracker').checked = s.writing.tracker !== false; }
+        if (s.goal) { document.getElementById('st-goal-chars').value = s.goal.chars || 150000; document.getElementById('st-today-goal').value = s.goal.today || 2000; document.getElementById('st-show-reading-time').checked = s.goal.showReading !== false; }
+        if (s.manuscript) { document.getElementById('st-manuscript-rows').value = s.manuscript.rows || 34; document.getElementById('st-manuscript-cols').value = s.manuscript.cols || 42; document.getElementById('st-show-manuscript').checked = s.manuscript.show !== false; }
+        if (s.theme !== undefined) document.getElementById('st-theme-preset').value = s.theme;
+        applyAllSettings();
+    }
+    function exportSettings() {
+        const s = collectAllSettings(); const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `cc_editor_settings_${getTodayDateStr()}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function importSettings(input) {
+        const file = input.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { try { const s = JSON.parse(e.target.result); applyImportedSettings(s); alert('設定をインポートしました。'); } catch (err) { alert('設定ファイルの読み込みに失敗しました。'); } input.value = ''; };
+        reader.readAsText(file);
+    }
+    function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectAllSettings())); }
+    function loadSettingsFromStorage() { const s = localStorage.getItem(SETTINGS_KEY); if (s) { try { applyImportedSettings(JSON.parse(s)); } catch (e) {} } }
+
+    const defaultText = `　C-エディタ
+
+■ 新機能・変更点
+・原稿用紙の初期設定を42字×34行に変更
+・設定のエクスポート/インポート機能を追加
+・ミニマップ機能を削除（安定性向上のため）
+
+□ 設定管理機能
+設定パネルの「設定管理」から：
+・📤 エクスポート：現在の設定をJSONファイルで保存
+・📥 インポート：保存した設定ファイルを読み込み
+
+□ 執筆支援機能
+・🧘 集中モード（ESCで解除）
+・タイプライターモード
+・執筆時間トラッカー
+・📊 分析機能
+
+□ 入力補助
+・改行時に全角スペースを自動挿入
+　（この行のように全角スペースで始まる行で改行すると、次の行にも自動で入ります）
+
+　ご執筆にお役立てください。`;
+
+    const AUTOSAVE_KEY = 'cc_editor_autosave', AUTOSAVE_INTERVAL = 30000;
+    function autoSave() { localStorage.setItem(AUTOSAVE_KEY, inputArea.value); saveSettingsToStorage(); }
+    function loadAutoSave() { const s = localStorage.getItem(AUTOSAVE_KEY); if (s && s.length > 0 && s !== defaultText) { if (confirm('前回の自動保存データがあります。復元しますか？')) { inputArea.value = s; } else { inputArea.value = defaultText; } } else { inputArea.value = defaultText; } }
+    setInterval(autoSave, AUTOSAVE_INTERVAL);
+    window.addEventListener('beforeunload', e => { autoSave(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
+
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+    function undoInput() { inputArea.focus(); document.execCommand('undo'); }
+    function redoInput() { inputArea.focus(); document.execCommand('redo'); }
+    function getGoalColorClass(p) { if (p >= 100) return 'goal-100'; if (p >= 75) return 'goal-75-99'; if (p >= 50) return 'goal-50-74'; if (p >= 25) return 'goal-25-49'; return 'goal-0-24'; }
+
+    function updateInputStats() {
+        const t = inputArea.value, tl = t.replace(/[\n\r]/g, '').length, nl = t.replace(/[\n\s　]/g, '').length, ll = t.split('\n').length;
+        charCountEl.innerText = `全体: ${tl}`; inputNetCountEl.innerText = `実質: ${nl}`; lineCountEl.innerText = `${ll} 行`;
+        const g = settingsCache.goalChars;
+        if (g > 0) { const p = Math.round((nl / g) * 100); inputGoalEl.innerText = `目標: ${nl}/${g} (${p}%)`; inputGoalEl.className = 'goal-display ' + getGoalColorClass(p); } else { inputGoalEl.innerText = ''; }
+        const tg = settingsCache.todayGoal;
+        if (tg > 0) { const tw = Math.max(0, nl - todayStartChars), tp = Math.round((tw / tg) * 100); inputTodayGoalEl.innerText = `今日: ${tw}/${tg} (${tp}%)`; inputTodayGoalEl.className = tw >= tg ? 'today-goal achieved' : 'today-goal'; } else { inputTodayGoalEl.innerText = ''; }
+        inputReadingEl.innerText = settingsCache.showReadingTime ? `約${Math.ceil(nl / 400)}分` : '';
+        if (settingsCache.showManuscript) { const cpp = settingsCache.manuscriptRows * settingsCache.manuscriptCols; inputManuscriptEl.innerText = `原稿用紙: ${(nl / cpp).toFixed(1)}枚`; } else { inputManuscriptEl.innerText = ''; }
+        updateCursorLineDisplay();
+    }
+    function updateCursorLineDisplay() { const p = inputArea.selectionStart, c = (inputArea.value.substring(0, p).match(/\n/g) || []).length + 1; inputPosBar.innerText = `現在: ${c} 行目`; }
+
+    document.addEventListener('selectionchange', () => {
+        const a = document.activeElement;
+        if (a === inputArea) { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s !== e) { const t = inputArea.value.substring(s, e), c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1; inputSelOverlay.textContent = `選択: ${c}字 / ${l}行`; inputSelOverlay.classList.add('show'); } else { inputSelOverlay.classList.remove('show'); } previewSelOverlay.classList.remove('show'); }
+        else if (previewScroll.contains(window.getSelection()?.anchorNode)) { const t = window.getSelection().toString(); if (t.length > 0) { const c = t.replace(/[\n\r]/g, '').length, l = (t.match(/\n/g) || []).length + 1; previewSelOverlay.textContent = `選択: ${c}字 / ${l}行`; previewSelOverlay.classList.add('show'); } else { previewSelOverlay.classList.remove('show'); } inputSelOverlay.classList.remove('show'); }
+        else { inputSelOverlay.classList.remove('show'); previewSelOverlay.classList.remove('show'); }
+    });
+
+    previewScroll.addEventListener('scroll', () => {
+        const v = document.getElementById('st-pv-v').checked; let p;
+        if (v) { const sl = previewScroll.scrollLeft, sw = previewScroll.scrollWidth - previewScroll.clientWidth; p = sw > 0 ? Math.round(Math.abs(sl) / sw * 100) : 0; }
+        else { const st = previewScroll.scrollTop, sh = previewScroll.scrollHeight - previewScroll.clientHeight; p = sh > 0 ? Math.round((st / sh) * 100) : 0; }
+        previewPosBar.innerText = `位置: ${p}%`;
+    });
+
+    function updatePreview() {
+        const t = inputArea.value, ss = settingsCache.showSpace, sh = settingsCache.showHighlight;
+        let s = escapeHtml(t); if (sh) previewContent.classList.add('highlight-active'); else previewContent.classList.remove('highlight-active');
+        const MZ = '\uE001', MH = '\uE002'; if (ss) { s = s.replace(/　/g, MZ).replace(/ /g, MH); }
+        if (sh) { s = s.replace(/「(.*?)」/g, '<span class="bracket-blue">「$1」</span>').replace(/『(.*?)』/g, '<span class="bracket-green">『$1』</span>'); }
+        s = s.replace(/｜([^《]+?)《(.+?)》/g, '<ruby>$1<rt>$2</rt></ruby>').replace(/([一-龠々〆ヵヶ]+)《(.+?)》/g, '<ruby>$1<rt>$2</rt></ruby>');
+        s = s.replace(/《《(.+?)》》/g, (m, p) => { let r = ''; for (let c of p) r += `<ruby class="bouten-ruby">${c}<rt>・</rt></ruby>`; return r; });
+        s = s.replace(/__(.+?)__/g, '<span class="underline-text">$1</span>').replace(/==(.+?)==/g, '<span class="highlight-text">$1</span>');
+        if (sh) s = s.replace(/([―─]{2,}|…{2,})/g, '<span class="symbol-hl">$1</span>');
+        if (ss) { s = s.split(MZ).join('<span class="space-zen">□</span>').split(MH).join('<span class="space-han">･</span>'); }
+        s = s.replace(/\n/g, '<br>'); previewContent.innerHTML = s;
+        const tl = t.replace(/[\n\r]/g, '').length, nl = t.replace(/[\n\s　｜《》]/g, '').length, ll = t.split('\n').length;
+        pvTotalCountEl.innerText = `全体: ${tl}`; pvNetCountEl.innerText = `実質: ${nl}`; pvLineCountEl.innerText = `${ll} 行`;
+        const g = settingsCache.goalChars; if (g > 0) { const p = Math.round((nl / g) * 100); pvGoalEl.innerText = `目標: ${nl}/${g} (${p}%)`; pvGoalEl.className = 'goal-display ' + getGoalColorClass(p); } else { pvGoalEl.innerText = ''; }
+        const tg = settingsCache.todayGoal; if (tg > 0) { const tw = Math.max(0, nl - todayStartChars), tp = Math.round((tw / tg) * 100); pvTodayGoalEl.innerText = `今日: ${tw}/${tg} (${tp}%)`; pvTodayGoalEl.className = tw >= tg ? 'today-goal achieved' : 'today-goal'; } else { pvTodayGoalEl.innerText = ''; }
+        pvReadingEl.innerText = settingsCache.showReadingTime ? `約${Math.ceil(nl / 400)}分` : '';
+        if (settingsCache.showManuscript) { const cpp = settingsCache.manuscriptRows * settingsCache.manuscriptCols; pvManuscriptEl.innerText = `原稿用紙: ${(nl / cpp).toFixed(1)}枚`; } else { pvManuscriptEl.innerText = ''; }
+        pvTimeEl.innerText = `更新: ${new Date().toLocaleTimeString('ja-JP', { hour12: false })}`;
+    }
+
+    function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
+
+    const fontMap = { 'font-gothic': '"Noto Sans JP", sans-serif', 'font-mincho': '"Shippori Mincho", serif', 'font-old': '"Zen Old Mincho", serif', 'font-round': '"M PLUS Rounded 1c", sans-serif', 'font-brush': '"Yuji Syuku", serif' };
+    function applyInputSettings() { const s = document.getElementById('st-in-size').value + 'px', l = document.getElementById('st-in-line').value, f = fontMap[document.getElementById('st-in-font').value], v = document.getElementById('st-in-v').checked; inputArea.style.fontSize = s; inputArea.style.lineHeight = l; inputArea.style.fontFamily = f; inputMirror.style.fontSize = s; inputMirror.style.lineHeight = l; inputMirror.style.fontFamily = f; if (v) inputArea.parentElement.classList.add('vertical-mode'); else inputArea.parentElement.classList.remove('vertical-mode'); }
+    function applyPreviewSettings() { const s = document.getElementById('st-pv-size').value + 'px', l = document.getElementById('st-pv-line').value, f = fontMap[document.getElementById('st-pv-font').value], v = document.getElementById('st-pv-v').checked; previewContent.style.fontSize = s; previewContent.style.lineHeight = l; previewContent.style.fontFamily = f; if (v) previewScroll.classList.add('vertical-mode'); else previewScroll.classList.remove('vertical-mode'); updatePreview(); }
+    function applyDisplaySettings() { settingsCache.showSpace = document.getElementById('st-show-space').checked; settingsCache.showHighlight = document.getElementById('st-show-highlight').checked; const si = document.getElementById('check-show-input').checked, sp = document.getElementById('check-show-preview').checked; if (si) document.getElementById('pane-input').classList.remove('hidden'); else document.getElementById('pane-input').classList.add('hidden'); if (sp) document.getElementById('pane-preview').classList.remove('hidden'); else document.getElementById('pane-preview').classList.add('hidden'); updatePreview(); }
+    function applyWritingSettings() { settingsCache.typewriterMode = document.getElementById('st-typewriter-mode').checked; settingsCache.writingTracker = document.getElementById('st-writing-tracker').checked; updateWritingTimeDisplay(); }
+    function applyGoalSettings() { settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0; settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0; settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked; updateInputStats(); updatePreview(); }
+    function applyManuscriptSettings() { settingsCache.manuscriptRows = parseInt(document.getElementById('st-manuscript-rows').value) || 34; settingsCache.manuscriptCols = parseInt(document.getElementById('st-manuscript-cols').value) || 42; settingsCache.showManuscript = document.getElementById('st-show-manuscript').checked; updateInputStats(); updatePreview(); }
+    function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
+    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); }
+
+    function togglePanel(id) { const p = document.getElementById(id); if (p.classList.contains('open')) { p.classList.remove('open'); } else { if (id !== 'settings-bar') document.querySelectorAll('.control-panel:not(#settings-bar)').forEach(x => x.classList.remove('open')); p.classList.add('open'); if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100); } }
+    function hidePane(t) { if (t === 'input') { document.getElementById('check-show-input').checked = false; document.getElementById('pane-input').classList.add('hidden'); } else if (t === 'preview') { document.getElementById('check-show-preview').checked = false; document.getElementById('pane-preview').classList.add('hidden'); } }
+    function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
+    document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); });
+
+    function toggleFocusMode() { document.body.classList.toggle('focus-mode'); document.getElementById('btn-focus').classList.toggle('active'); if (document.body.classList.contains('focus-mode')) inputArea.focus(); }
+
+    inputArea.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+            const p = inputArea.selectionStart, t = inputArea.value, ls = t.lastIndexOf('\n', p - 1) + 1, cl = t.substring(ls, p);
+            if (cl.startsWith('　')) { e.preventDefault(); const b = t.substring(0, p), a = t.substring(inputArea.selectionEnd); inputArea.value = b + '\n　' + a; const np = p + 2; inputArea.setSelectionRange(np, np); updateInputStats(); if (settingsCache.typewriterMode) setTimeout(() => scrollToCursorPosition(np), 10); }
+        }
+    });
+    inputArea.addEventListener('input', () => { lastInputTime = Date.now(); updateInputStats(); if (settingsCache.typewriterMode) scrollToCursorPosition(inputArea.selectionStart); });
+
+    function insertText(t, o = 0) { const s = inputArea.selectionStart, e = inputArea.selectionEnd, b = inputArea.value.substring(0, s), a = inputArea.value.substring(e); inputArea.value = b + t + a; const np = s + t.length - o; inputArea.setSelectionRange(np, np); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+    function insertRubyToSelection() { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s === e) { alert('ルビを付けたい文字を選択してください。'); return; } const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e), rt = `｜${st}《》`; inputArea.value = b + rt + a; inputArea.setSelectionRange(s + st.length + 2, s + st.length + 2); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+    function insertBoutenToSelection() { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s === e) { alert('傍点を付けたい文字を選択してください。'); return; } const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e), bt = `《《${st}》》`; inputArea.value = b + bt + a; inputArea.setSelectionRange(s + bt.length, s + bt.length); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+
+    function scrollToCursorPosition(idx) {
+        const t = inputArea.value, v = document.getElementById('st-in-v').checked, cs = window.getComputedStyle(inputArea);
+        inputMirror.style.fontSize = cs.fontSize; inputMirror.style.lineHeight = cs.lineHeight; inputMirror.style.fontFamily = cs.fontFamily; inputMirror.style.width = inputArea.clientWidth + 'px'; inputMirror.style.height = inputArea.clientHeight + 'px';
+        const tc = t.substring(0, idx), m = document.createElement('span'); m.textContent = '|'; inputMirror.innerHTML = ''; inputMirror.appendChild(document.createTextNode(tc)); inputMirror.appendChild(m);
+        const mr = m.getBoundingClientRect(), mir = inputMirror.getBoundingClientRect(), mot = mr.top - mir.top + inputMirror.scrollTop, mol = mr.left - mir.left + inputMirror.scrollLeft;
+        if (v) inputArea.scrollLeft = mol - (inputArea.clientWidth / 2); else inputArea.scrollTop = mot - (inputArea.clientHeight / 2);
+    }
+
+    let searchMatches = [], currentMatchIndex = -1;
+    function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }
+    function updateSearchInfo() { const i = document.getElementById('search-match-info'); if (searchMatches.length === 0) { i.innerText = '0 / 0'; i.style.color = '#999'; } else { i.innerText = `${currentMatchIndex + 1} / ${searchMatches.length}`; i.style.color = '#15803d'; } }
+    function findNext() { if (searchMatches.length === 0) doSearch(); else { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; jumpToMatch(); updateSearchInfo(); } }
+    function findPrev() { if (searchMatches.length === 0) doSearch(); else { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; jumpToMatch(); updateSearchInfo(); } }
+    function jumpToMatch() { const m = searchMatches[currentMatchIndex]; if (!m) return; inputArea.focus(); inputArea.setSelectionRange(m.start, m.end); scrollToCursorPosition(m.start); updateCursorLineDisplay(); }
+    function replaceOne() { if (currentMatchIndex < 0) findNext(); if (currentMatchIndex < 0) return; const r = document.getElementById('replace-input').value, m = searchMatches[currentMatchIndex]; inputArea.setRangeText(r, m.start, m.end, 'select'); doSearch(); jumpToMatch(); }
+    function replaceAll() { const q = document.getElementById('search-input').value, r = document.getElementById('replace-input').value; if (!q) return; inputArea.value = inputArea.value.split(q).join(r); updateInputStats(); }
+
+    let outlineData = [];
+    function toggleOutline() { const p = document.getElementById('outline-panel'); if (p.classList.contains('open')) { p.classList.remove('open'); document.getElementById('btn-toggle-outline')?.classList.remove('active'); } else { generateOutline(); p.classList.add('open'); document.getElementById('btn-toggle-outline')?.classList.add('active'); } }
+    function toggleOutlineDock() { const d = document.getElementById('check-outline-dock').checked, c = document.getElementById('main-container'), b = document.getElementById('btn-outline-swap'); if (d) { c.classList.add('outline-docked'); b.style.display = 'inline-block'; } else { c.classList.remove('outline-docked', 'outline-left'); b.style.display = 'none'; document.getElementById('outline-panel').style.width = '300px'; } }
+    function swapOutlineSide() { document.getElementById('main-container').classList.toggle('outline-left'); }
+    function switchOutlineTab(tab) { document.querySelectorAll('.outline-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.outline-tab-content').forEach(c => c.classList.remove('active')); document.querySelector(`.outline-tab[onclick*="${tab}"]`).classList.add('active'); document.getElementById(`outline-tab-${tab}`).classList.add('active'); }
+
+    function generateOutline() {
+        const l = document.getElementById('outline-list'), sm = document.getElementById('outline-summary'); l.innerHTML = ''; outlineData = [];
+        const t = inputArea.value, ls = t.split('\n'), rx = /^([#＃■□▲△▼▽◆◇○◎●§・※☆★]+|第[一二三四五六七八九十百千\d]+[章話節部編]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+)/;
+        let cl = 0, lm = new Map(), ca = 0, found = false;
+        ls.forEach(line => { const c = line.trim(), cp = ca; ca += line.length + 1; const m = c.match(rx); if (m) { found = true; let sk = m[1]; if (sk.match(/^第.+[章話節部編]$/)) sk = '___CHAPTER___'; else if (sk.match(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+$/)) sk = '___CIRCLED___'; else if (sk.match(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/)) sk = '___ROMAN___'; if (!lm.has(sk)) { cl++; lm.set(sk, cl); } outlineData.push({ text: c, level: lm.get(sk), pos: cp, length: c.length, collapsed: false, index: outlineData.length, directCharCount: 0, charCount: 0 }); } });
+        const tl = t.length; for (let i = 0; i < outlineData.length; i++) { const sp = outlineData[i].pos, ep = (i + 1 < outlineData.length) ? outlineData[i + 1].pos : tl; outlineData[i].directCharCount = t.substring(sp, ep).replace(/[\n\s　]/g, '').length; }
+        for (let i = outlineData.length - 1; i >= 0; i--) { const clv = outlineData[i].level; let tc = outlineData[i].directCharCount; for (let j = i + 1; j < outlineData.length; j++) { if (outlineData[j].level <= clv) break; if (outlineData[j].level === clv + 1) tc += outlineData[j].charCount; else { let hp = false; for (let k = j - 1; k > i; k--) { if (outlineData[k].level === outlineData[j].level - 1) { hp = true; break; } if (outlineData[k].level <= clv) break; } if (!hp) tc += outlineData[j].charCount; } } outlineData[i].charCount = tc; }
+        let lc = new Map(); outlineData.forEach(it => { if (!lc.has(it.level)) lc.set(it.level, 0); lc.set(it.level, lc.get(it.level) + it.directCharCount); });
+        if (found) { let st = '文字数: '; Array.from(lc.keys()).sort((a,b) => a-b).forEach((lv, i, a) => { st += `Lv${lv}: ${lc.get(lv).toLocaleString()}`; if (i < a.length - 1) st += ' / '; }); sm.innerHTML = st; sm.style.display = 'block'; } else { sm.style.display = 'none'; }
+        renderOutline(); if (!found) l.innerHTML = '<div class="outline-empty">見出しが見つかりません。</div>';
+    }
+    function renderOutline() {
+        const l = document.getElementById('outline-list'); l.innerHTML = '';
+        outlineData.forEach((it, idx) => {
+            const d = document.createElement('div'); d.className = `outline-item outline-level-${Math.min(it.level, 3)}`;
+            const hc = outlineData.some((x, i) => i > idx && x.level > it.level && !outlineData.slice(idx + 1, i).some(m => m.level <= it.level));
+            const tg = document.createElement('span'); tg.className = 'outline-toggle'; if (hc) { tg.textContent = it.collapsed ? '▶' : '▼'; tg.onclick = e => { e.stopPropagation(); toggleOutlineItem(idx); }; } d.appendChild(tg);
+            const ts = document.createElement('span'); ts.className = 'outline-text'; ts.textContent = it.text; d.appendChild(ts);
+            const cc = document.createElement('span'); cc.className = 'outline-char-count'; cc.textContent = it.charCount.toLocaleString(); d.appendChild(cc);
+            let hd = false; for (let i = 0; i < idx; i++) { if (outlineData[i].collapsed && outlineData[i].level < it.level) { let ir = true; for (let j = i + 1; j < idx; j++) { if (outlineData[j].level <= outlineData[i].level) { ir = false; break; } } if (ir) { hd = true; break; } } } if (hd) d.classList.add('outline-hidden');
+            d.onclick = e => { if (e.target.classList.contains('outline-toggle')) return; inputArea.focus(); inputArea.setSelectionRange(it.pos, it.pos + it.length); setTimeout(() => scrollToCursorPosition(it.pos), 100); updateCursorLineDisplay(); if (window.innerWidth < 768 && !document.getElementById('check-outline-dock').checked) toggleOutline(); };
+            l.appendChild(d);
+        });
+    }
+    function toggleOutlineItem(i) { outlineData[i].collapsed = !outlineData[i].collapsed; renderOutline(); }
+    function expandAllOutline() { outlineData.forEach(it => it.collapsed = false); renderOutline(); }
+    function collapseAllOutline() { outlineData.forEach(it => it.collapsed = true); renderOutline(); }
+
+    function toggleLayoutAxis() { const c = document.getElementById('main-container'); if (layoutAxis === 'row') { layoutAxis = 'column'; document.body.classList.add('scroll-mode'); btnSwap.innerText = '上下入替'; } else { layoutAxis = 'row'; document.body.classList.remove('scroll-mode'); btnSwap.innerText = '左右入替'; } c.classList.remove('reverse-row', 'reverse-col'); layoutReversed = false; }
+    function toggleLayoutOrder() { const c = document.getElementById('main-container'); layoutReversed = !layoutReversed; c.classList.remove('reverse-row', 'reverse-col'); if (layoutReversed) c.classList.add(layoutAxis === 'row' ? 'reverse-row' : 'reverse-col'); }
+
+    function showJumpDialog() { document.getElementById('jump-dialog').classList.add('show'); document.getElementById('jump-line-input').value = ''; document.getElementById('jump-line-input').focus(); }
+    function closeJumpDialog() { document.getElementById('jump-dialog').classList.remove('show'); }
+    function executeJump() { const ln = parseInt(document.getElementById('jump-line-input').value); if (isNaN(ln) || ln < 1) { alert('有効な行番号を入力してください。'); return; } const ls = inputArea.value.split('\n'); if (ln > ls.length) { alert(`最大行数は ${ls.length} 行です。`); return; } let p = 0; for (let i = 0; i < ln - 1; i++) p += ls[i].length + 1; inputArea.focus(); inputArea.setSelectionRange(p, p); setTimeout(() => scrollToCursorPosition(p), 100); updateCursorLineDisplay(); closeJumpDialog(); }
+    document.getElementById('jump-line-input').addEventListener('keydown', e => { if (e.key === 'Enter') executeJump(); if (e.key === 'Escape') closeJumpDialog(); });
+
+    function showAnalysis() {
+        const t = inputArea.value, tc = t.replace(/[\n\s　]/g, '').length;
+        const kc = (t.match(/[一-龠々〆ヵヶ]/g) || []).length, hc = (t.match(/[ぁ-ん]/g) || []).length, ktc = (t.match(/[ァ-ヴー]/g) || []).length, oc = tc - kc - hc - ktc;
+        const kp = tc > 0 ? (kc / tc * 100).toFixed(1) : 0, hp = tc > 0 ? (hc / tc * 100).toFixed(1) : 0, ktp = tc > 0 ? (ktc / tc * 100).toFixed(1) : 0, op = tc > 0 ? (oc / tc * 100).toFixed(1) : 0;
+        const ss = t.split(/。|！|？|\!|\?/).filter(s => s.trim().length > 0), sl = ss.map(s => s.replace(/[\n\s　]/g, '').length);
+        const al = sl.length > 0 ? Math.round(sl.reduce((a, b) => a + b, 0) / sl.length) : 0, ml = sl.length > 0 ? Math.max(...sl) : 0, ls = sl.filter(l => l > 100).length;
+        const dm = t.match(/「[^」]*」/g) || [], dc = dm.join('').replace(/[「」\n\s　]/g, '').length, dp = tc > 0 ? (dc / tc * 100).toFixed(1) : 0, np = (100 - parseFloat(dp)).toFixed(1);
+        const ct = t.replace(/[\n\s　「」『』（）()、。！？\!\?…―─]/g, ''), fm = new Map();
+        for (let len = 2; len <= 4; len++) { for (let i = 0; i <= ct.length - len; i++) { const w = ct.substring(i, i + len); if (!/^[ぁ-んァ-ヴー一-龠々〆ヵヶ]+$/.test(w)) continue; fm.set(w, (fm.get(w) || 0) + 1); } }
+        const fw = Array.from(fm.entries()).filter(([w, c]) => c >= 3).sort((a, b) => b[1] - a[1]).slice(0, 15);
+        document.getElementById('analysis-results').innerHTML = `
+            <div class="analysis-section"><h4>📊 文字種別</h4>
+                <div class="analysis-row"><span>漢字</span><span>${kc.toLocaleString()}字 (${kp}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${kp}%; background:#dc2626;"></div></div>
+                <div class="analysis-row"><span>ひらがな</span><span>${hc.toLocaleString()}字 (${hp}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${hp}%; background:#2563eb;"></div></div>
+                <div class="analysis-row"><span>カタカナ</span><span>${ktc.toLocaleString()}字 (${ktp}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${ktp}%; background:#16a34a;"></div></div>
+                <div class="analysis-row"><span>その他</span><span>${oc.toLocaleString()}字 (${op}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${op}%; background:#9ca3af;"></div></div>
+            </div>
+            <div class="analysis-section"><h4>📝 文長分析</h4>
+                <div class="analysis-row"><span>文の数</span><span>${ss.length}文</span></div>
+                <div class="analysis-row"><span>平均文長</span><span>${al}字</span></div>
+                <div class="analysis-row"><span>最長文</span><span>${ml}字</span></div>
+                ${ls > 0 ? `<div class="warning-text">⚠️ 100字超の長い文が ${ls} 箇所</div>` : '<div style="color:#16a34a;">✓ 極端に長い文はありません</div>'}
+            </div>
+            <div class="analysis-section"><h4>💬 会話文比率</h4>
+                <div class="analysis-row"><span>会話文</span><span>${dc.toLocaleString()}字 (${dp}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${dp}%; background:#f97316;"></div></div>
+                <div class="analysis-row"><span>地の文</span><span>${(tc - dc).toLocaleString()}字 (${np}%)</span></div><div class="analysis-bar"><div class="analysis-bar-fill" style="width:${np}%; background:#8b5cf6;"></div></div>
+            </div>
+            <div class="analysis-section"><h4>🔤 頻出語 TOP15</h4>
+                ${fw.length > 0 ? `<div class="freq-list">${fw.map(([w, c]) => `<span class="freq-item">${w} (${c})</span>`).join('')}</div>` : '<div class="outline-empty">十分なデータがありません</div>'}
+            </div>`;
+        document.getElementById('analysis-modal').classList.add('show');
+    }
+    function closeAnalysis() { document.getElementById('analysis-modal').classList.remove('show'); }
+
+    function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
+    function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
+    function saveAsText() { const b = new Blob([inputArea.value], { type: 'text/plain' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
+    function saveAsHTML() { updatePreview(); const c = previewContent.innerHTML, v = document.getElementById('st-pv-v').checked, fk = document.getElementById('st-pv-font').value, fs = document.getElementById('st-pv-size').value, lh = document.getElementById('st-pv-line').value; const h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>エクスポート</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${c}</body></html>`; const b = new Blob([h], { type: 'text/html' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.html`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
+    function loadFile(input) { const f = input.files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { inputArea.value = e.target.result; updateInputStats(); updatePreview(); input.value = ''; }; r.readAsText(f); }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
+    inputArea.addEventListener('keyup', updateCursorLineDisplay);
+    inputArea.addEventListener('click', updateCursorLineDisplay);
+
+    // 初期化
+    loadAutoSave();
+    loadTodayStart();
+    loadWritingTime();
+    loadBookmarks();
+    loadSettingsFromStorage();
+    startWritingTimer();
+    applyAllSettings();
+    updateInputStats();
+    updatePreview();
+    updateWritingTimeDisplay();
+</script>
+</body>
+</html>

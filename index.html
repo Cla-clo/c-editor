@@ -180,7 +180,9 @@
     .main-container.reverse-row #pane-input { order: 3; }
     .main-container.reverse-row #pane-preview { order: 1; }
     .pane.hidden { display: none !important; }
-    body.scroll-mode .pane { flex: none; height: 90vh; margin-bottom: 20px; }
+    body.scroll-mode .pane { flex: none; margin-bottom: 20px; min-height: 50vh; }
+    body.scroll-mode #pane-input { height: auto; min-height: 70vh; }
+    body.scroll-mode #pane-preview { height: auto; max-height: 90vh; overflow: hidden; }
 
     /* Pane Resizer */
     .pane-resizer {
@@ -298,9 +300,27 @@
     .vertical-mode textarea, .vertical-mode #input-mirror-container { writing-mode: vertical-rl; text-orientation: upright; }
 
     #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: hidden; overflow-y: auto; box-sizing: border-box; }
-    #preview-scroll.vertical-mode { overflow-x: auto; overflow-y: hidden; }
-    #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; }
+    #preview-scroll.vertical-mode { overflow-x: auto; overflow-y: hidden; height: 100%; }
+    #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; height: 100%; }
     #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; }
+    body.scroll-mode #preview-scroll { height: auto; max-height: 85vh; overflow-y: auto; }
+    body.scroll-mode #preview-scroll.vertical-mode { overflow-x: auto; }
+
+    /* Preview Tabs */
+    .preview-tabs-container {
+        display: flex; align-items: center; background: var(--pane-header-bg);
+        border-bottom: 1px solid var(--border-color); overflow-x: auto;
+        flex-shrink: 0; min-height: 32px;
+    }
+    .preview-tabs-container::-webkit-scrollbar { height: 3px; }
+    .preview-tabs-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    .preview-tab {
+        padding: 6px 12px; font-size: 0.75rem; cursor: pointer; border: none;
+        background: transparent; color: var(--text-muted); white-space: nowrap;
+        border-right: 1px solid var(--border-color); transition: all 0.2s;
+    }
+    .preview-tab:hover { background: var(--panel-bg); }
+    .preview-tab.active { background: var(--panel-bg); color: var(--text-color); font-weight: bold; border-bottom: 2px solid #16a34a; }
 
     ruby { ruby-align: space-between; ruby-position: over; }
     rt { color: #555; user-select: none; font-size: 0.5em; }
@@ -331,8 +351,8 @@
     .main-container.memo-docked #memo-panel {
         position: relative; top: auto; left: auto; bottom: auto;
         transform: none; box-shadow: none; z-index: 1; display: none;
-        flex: none; resize: horizontal; overflow: auto;
-        min-width: 150px; max-width: 50vw; width: 250px;
+        flex: 0 0 auto; resize: horizontal; overflow: auto;
+        min-width: 180px; max-width: 50vw; width: 250px;
         border-right: 1px solid #fcd34d; border-left: none;
         order: -10; /* デフォルトで左側 */
     }
@@ -382,8 +402,8 @@
     .main-container.outline-docked #outline-panel {
         position: relative; top: auto; right: auto; bottom: auto;
         transform: none; box-shadow: none; z-index: 1; display: none;
-        flex: none; resize: horizontal; overflow: auto;
-        min-width: 150px; max-width: 60vw; width: 300px;
+        flex: 0 0 auto; resize: horizontal; overflow: auto;
+        min-width: 180px; max-width: 60vw; width: 300px;
         border-left: 1px solid var(--border-color); border-right: none;
         order: 10; /* デフォルトで右側 */
     }
@@ -624,10 +644,12 @@
                 ・<b>Ctrl+S</b>：保存ダイアログ<br>
                 ・<b>Ctrl+F</b>：検索パネル<br>
                 ・<b>Ctrl+G</b>：行番号ジャンプ<br>
+                ・<b>Ctrl+T</b>：新規タブ追加<br>
+                ・<b>Ctrl+Shift+T</b>：新規メモタブ<br>
                 ・<b>Ctrl+Z</b>：元に戻す<br>
                 ・<b>Ctrl+Y</b>：やり直し<br>
                 ・<b>F11</b>：集中モード切替<br>
-                ・<b>Esc</b>：集中モード解除・ダイアログ閉じる
+                ・<b>Esc</b>：ダイアログ閉じる
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
                 <div class="help-title">【記法（小説向け）】</div>
@@ -731,10 +753,6 @@
             <div class="setting-row">
                 <label><input type="checkbox" id="st-default-preview-hidden"> 起動時プレビュー非表示</label>
             </div>
-            <div class="setting-row">
-                <label><input type="checkbox" id="st-sync-input-to-preview" checked onchange="applyTabSyncSettings()"> 入力タブ→プレビュー同期</label>
-                <label><input type="checkbox" id="st-sync-preview-to-input" onchange="applyTabSyncSettings()"> プレビュー→入力タブ同期</label>
-            </div>
         </div>
 
         <div class="setting-group">
@@ -800,16 +818,10 @@
             </div>
         </div>
 
-        <div class="setting-group">
-            <div class="setting-title">設定管理</div>
-            <div class="setting-row">
-                <button class="btn btn-export" onclick="exportSettings()">📤 エクスポート</button>
-                <input type="file" id="settings-file-input" accept=".json" onchange="importSettings(this)">
-                <button class="btn btn-import" onclick="document.getElementById('settings-file-input').click()">📥 インポート</button>
-            </div>
-        </div>
-
-        <div class="setting-group" style="border-right:none;">
+        <div class="setting-group" style="border-right:none; margin-left:auto; display:flex; align-items:center; gap:8px;">
+            <button class="btn btn-export" onclick="exportSettings()" style="font-size:0.7rem;">📤</button>
+            <input type="file" id="settings-file-input" accept=".json" onchange="importSettings(this)" style="display:none;">
+            <button class="btn btn-import" onclick="document.getElementById('settings-file-input').click()" style="font-size:0.7rem;">📥</button>
             <button class="btn btn-apply-all" onclick="applyAllSettings()">⚡ 全体適用</button>
         </div>
     </div>
@@ -844,11 +856,10 @@
     <div class="pane" id="pane-preview">
         <div class="pane-header">
             <h2>プレビュー</h2>
-            <select id="preview-tab-select" onchange="changePreviewTab()" style="font-size:0.75rem; padding:2px 4px; margin-left:8px;">
-                <option value="current">現在のタブ</option>
-                <option value="all">全タブ結合</option>
-            </select>
             <button class="pane-close-btn" onclick="hidePane('preview')">✕</button>
+        </div>
+        <div class="preview-tabs-container" id="preview-tabs-container">
+            <!-- Preview tabs will be dynamically generated -->
         </div>
         <div class="pane-subheader" id="preview-pos-bar">位置: 0%</div>
         <div class="pane-body">
@@ -882,7 +893,7 @@
             <div class="memo-file-btns">
                 <input type="file" id="memo-file-input" accept=".txt" style="display:none;" onchange="loadMemoFile(this)">
                 <button class="btn" onclick="document.getElementById('memo-file-input').click()" title="メモを開く" style="padding:2px 6px; font-size:0.7rem;">📂</button>
-                <button class="btn" onclick="saveMemoToFile()" title="メモを保存" style="padding:2px 6px; font-size:0.7rem;">💾</button>
+                <button class="btn" onclick="showMemoSaveDialog()" title="メモを保存" style="padding:2px 6px; font-size:0.7rem;">💾</button>
             </div>
         </div>
         <textarea id="memo-area" placeholder="メモを入力..."></textarea>
@@ -956,6 +967,24 @@
             <button class="btn" onclick="saveAsText()">📄 テキスト</button>
             <button class="btn" onclick="saveAsHTML()">🌐 HTML</button>
             <button class="btn" onclick="closeSaveDialog()">キャンセル</button>
+        </div>
+    </div>
+</div>
+
+<div id="memo-save-dialog" class="save-dialog-overlay" style="display:none;">
+    <div class="save-dialog" style="background:#fefce8;">
+        <h3>📝 メモを保存</h3>
+        <div style="margin-bottom: 15px; font-size: 0.85rem;">
+            <label style="display: block; margin-bottom: 5px;">
+                <input type="radio" name="memo-save-scope" value="current" checked> 現在のタブのみ
+            </label>
+            <label style="display: block;">
+                <input type="radio" name="memo-save-scope" value="all"> 全タブを結合
+            </label>
+        </div>
+        <div class="save-dialog-buttons">
+            <button class="btn" onclick="executeMemoSave()">💾 保存</button>
+            <button class="btn" onclick="closeMemoSaveDialog()">キャンセル</button>
         </div>
     </div>
 </div>
@@ -1061,12 +1090,11 @@
         if (newTab) inputArea.value = newTab.content;
         renderInputTabs();
         updateInputStats();
-        // Sync preview tab if setting enabled
-        if (syncInputToPreview && previewMode !== 'all') {
-            previewMode = 'current';
-            document.getElementById('preview-tab-select').value = 'current';
+        // Preview tab stays independent - only update content if showing current input tab
+        if (!previewShowAll && previewTabId === null) {
+            updatePreview();
+            renderPreviewTabs();
         }
-        updatePreview();
         saveTabsToStorage();
     }
 
@@ -1429,11 +1457,13 @@
         const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
         let popupTop, popupLeft;
         if (isVertical) {
-            popupTop = Math.min(Math.max(markerRect.top + 20, inputRect.top), inputRect.bottom - 40);
-            popupLeft = Math.max(markerRect.left - 80, inputRect.left);
+            // Vertical mode: position to the left of selection
+            popupTop = Math.min(Math.max(markerRect.top, inputRect.top), inputRect.bottom - 40);
+            popupLeft = Math.max(markerRect.left - 120, inputRect.left);
         } else {
-            popupTop = Math.min(Math.max(markerRect.bottom + 5, inputRect.top), inputRect.bottom - 40);
-            popupLeft = Math.min(Math.max(markerRect.left - 30, inputRect.left), window.innerWidth - 150);
+            // Horizontal mode: position to the right of selection
+            popupTop = Math.min(Math.max(markerRect.top - 10, inputRect.top), inputRect.bottom - 40);
+            popupLeft = Math.min(markerRect.right + 10, window.innerWidth - 180);
         }
         quickInsertPopup.style.top = popupTop + 'px';
         quickInsertPopup.style.left = popupLeft + 'px';
@@ -1522,49 +1552,46 @@
         previewPosBar.innerText = `位置: ${p}%`;
     });
 
-    let previewMode = 'current'; // 'current' or 'all'
-    let syncInputToPreview = true;
-    let syncPreviewToInput = false;
+    let previewTabId = null; // null = follow input, or specific tab id
+    let previewShowAll = false;
 
-    function changePreviewTab() {
-        previewMode = document.getElementById('preview-tab-select').value;
-        updatePreview();
-    }
+    function renderPreviewTabs() {
+        const container = document.getElementById('preview-tabs-container');
+        if (!container) return;
+        container.innerHTML = '';
 
-    function applyTabSyncSettings() {
-        syncInputToPreview = document.getElementById('st-sync-input-to-preview').checked;
-        syncPreviewToInput = document.getElementById('st-sync-preview-to-input').checked;
+        // "全タブ" button
+        const allTab = document.createElement('div');
+        allTab.className = 'preview-tab' + (previewShowAll ? ' active' : '');
+        allTab.textContent = '📚全タブ';
+        allTab.onclick = () => { previewShowAll = true; previewTabId = null; renderPreviewTabs(); updatePreview(); };
+        container.appendChild(allTab);
+
+        // Individual tabs
+        inputTabs.forEach(tab => {
+            const tabEl = document.createElement('div');
+            const isActive = !previewShowAll && (previewTabId === tab.id || (previewTabId === null && tab.id === activeTabId));
+            tabEl.className = 'preview-tab' + (isActive ? ' active' : '');
+            tabEl.textContent = tab.name;
+            tabEl.onclick = () => { previewShowAll = false; previewTabId = tab.id; renderPreviewTabs(); updatePreview(); };
+            container.appendChild(tabEl);
+        });
     }
 
     function getPreviewContent() {
-        // Save current tab content first
         const currentTab = inputTabs.find(t => t.id === activeTabId);
         if (currentTab) currentTab.content = inputArea.value;
 
-        if (previewMode === 'all') {
-            // Combine all tabs
+        if (previewShowAll) {
             return inputTabs.map(tab => `◆ ${tab.name}\n\n${tab.content}`).join('\n\n');
-        } else if (previewMode.startsWith('tab-')) {
-            // Specific tab selected
-            const tabId = parseInt(previewMode.substring(4));
-            const tab = inputTabs.find(t => t.id === tabId);
-            return tab ? tab.content : inputArea.value;
         }
-        return inputArea.value;
+        const targetId = previewTabId !== null ? previewTabId : activeTabId;
+        const tab = inputTabs.find(t => t.id === targetId);
+        return tab ? tab.content : inputArea.value;
     }
 
     function updatePreviewTabOptions() {
-        const select = document.getElementById('preview-tab-select');
-        if (!select) return;
-        // Keep first two options (current, all), remove the rest
-        while (select.options.length > 2) select.remove(2);
-        // Add individual tab options
-        inputTabs.forEach(tab => {
-            const opt = document.createElement('option');
-            opt.value = `tab-${tab.id}`;
-            opt.textContent = tab.name;
-            select.appendChild(opt);
-        });
+        renderPreviewTabs();
     }
 
     function updatePreview() {
@@ -1587,25 +1614,28 @@
         pvTimeEl.innerText = `更新: ${new Date().toLocaleTimeString('ja-JP', { hour12: false })}`;
     }
 
-    function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
-
-    // Sync preview scroll position to input cursor
-    function doSyncPreviewToInput() {
-        const scrollTop = previewScroll.scrollTop;
-        const scrollHeight = previewScroll.scrollHeight - previewScroll.clientHeight;
-        if (scrollHeight <= 0) { inputArea.focus(); inputArea.setSelectionRange(0, 0); return; }
-        const ratio = scrollTop / scrollHeight;
-        const lines = inputArea.value.split('\n');
-        const targetLine = Math.floor(lines.length * ratio);
-        let pos = 0;
-        for (let i = 0; i < Math.min(targetLine, lines.length); i++) {
-            pos += lines[i].length + 1;
+    function syncPreviewPosition() {
+        // If preview is showing a different tab, switch to input's tab first
+        if (!previewShowAll && previewTabId !== null && previewTabId !== activeTabId) {
+            previewTabId = activeTabId;
+            renderPreviewTabs();
         }
-        pos = Math.min(pos, inputArea.value.length);
-        inputArea.focus();
-        inputArea.setSelectionRange(pos, pos);
-        scrollToCursorPosition(pos);
-        updateCursorLineDisplay();
+        updatePreview();
+        const p = inputArea.selectionStart;
+        const i = (inputArea.value.substring(0, p).match(/\n/g) || []).length;
+        const b = previewContent.querySelectorAll('br');
+        if (b.length > 0) {
+            const t = b[Math.min(i, b.length - 1)];
+            if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        } else {
+            previewScroll.scrollTop = 0;
+        }
+    }
+
+    // Sync preview scroll position to input cursor (disabled - keeping input→preview only)
+    function doSyncPreviewToInput() {
+        // Sync is primarily input→preview; this is kept for compatibility
+        syncPreviewPosition();
     }
 
     function updatePreviewAndShow() {
@@ -1667,10 +1697,20 @@
     const pinnedPanels = new Set();
     function togglePanel(id) {
         const p = document.getElementById(id);
+        const btn = document.querySelector(`#${id} .panel-pin-btn`);
         if (p.classList.contains('open')) {
-            p.classList.remove('open');
+            if (pinnedPanels.has(id)) {
+                // If pinned, unpin and close
+                pinnedPanels.delete(id);
+                if (btn) btn.classList.remove('pinned');
+                p.classList.remove('open');
+            } else {
+                // If open but not pinned, pin it
+                pinnedPanels.add(id);
+                if (btn) btn.classList.add('pinned');
+            }
         } else {
-            // Close non-pinned panels (except settings which stays separate)
+            // Close non-pinned panels
             document.querySelectorAll('.control-panel.open').forEach(x => {
                 if (!pinnedPanels.has(x.id) && x.id !== id) x.classList.remove('open');
             });
@@ -1694,6 +1734,27 @@
         document.querySelectorAll('.control-panel.open').forEach(p => {
             if (!pinnedPanels.has(p.id)) p.classList.remove('open');
         });
+    });
+    // Close non-docked memo/outline when clicking on panes
+    document.getElementById('pane-input').addEventListener('click', e => {
+        if (e.target.closest('.input-tab') || e.target.closest('.input-tab-add')) return;
+        const mainContainer = document.getElementById('main-container');
+        if (!mainContainer.classList.contains('memo-docked')) {
+            document.getElementById('memo-panel').classList.remove('open');
+        }
+        if (!mainContainer.classList.contains('outline-docked')) {
+            document.getElementById('outline-panel').classList.remove('open');
+        }
+    });
+    document.getElementById('pane-preview').addEventListener('click', e => {
+        if (e.target.closest('.preview-tab')) return;
+        const mainContainer = document.getElementById('main-container');
+        if (!mainContainer.classList.contains('memo-docked')) {
+            document.getElementById('memo-panel').classList.remove('open');
+        }
+        if (!mainContainer.classList.contains('outline-docked')) {
+            document.getElementById('outline-panel').classList.remove('open');
+        }
     });
     function hidePane(t) {
         if (t === 'input') {
@@ -1892,11 +1953,23 @@
         memoCharCount.textContent = `${count}字`;
     }
 
-    function saveMemoToFile() {
+    function showMemoSaveDialog() {
+        document.getElementById('memo-save-dialog').style.display = 'flex';
+    }
+    function closeMemoSaveDialog() {
+        document.getElementById('memo-save-dialog').style.display = 'none';
+    }
+    function executeMemoSave() {
+        const scope = document.querySelector('input[name="memo-save-scope"]:checked')?.value || 'current';
         const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
         if (currentTab) currentTab.content = memoArea.value;
-        const combined = memoTabs.map(t => `◇ ${t.name}\n${t.content}`).join('\n\n');
-        const blob = new Blob([combined], { type: 'text/plain' });
+        let content;
+        if (scope === 'all') {
+            content = memoTabs.map(t => `◇ ${t.name}\n${t.content}`).join('\n\n');
+        } else {
+            content = currentTab ? currentTab.content : '';
+        }
+        const blob = new Blob([content], { type: 'text/plain' });
         const a = document.createElement('a');
         const n = new Date();
         a.href = URL.createObjectURL(blob);
@@ -1904,6 +1977,7 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        closeMemoSaveDialog();
     }
 
     function loadMemoFile(input) {
@@ -2136,7 +2210,15 @@
         r.readAsText(f);
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.key === 'F11') { e.preventDefault(); toggleFocusMode(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); closeMemoSaveDialog(); }
+        if (e.key === 'F11') { e.preventDefault(); toggleFocusMode(); }
+        if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); }
+        if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); }
+        if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); }
+        if (e.ctrlKey && !e.shiftKey && e.key === 't') { e.preventDefault(); addNewTab(); }
+        if (e.ctrlKey && e.shiftKey && e.key === 'T') { e.preventDefault(); addNewMemoTab(); }
+    });
     inputArea.addEventListener('keyup', updateCursorLineDisplay);
     inputArea.addEventListener('click', updateCursorLineDisplay);
 
@@ -2208,6 +2290,7 @@
     }
     sessionStorage.setItem('cc_editor_session_started', 'true');
     updateInputStats();
+    renderPreviewTabs();
     updatePreview();
     updateWritingTimeDisplay();
 </script>

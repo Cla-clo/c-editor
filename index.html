@@ -881,6 +881,9 @@
     const TABS_KEY = 'cc_editor_tabs';
     let todayStartChars = 0, writingSeconds = 0, lastInputTime = 0, writingTimerInterval = null, bookmarks = [];
 
+    // Utility function - must be defined before use in renderInputTabs
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+
     // Input Tabs System
     let inputTabs = [{ id: 1, name: '第1章', content: '' }];
     let activeTabId = 1;
@@ -1144,7 +1147,6 @@
     setInterval(autoSave, AUTOSAVE_INTERVAL);
     window.addEventListener('beforeunload', e => { autoSave(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
 
-    function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
     function undoInput() { inputArea.focus(); document.execCommand('undo'); }
     function redoInput() { inputArea.focus(); document.execCommand('redo'); }
     function getGoalColorClass(p) { if (p >= 100) return 'goal-100'; if (p >= 75) return 'goal-75-99'; if (p >= 50) return 'goal-50-74'; if (p >= 25) return 'goal-25-49'; return 'goal-0-24'; }

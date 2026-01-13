@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>C-エディタ</title>
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&family=Zen+Old+Mincho&family=M+PLUS+Rounded+1c&family=Yuji+Syuku&display=swap" rel="stylesheet">
 
 <style>
@@ -181,6 +184,37 @@
         border-bottom: 1px solid var(--border-color); flex-shrink: 0;
     }
     .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; }
+
+    /* Input Tabs */
+    .input-tabs-container {
+        display: flex; align-items: center; background: var(--pane-header-bg);
+        border-bottom: 1px solid var(--border-color); overflow-x: auto;
+        flex-shrink: 0; min-height: 32px;
+    }
+    .input-tabs-container::-webkit-scrollbar { height: 3px; }
+    .input-tabs-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    .input-tab {
+        padding: 6px 12px; font-size: 0.75rem; cursor: pointer; border: none;
+        background: transparent; color: var(--text-muted); white-space: nowrap;
+        border-right: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px;
+        transition: all 0.2s;
+    }
+    .input-tab:hover { background: var(--panel-bg); }
+    .input-tab.active { background: var(--panel-bg); color: var(--text-color); font-weight: bold; border-bottom: 2px solid #2563eb; }
+    .input-tab .tab-close {
+        font-size: 0.7rem; color: var(--text-muted); cursor: pointer;
+        padding: 0 2px; border-radius: 2px; line-height: 1;
+    }
+    .input-tab .tab-close:hover { background: #fee2e2; color: #dc2626; }
+    .input-tab-add {
+        padding: 4px 10px; font-size: 1rem; cursor: pointer; border: none;
+        background: transparent; color: var(--text-muted); line-height: 1;
+    }
+    .input-tab-add:hover { color: #2563eb; background: #e0f2fe; }
+    .tab-name-input {
+        font-size: 0.75rem; padding: 2px 4px; border: 1px solid #2563eb;
+        border-radius: 2px; width: 80px; background: var(--panel-bg);
+    }
     .pane-close-btn {
         background: transparent; border: none; color: var(--text-muted); cursor: pointer;
         font-size: 1rem; padding: 0 4px; line-height: 1;
@@ -679,6 +713,9 @@
 <div class="main-container" id="main-container">
     <div class="pane" id="pane-input">
         <div class="pane-header"><h2>入力</h2><button class="pane-close-btn" onclick="hidePane('input')">✕</button></div>
+        <div class="input-tabs-container" id="input-tabs-container">
+            <!-- Tabs will be dynamically generated -->
+        </div>
         <div class="pane-subheader" id="input-pos-bar">現在: 1 行目</div>
         <div class="pane-body">
             <div id="input-mirror-container"></div>
@@ -767,6 +804,14 @@
 <div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
     <div class="save-dialog">
         <h3>保存形式を選択</h3>
+        <div style="margin-bottom: 15px; font-size: 0.85rem;">
+            <label style="display: block; margin-bottom: 5px;">
+                <input type="radio" name="save-scope" value="current" checked> 現在のタブのみ
+            </label>
+            <label style="display: block;">
+                <input type="radio" name="save-scope" value="all"> 全タブを結合（章区切り付き）
+            </label>
+        </div>
         <div class="save-dialog-buttons">
             <button class="btn" onclick="saveAsText()">📄 テキスト</button>
             <button class="btn" onclick="saveAsHTML()">🌐 HTML</button>
@@ -833,7 +878,141 @@
     const WRITING_TIME_KEY = 'cc_editor_writing_time';
     const BOOKMARKS_KEY = 'cc_editor_bookmarks';
     const SETTINGS_KEY = 'cc_editor_settings';
+    const TABS_KEY = 'cc_editor_tabs';
     let todayStartChars = 0, writingSeconds = 0, lastInputTime = 0, writingTimerInterval = null, bookmarks = [];
+
+    // Utility function - must be defined before use in renderInputTabs
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+
+    // Input Tabs System
+    let inputTabs = [{ id: 1, name: '第1章', content: '' }];
+    let activeTabId = 1;
+    let nextTabId = 2;
+
+    function renderInputTabs() {
+        const container = document.getElementById('input-tabs-container');
+        container.innerHTML = '';
+        inputTabs.forEach(tab => {
+            const tabEl = document.createElement('div');
+            tabEl.className = 'input-tab' + (tab.id === activeTabId ? ' active' : '');
+            tabEl.innerHTML = `
+                <span class="tab-name" ondblclick="startEditTabName(${tab.id})">${escapeHtml(tab.name)}</span>
+                ${inputTabs.length > 1 ? `<span class="tab-close" onclick="event.stopPropagation(); deleteTab(${tab.id})">✕</span>` : ''}
+            `;
+            tabEl.onclick = () => switchTab(tab.id);
+            container.appendChild(tabEl);
+        });
+        const addBtn = document.createElement('button');
+        addBtn.className = 'input-tab-add';
+        addBtn.textContent = '＋';
+        addBtn.title = '新しいタブを追加';
+        addBtn.onclick = addNewTab;
+        container.appendChild(addBtn);
+    }
+
+    function switchTab(tabId) {
+        // Save current tab content
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.content = inputArea.value;
+        // Switch to new tab
+        activeTabId = tabId;
+        const newTab = inputTabs.find(t => t.id === tabId);
+        if (newTab) inputArea.value = newTab.content;
+        renderInputTabs();
+        updateInputStats();
+        updatePreview();
+        saveTabsToStorage();
+    }
+
+    function addNewTab() {
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.content = inputArea.value;
+        const newTab = { id: nextTabId++, name: `第${inputTabs.length + 1}章`, content: '' };
+        inputTabs.push(newTab);
+        activeTabId = newTab.id;
+        inputArea.value = '';
+        renderInputTabs();
+        updateInputStats();
+        updatePreview();
+        saveTabsToStorage();
+    }
+
+    function deleteTab(tabId) {
+        if (inputTabs.length <= 1) return;
+        if (!confirm('このタブを削除しますか？')) return;
+        const idx = inputTabs.findIndex(t => t.id === tabId);
+        inputTabs.splice(idx, 1);
+        if (activeTabId === tabId) {
+            activeTabId = inputTabs[Math.max(0, idx - 1)].id;
+            inputArea.value = inputTabs.find(t => t.id === activeTabId).content;
+        }
+        renderInputTabs();
+        updateInputStats();
+        updatePreview();
+        saveTabsToStorage();
+    }
+
+    function startEditTabName(tabId) {
+        const container = document.getElementById('input-tabs-container');
+        const tabEl = container.querySelector(`.input-tab.active .tab-name`) || container.querySelector(`.input-tab:nth-child(${inputTabs.findIndex(t => t.id === tabId) + 1}) .tab-name`);
+        const tab = inputTabs.find(t => t.id === tabId);
+        if (!tabEl || !tab) return;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'tab-name-input';
+        input.value = tab.name;
+        input.onblur = () => finishEditTabName(tabId, input.value);
+        input.onkeydown = e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = tab.name; input.blur(); } };
+        tabEl.replaceWith(input);
+        input.focus();
+        input.select();
+    }
+
+    function finishEditTabName(tabId, newName) {
+        const tab = inputTabs.find(t => t.id === tabId);
+        if (tab) tab.name = newName.trim() || tab.name;
+        renderInputTabs();
+        saveTabsToStorage();
+    }
+
+    function saveTabsToStorage() {
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.content = inputArea.value;
+        localStorage.setItem(TABS_KEY, JSON.stringify({ tabs: inputTabs, activeTabId, nextTabId }));
+    }
+
+    function loadTabsFromStorage() {
+        const s = localStorage.getItem(TABS_KEY);
+        if (s) {
+            try {
+                const d = JSON.parse(s);
+                if (d.tabs && d.tabs.length > 0) {
+                    inputTabs = d.tabs;
+                    activeTabId = d.activeTabId || inputTabs[0].id;
+                    nextTabId = d.nextTabId || inputTabs.length + 1;
+                    const activeTab = inputTabs.find(t => t.id === activeTabId);
+                    if (activeTab) inputArea.value = activeTab.content;
+                    return true;
+                }
+            } catch (e) {}
+        }
+        return false;
+    }
+
+    function getAllTabsContent() {
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.content = inputArea.value;
+        let combined = '';
+        inputTabs.forEach((tab, idx) => {
+            if (idx > 0) combined += '\n\n';
+            combined += `■ ${tab.name}\n\n${tab.content}`;
+        });
+        return combined;
+    }
+
+    function getCurrentTabContent() {
+        return inputArea.value;
+    }
 
     function getTodayDateStr() { const n = new Date(); return `${n.getFullYear()}-${(n.getMonth()+1).toString().padStart(2,'0')}-${n.getDate().toString().padStart(2,'0')}`; }
 
@@ -942,12 +1121,32 @@
 　ご執筆にお役立てください。`;
 
     const AUTOSAVE_KEY = 'cc_editor_autosave', AUTOSAVE_INTERVAL = 30000;
-    function autoSave() { localStorage.setItem(AUTOSAVE_KEY, inputArea.value); saveSettingsToStorage(); }
-    function loadAutoSave() { const s = localStorage.getItem(AUTOSAVE_KEY); if (s && s.length > 0 && s !== defaultText) { if (confirm('前回の自動保存データがあります。復元しますか？')) { inputArea.value = s; } else { inputArea.value = defaultText; } } else { inputArea.value = defaultText; } }
+    function autoSave() { saveTabsToStorage(); saveSettingsToStorage(); }
+    function loadAutoSave() {
+        // Try to load tabs first (new format)
+        if (loadTabsFromStorage()) {
+            renderInputTabs();
+            return;
+        }
+        // Fallback: try old single-content format
+        const s = localStorage.getItem(AUTOSAVE_KEY);
+        if (s && s.length > 0 && s !== defaultText) {
+            if (confirm('前回の自動保存データがあります。復元しますか？')) {
+                inputTabs[0].content = s;
+                inputArea.value = s;
+            } else {
+                inputArea.value = defaultText;
+                inputTabs[0].content = defaultText;
+            }
+        } else {
+            inputArea.value = defaultText;
+            inputTabs[0].content = defaultText;
+        }
+        renderInputTabs();
+    }
     setInterval(autoSave, AUTOSAVE_INTERVAL);
     window.addEventListener('beforeunload', e => { autoSave(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
 
-    function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
     function undoInput() { inputArea.focus(); document.execCommand('undo'); }
     function redoInput() { inputArea.focus(); document.execCommand('redo'); }
     function getGoalColorClass(p) { if (p >= 100) return 'goal-100'; if (p >= 75) return 'goal-75-99'; if (p >= 50) return 'goal-50-74'; if (p >= 25) return 'goal-25-49'; return 'goal-0-24'; }
@@ -1285,9 +1484,56 @@
 
     function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
     function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
-    function saveAsText() { const b = new Blob([inputArea.value], { type: 'text/plain' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
-    function saveAsHTML() { updatePreview(); const c = previewContent.innerHTML, v = document.getElementById('st-pv-v').checked, fk = document.getElementById('st-pv-font').value, fs = document.getElementById('st-pv-size').value, lh = document.getElementById('st-pv-line').value; const h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>エクスポート</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${c}</body></html>`; const b = new Blob([h], { type: 'text/html' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.html`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
-    function loadFile(input) { const f = input.files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { inputArea.value = e.target.result; updateInputStats(); updatePreview(); input.value = ''; }; r.readAsText(f); }
+    function getSaveScope() { return document.querySelector('input[name="save-scope"]:checked')?.value || 'current'; }
+    function getContentToSave() { return getSaveScope() === 'all' ? getAllTabsContent() : getCurrentTabContent(); }
+    function saveAsText() { const content = getContentToSave(); const b = new Blob([content], { type: 'text/plain' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
+    function saveAsHTML() {
+        const scope = getSaveScope();
+        const v = document.getElementById('st-pv-v').checked, fk = document.getElementById('st-pv-font').value, fs = document.getElementById('st-pv-size').value, lh = document.getElementById('st-pv-line').value;
+        let htmlContent = '';
+        if (scope === 'all') {
+            const currentTab = inputTabs.find(t => t.id === activeTabId);
+            if (currentTab) currentTab.content = inputArea.value;
+            inputTabs.forEach((tab, idx) => {
+                if (idx > 0) htmlContent += '<div style="page-break-before: always; margin-top: 40px;"></div>';
+                htmlContent += `<h2 style="font-size: 1.5em; margin-bottom: 1em;">${escapeHtml(tab.name)}</h2>`;
+                htmlContent += renderTextToHTML(tab.content);
+            });
+        } else {
+            updatePreview();
+            htmlContent = previewContent.innerHTML;
+        }
+        const h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>エクスポート</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${htmlContent}</body></html>`;
+        const b = new Blob([h], { type: 'text/html' }), a = document.createElement('a'), n = new Date();
+        a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.html`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog();
+    }
+    function renderTextToHTML(text) {
+        const ss = settingsCache.showSpace, sh = settingsCache.showHighlight;
+        let s = escapeHtml(text);
+        const MZ = '\uE001', MH = '\uE002'; if (ss) { s = s.replace(/　/g, MZ).replace(/ /g, MH); }
+        if (sh) { s = s.replace(/「(.*?)」/g, '<span class="bracket-blue">「$1」</span>').replace(/『(.*?)』/g, '<span class="bracket-green">『$1』</span>'); }
+        s = s.replace(/｜([^《]+?)《(.+?)》/g, '<ruby>$1<rt>$2</rt></ruby>').replace(/([一-龠々〆ヵヶ]+)《(.+?)》/g, '<ruby>$1<rt>$2</rt></ruby>');
+        s = s.replace(/《《(.+?)》》/g, (m, p) => { let r = ''; for (let c of p) r += `<ruby class="bouten-ruby">${c}<rt>・</rt></ruby>`; return r; });
+        s = s.replace(/__(.+?)__/g, '<span class="underline-text">$1</span>').replace(/==(.+?)==/g, '<span class="highlight-text">$1</span>');
+        if (sh) s = s.replace(/([―─]{2,}|…{2,})/g, '<span class="symbol-hl">$1</span>');
+        if (ss) { s = s.split(MZ).join('<span class="space-zen">□</span>').split(MH).join('<span class="space-han">･</span>'); }
+        return s.replace(/\n/g, '<br>');
+    }
+    function loadFile(input) {
+        const f = input.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = e => {
+            inputArea.value = e.target.result;
+            const currentTab = inputTabs.find(t => t.id === activeTabId);
+            if (currentTab) currentTab.content = e.target.result;
+            updateInputStats();
+            updatePreview();
+            saveTabsToStorage();
+            input.value = '';
+        };
+        r.readAsText(f);
+    }
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
     inputArea.addEventListener('keyup', updateCursorLineDisplay);

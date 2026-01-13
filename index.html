@@ -577,7 +577,7 @@
             <button class="btn btn-sync dropdown-btn">📲 同期 ▼</button>
             <div class="dropdown-content sync-dropdown-content">
                 <a onclick="syncPreviewPosition()">入力 → プレビュー</a>
-                <a onclick="syncPreviewToInput()">プレビュー → 入力</a>
+                <a onclick="doSyncPreviewToInput()">プレビュー → 入力</a>
             </div>
         </div>
         <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
@@ -1555,6 +1555,7 @@
 
     function updatePreviewTabOptions() {
         const select = document.getElementById('preview-tab-select');
+        if (!select) return;
         // Keep first two options (current, all), remove the rest
         while (select.options.length > 2) select.remove(2);
         // Add individual tab options
@@ -1589,7 +1590,7 @@
     function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
 
     // Sync preview scroll position to input cursor
-    function syncPreviewToInput() {
+    function doSyncPreviewToInput() {
         const scrollTop = previewScroll.scrollTop;
         const scrollHeight = previewScroll.scrollHeight - previewScroll.clientHeight;
         if (scrollHeight <= 0) { inputArea.focus(); inputArea.setSelectionRange(0, 0); return; }
@@ -1791,6 +1792,7 @@
 
     function renderMemoTabs() {
         const container = document.getElementById('memo-tabs-container');
+        if (!container) return;
         container.innerHTML = '';
         memoTabs.forEach(tab => {
             const tabEl = document.createElement('div');
@@ -1885,6 +1887,7 @@
     }
 
     function updateMemoCharCount() {
+        if (!memoArea || !memoCharCount) return;
         const count = memoArea.value.replace(/[\n\r\s]/g, '').length;
         memoCharCount.textContent = `${count}字`;
     }

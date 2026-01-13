@@ -310,6 +310,30 @@
     .highlight-text { background: linear-gradient(transparent 60%, #fef08a 60%); }
     body.theme-dark .highlight-text { background: linear-gradient(transparent 60%, #854d0e 60%); }
 
+    /* Memo Panel */
+    #memo-panel {
+        position: fixed; top: 46px; left: 0; bottom: 0; width: 280px;
+        background: #fefce8; border-right: 1px solid #fcd34d;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    body.theme-dark #memo-panel { background: #422006; border-color: #854d0e; }
+    #memo-panel.open { transform: translateX(0); }
+    .memo-header {
+        padding: 8px 10px; background: #fef3c7; border-bottom: 1px solid #fcd34d;
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+    }
+    body.theme-dark .memo-header { background: #713f12; border-color: #854d0e; }
+    .memo-controls { display: flex; align-items: center; gap: 8px; }
+    #memo-area {
+        flex: 1; width: 100%; padding: 12px; border: none; resize: none;
+        font-size: 0.9rem; line-height: 1.6; background: transparent;
+        font-family: inherit; color: var(--text-color);
+    }
+    #memo-area:focus { outline: none; }
+    body.focus-mode #memo-panel { display: none !important; }
+
     #outline-panel {
         position: fixed; top: 46px; right: 0; bottom: 0; width: 300px;
         background: var(--panel-bg); border-left: 1px solid var(--border-color);
@@ -505,6 +529,7 @@
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
+        <button class="btn" onclick="toggleMemoPane()">📝 メモ</button>
         <button class="btn" onclick="toggleOutline()">📑 目次</button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
@@ -775,6 +800,17 @@
             <span id="pv-reading-time" class="reading-time"></span>
             <span id="pv-manuscript" class="manuscript-pages"></span>
         </div>
+    </div>
+
+    <div id="memo-panel">
+        <div class="memo-header">
+            <span>📝 メモ</span>
+            <div class="memo-controls">
+                <span id="memo-char-count" style="font-size: 0.75rem; color: var(--text-muted);">0字</span>
+                <button class="btn" onclick="toggleMemoPane()" style="border:none; background:transparent;">✕</button>
+            </div>
+        </div>
+        <textarea id="memo-area" placeholder="メモを入力..."></textarea>
     </div>
 
     <div id="outline-panel">
@@ -1599,6 +1635,36 @@
     function replaceOne() { if (currentMatchIndex < 0) findNext(); if (currentMatchIndex < 0) return; const r = document.getElementById('replace-input').value, m = searchMatches[currentMatchIndex]; inputArea.setRangeText(r, m.start, m.end, 'select'); doSearch(); jumpToMatch(); }
     function replaceAll() { const q = document.getElementById('search-input').value, r = document.getElementById('replace-input').value; if (!q) return; inputArea.value = inputArea.value.split(q).join(r); updateInputStats(); }
 
+    // Memo Pane
+    const MEMO_KEY = 'cc_editor_memo';
+    const memoArea = document.getElementById('memo-area');
+    const memoCharCount = document.getElementById('memo-char-count');
+
+    function toggleMemoPane() {
+        const p = document.getElementById('memo-panel');
+        p.classList.toggle('open');
+    }
+
+    function loadMemo() {
+        const saved = localStorage.getItem(MEMO_KEY);
+        if (saved) memoArea.value = saved;
+        updateMemoCharCount();
+    }
+
+    function saveMemo() {
+        localStorage.setItem(MEMO_KEY, memoArea.value);
+    }
+
+    function updateMemoCharCount() {
+        const count = memoArea.value.replace(/[\n\r\s]/g, '').length;
+        memoCharCount.textContent = `${count}字`;
+    }
+
+    memoArea.addEventListener('input', () => {
+        updateMemoCharCount();
+        saveMemo();
+    });
+
     let outlineData = [];
     function toggleOutline() { const p = document.getElementById('outline-panel'); if (p.classList.contains('open')) { p.classList.remove('open'); document.getElementById('btn-toggle-outline')?.classList.remove('active'); } else { generateOutline(); p.classList.add('open'); document.getElementById('btn-toggle-outline')?.classList.add('active'); } }
     function toggleOutlineDock() { const d = document.getElementById('check-outline-dock').checked, c = document.getElementById('main-container'), b = document.getElementById('btn-outline-swap'); if (d) { c.classList.add('outline-docked'); b.style.display = 'inline-block'; } else { c.classList.remove('outline-docked', 'outline-left'); b.style.display = 'none'; document.getElementById('outline-panel').style.width = '300px'; } }
@@ -1779,6 +1845,7 @@
     loadTodayStart();
     loadWritingTime();
     loadBookmarks();
+    loadMemo();
     loadSettingsFromStorage();
     loadPaneWidthSettings();
     startWritingTimer();

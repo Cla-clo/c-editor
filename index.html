@@ -130,6 +130,12 @@
         color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; line-height: 1;
     }
     .panel-close-btn:hover { color: #dc2626; }
+    .panel-pin-btn {
+        position: absolute; top: 4px; right: 28px; background: transparent; border: none;
+        color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; line-height: 1; opacity: 0.6;
+    }
+    .panel-pin-btn:hover { opacity: 1; }
+    .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
     #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; }
     body.theme-dark #search-bar { background: #14532d; border-color: #166534; }
@@ -283,10 +289,10 @@
     }
     .vertical-mode textarea, .vertical-mode #input-mirror-container { writing-mode: vertical-rl; text-orientation: upright; }
 
-    #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: hidden; overflow-y: auto; }
+    #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: hidden; overflow-y: auto; box-sizing: border-box; }
     #preview-scroll.vertical-mode { overflow-x: auto; overflow-y: hidden; }
     #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; }
-    #preview-content { word-wrap: break-word; color: var(--text-color); }
+    #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; }
 
     ruby { ruby-align: space-between; ruby-position: over; }
     rt { color: #555; user-select: none; font-size: 0.5em; }
@@ -303,6 +309,30 @@
     .underline-text { text-decoration: underline; text-decoration-color: #dc2626; text-underline-offset: 2px; }
     .highlight-text { background: linear-gradient(transparent 60%, #fef08a 60%); }
     body.theme-dark .highlight-text { background: linear-gradient(transparent 60%, #854d0e 60%); }
+
+    /* Memo Panel */
+    #memo-panel {
+        position: fixed; top: 46px; left: 0; bottom: 0; width: 280px;
+        background: #fefce8; border-right: 1px solid #fcd34d;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    body.theme-dark #memo-panel { background: #422006; border-color: #854d0e; }
+    #memo-panel.open { transform: translateX(0); }
+    .memo-header {
+        padding: 8px 10px; background: #fef3c7; border-bottom: 1px solid #fcd34d;
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+    }
+    body.theme-dark .memo-header { background: #713f12; border-color: #854d0e; }
+    .memo-controls { display: flex; align-items: center; gap: 8px; }
+    #memo-area {
+        flex: 1; width: 100%; padding: 12px; border: none; resize: none;
+        font-size: 0.9rem; line-height: 1.6; background: transparent;
+        font-family: inherit; color: var(--text-color);
+    }
+    #memo-area:focus { outline: none; }
+    body.focus-mode #memo-panel { display: none !important; }
 
     #outline-panel {
         position: fixed; top: 46px; right: 0; bottom: 0; width: 300px;
@@ -499,6 +529,7 @@
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
+        <button class="btn" onclick="toggleMemoPane()">📝 メモ</button>
         <button class="btn" onclick="toggleOutline()">📑 目次</button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
@@ -508,6 +539,7 @@
 
 <div class="controls-wrapper">
     <div id="search-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('search-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
         <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
         <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
@@ -521,6 +553,7 @@
     </div>
     
     <div id="help-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('help-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -538,7 +571,8 @@
                 ・<b>Ctrl+G</b>：行番号ジャンプ<br>
                 ・<b>Ctrl+Z</b>：元に戻す<br>
                 ・<b>Ctrl+Y</b>：やり直し<br>
-                ・<b>ESC</b>：集中モード解除/ダイアログ閉じる
+                ・<b>F11</b>：集中モード切替<br>
+                ・<b>Esc</b>：集中モード解除・ダイアログ閉じる
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
                 <div class="help-title">【記法（小説向け）】</div>
@@ -587,6 +621,7 @@
     </div>
 
     <div id="settings-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('settings-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
         <div class="setting-group">
             <div class="setting-title">入力エリア <button class="btn btn-apply" onclick="applyInputSettings()">適用</button></div>
@@ -696,6 +731,17 @@
         </div>
 
         <div class="setting-group">
+            <div class="setting-title">ペイン幅 <button class="btn btn-apply" onclick="applyPaneWidthSettings()">適用</button></div>
+            <div class="setting-row">
+                <label>入力: <input type="number" id="st-pane-input-width" value="50" min="10" max="90" style="width:50px;">%</label>
+                <label>プレビュー: <input type="number" id="st-pane-preview-width" value="50" min="10" max="90" style="width:50px;">%</label>
+            </div>
+            <div class="setting-row">
+                <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
+            </div>
+        </div>
+
+        <div class="setting-group">
             <div class="setting-title">設定管理</div>
             <div class="setting-row">
                 <button class="btn btn-export" onclick="exportSettings()">📤 エクスポート</button>
@@ -756,6 +802,17 @@
         </div>
     </div>
 
+    <div id="memo-panel">
+        <div class="memo-header">
+            <span>📝 メモ</span>
+            <div class="memo-controls">
+                <span id="memo-char-count" style="font-size: 0.75rem; color: var(--text-muted);">0字</span>
+                <button class="btn" onclick="toggleMemoPane()" style="border:none; background:transparent;">✕</button>
+            </div>
+        </div>
+        <textarea id="memo-area" placeholder="メモを入力..."></textarea>
+    </div>
+
     <div id="outline-panel">
         <div class="outline-header">
             <span>目次・ブックマーク</span>
@@ -780,6 +837,10 @@
             </div>
             <div id="outline-tab-bookmark" class="outline-tab-content">
                 <button class="bookmark-add-btn" onclick="addBookmark()">＋ 現在位置にブックマークを追加</button>
+                <div id="bookmark-actions" style="display:none; margin-bottom: 8px; padding: 4px; background: #fef3c7; border-radius: 4px;">
+                    <label style="font-size: 0.8rem; cursor: pointer;"><input type="checkbox" id="bookmark-select-all" onchange="toggleAllBookmarks()"> 全選択</label>
+                    <button onclick="deleteSelectedBookmarks()" style="margin-left: 8px; padding: 2px 8px; font-size: 0.75rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; cursor: pointer;">🗑 選択削除</button>
+                </div>
                 <div id="bookmark-list"></div>
             </div>
         </div>
@@ -799,6 +860,7 @@
 <div id="quick-insert-popup" class="quick-insert-popup">
     <button class="qip-ruby" onclick="quickInsertRuby()">🔤ルビ</button>
     <button class="qip-bouten" onclick="quickInsertBouten()">⚫傍点</button>
+    <button style="color:#d97706;" onclick="quickAddBookmark()">🔖しおり</button>
 </div>
 
 <div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
@@ -1005,7 +1067,7 @@
         let combined = '';
         inputTabs.forEach((tab, idx) => {
             if (idx > 0) combined += '\n\n';
-            combined += `■ ${tab.name}\n\n${tab.content}`;
+            combined += `◆ ${tab.name}\n\n${tab.content}`;
         });
         return combined;
     }
@@ -1053,10 +1115,25 @@
     }
     function deleteBookmark(i) { bookmarks.splice(i, 1); saveBookmarks(); renderBookmarks(); }
     function jumpToBookmark(pos) { inputArea.focus(); inputArea.setSelectionRange(pos, pos); setTimeout(() => scrollToCursorPosition(pos), 100); updateCursorLineDisplay(); }
+    function toggleAllBookmarks() {
+        const checked = document.getElementById('bookmark-select-all').checked;
+        document.querySelectorAll('.bookmark-checkbox').forEach(cb => cb.checked = checked);
+    }
+    function deleteSelectedBookmarks() {
+        const checkboxes = document.querySelectorAll('.bookmark-checkbox:checked');
+        if (checkboxes.length === 0) return;
+        if (!confirm(`${checkboxes.length}件のブックマークを削除しますか？`)) return;
+        const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+        indices.forEach(i => bookmarks.splice(i, 1));
+        saveBookmarks(); renderBookmarks();
+        document.getElementById('bookmark-select-all').checked = false;
+    }
     function renderBookmarks() {
         const l = document.getElementById('bookmark-list'); l.innerHTML = '';
-        if (bookmarks.length === 0) { l.innerHTML = '<div class="outline-empty">ブックマークがありません</div>'; return; }
-        bookmarks.forEach((b, i) => { const d = document.createElement('div'); d.className = 'bookmark-item'; d.innerHTML = `<span class="bookmark-text" onclick="jumpToBookmark(${b.pos})">📍 ${b.lineNum}行目: ${b.preview}</span><span class="bookmark-delete" onclick="deleteBookmark(${i})">✕</span>`; l.appendChild(d); });
+        const actions = document.getElementById('bookmark-actions');
+        if (bookmarks.length === 0) { l.innerHTML = '<div class="outline-empty">ブックマークがありません</div>'; actions.style.display = 'none'; return; }
+        actions.style.display = 'block';
+        bookmarks.forEach((b, i) => { const d = document.createElement('div'); d.className = 'bookmark-item'; d.innerHTML = `<input type="checkbox" class="bookmark-checkbox" data-index="${i}" style="margin-right:6px;"><span class="bookmark-text" onclick="jumpToBookmark(${b.pos})">📍 ${b.lineNum}行目: ${escapeHtml(b.preview)}</span><span class="bookmark-delete" onclick="deleteBookmark(${i})">✕</span>`; l.appendChild(d); });
     }
 
     // 設定エクスポート/インポート
@@ -1250,15 +1327,32 @@
         const s = inputArea.selectionStart, e = inputArea.selectionEnd;
         if (s === e) { quickInsertPopup.classList.remove('show'); return; }
         lastSelectionRange = { start: s, end: e };
-        // Position popup near cursor
-        const rect = inputArea.getBoundingClientRect();
-        const lines = inputArea.value.substring(0, s).split('\n');
-        const lineHeight = parseFloat(getComputedStyle(inputArea).lineHeight) || 24;
-        const scrollTop = inputArea.scrollTop;
-        const approxY = rect.top + (lines.length * lineHeight) - scrollTop;
-        const approxX = rect.left + 100;
-        quickInsertPopup.style.top = Math.min(Math.max(approxY, rect.top), rect.bottom - 40) + 'px';
-        quickInsertPopup.style.left = Math.min(approxX, window.innerWidth - 150) + 'px';
+        // Position popup near selection using mirror technique
+        const cs = window.getComputedStyle(inputArea);
+        inputMirror.style.fontSize = cs.fontSize;
+        inputMirror.style.lineHeight = cs.lineHeight;
+        inputMirror.style.fontFamily = cs.fontFamily;
+        inputMirror.style.width = inputArea.clientWidth + 'px';
+        inputMirror.style.height = inputArea.clientHeight + 'px';
+        const textBefore = inputArea.value.substring(0, e);
+        const marker = document.createElement('span');
+        marker.textContent = '|';
+        inputMirror.innerHTML = '';
+        inputMirror.appendChild(document.createTextNode(textBefore));
+        inputMirror.appendChild(marker);
+        const markerRect = marker.getBoundingClientRect();
+        const inputRect = inputArea.getBoundingClientRect();
+        const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
+        let popupTop, popupLeft;
+        if (isVertical) {
+            popupTop = Math.min(Math.max(markerRect.top + 20, inputRect.top), inputRect.bottom - 40);
+            popupLeft = Math.max(markerRect.left - 80, inputRect.left);
+        } else {
+            popupTop = Math.min(Math.max(markerRect.bottom + 5, inputRect.top), inputRect.bottom - 40);
+            popupLeft = Math.min(Math.max(markerRect.left - 30, inputRect.left), window.innerWidth - 150);
+        }
+        quickInsertPopup.style.top = popupTop + 'px';
+        quickInsertPopup.style.left = popupLeft + 'px';
         quickInsertPopup.classList.add('show');
     }
 
@@ -1285,6 +1379,21 @@
         inputArea.setSelectionRange(s + bt.length, s + bt.length);
         inputArea.focus();
         updateInputStats();
+        hideQuickInsertPopup();
+    }
+
+    function quickAddBookmark() {
+        const s = lastSelectionRange.start, e = lastSelectionRange.end;
+        const pos = s;
+        const text = inputArea.value;
+        const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+        const lineEnd = text.indexOf('\n', pos);
+        const lineText = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd).trim();
+        const preview = lineText.substring(0, 30) + (lineText.length > 30 ? '...' : '');
+        const lineNum = (text.substring(0, pos).match(/\n/g) || []).length + 1;
+        bookmarks.push({ pos, lineNum, preview, created: Date.now() });
+        saveBookmarks();
+        renderBookmarks();
         hideQuickInsertPopup();
     }
 
@@ -1351,6 +1460,30 @@
 
     function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
 
+    // Preview click to sync with input
+    previewContent.addEventListener('click', e => {
+        const brElements = previewContent.querySelectorAll('br');
+        if (brElements.length === 0) { inputArea.focus(); inputArea.setSelectionRange(0, 0); return; }
+        const clickY = e.clientY;
+        let targetLine = 0;
+        for (let i = 0; i < brElements.length; i++) {
+            const rect = brElements[i].getBoundingClientRect();
+            if (rect.top > clickY) break;
+            targetLine = i + 1;
+        }
+        // Jump to line in input
+        const lines = inputArea.value.split('\n');
+        let pos = 0;
+        for (let i = 0; i < Math.min(targetLine, lines.length); i++) {
+            pos += lines[i].length + 1;
+        }
+        pos = Math.min(pos, inputArea.value.length);
+        inputArea.focus();
+        inputArea.setSelectionRange(pos, pos);
+        scrollToCursorPosition(pos);
+        updateCursorLineDisplay();
+    });
+
     function updatePreviewAndShow() {
         updatePreview();
         const previewPane = document.getElementById('pane-preview');
@@ -1363,15 +1496,111 @@
     const fontMap = { 'font-gothic': '"Noto Sans JP", sans-serif', 'font-mincho': '"Shippori Mincho", serif', 'font-old': '"Zen Old Mincho", serif', 'font-round': '"M PLUS Rounded 1c", sans-serif', 'font-brush': '"Yuji Syuku", serif' };
     function applyInputSettings() { const s = document.getElementById('st-in-size').value + 'px', l = document.getElementById('st-in-line').value, f = fontMap[document.getElementById('st-in-font').value], v = document.getElementById('st-in-v').checked; inputArea.style.fontSize = s; inputArea.style.lineHeight = l; inputArea.style.fontFamily = f; inputMirror.style.fontSize = s; inputMirror.style.lineHeight = l; inputMirror.style.fontFamily = f; if (v) inputArea.parentElement.classList.add('vertical-mode'); else inputArea.parentElement.classList.remove('vertical-mode'); }
     function applyPreviewSettings() { const s = document.getElementById('st-pv-size').value + 'px', l = document.getElementById('st-pv-line').value, f = fontMap[document.getElementById('st-pv-font').value], v = document.getElementById('st-pv-v').checked; previewContent.style.fontSize = s; previewContent.style.lineHeight = l; previewContent.style.fontFamily = f; if (v) previewScroll.classList.add('vertical-mode'); else previewScroll.classList.remove('vertical-mode'); updatePreview(); }
-    function applyDisplaySettings() { settingsCache.showSpace = document.getElementById('st-show-space').checked; settingsCache.showHighlight = document.getElementById('st-show-highlight').checked; settingsCache.defaultPreviewHidden = document.getElementById('st-default-preview-hidden').checked; const si = document.getElementById('check-show-input').checked, sp = document.getElementById('check-show-preview').checked; if (si) document.getElementById('pane-input').classList.remove('hidden'); else document.getElementById('pane-input').classList.add('hidden'); if (sp) document.getElementById('pane-preview').classList.remove('hidden'); else document.getElementById('pane-preview').classList.add('hidden'); updatePreview(); }
+    function applyDisplaySettings() { settingsCache.showSpace = document.getElementById('st-show-space').checked; settingsCache.showHighlight = document.getElementById('st-show-highlight').checked; settingsCache.defaultPreviewHidden = document.getElementById('st-default-preview-hidden').checked; const si = document.getElementById('check-show-input').checked, sp = document.getElementById('check-show-preview').checked; if (si) document.getElementById('pane-input').classList.remove('hidden'); else document.getElementById('pane-input').classList.add('hidden'); if (sp) document.getElementById('pane-preview').classList.remove('hidden'); else document.getElementById('pane-preview').classList.add('hidden'); adjustPaneWidthsOnVisibility(); updatePreview(); }
     function applyWritingSettings() { settingsCache.typewriterMode = document.getElementById('st-typewriter-mode').checked; settingsCache.writingTracker = document.getElementById('st-writing-tracker').checked; updateWritingTimeDisplay(); }
     function applyGoalSettings() { settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0; settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0; settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked; settingsCache.celebrateGoal = document.getElementById('st-celebrate-goal').checked; goalAchieved = { today: false, total: false }; updateInputStats(); updatePreview(); }
     function applyManuscriptSettings() { settingsCache.manuscriptRows = parseInt(document.getElementById('st-manuscript-rows').value) || 34; settingsCache.manuscriptCols = parseInt(document.getElementById('st-manuscript-cols').value) || 42; settingsCache.showManuscript = document.getElementById('st-show-manuscript').checked; updateInputStats(); updatePreview(); }
     function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
     function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); }
 
-    function togglePanel(id) { const p = document.getElementById(id); if (p.classList.contains('open')) { p.classList.remove('open'); } else { if (id !== 'settings-bar') document.querySelectorAll('.control-panel:not(#settings-bar)').forEach(x => x.classList.remove('open')); p.classList.add('open'); if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100); } }
-    function hidePane(t) { if (t === 'input') { document.getElementById('check-show-input').checked = false; document.getElementById('pane-input').classList.add('hidden'); } else if (t === 'preview') { document.getElementById('check-show-preview').checked = false; document.getElementById('pane-preview').classList.add('hidden'); } }
+    function applyPaneWidthSettings() {
+        const inputWidth = parseInt(document.getElementById('st-pane-input-width').value) || 50;
+        const previewWidth = parseInt(document.getElementById('st-pane-preview-width').value) || 50;
+        const inputPane = document.getElementById('pane-input');
+        const previewPane = document.getElementById('pane-preview');
+        const clampedInput = Math.max(10, Math.min(90, inputWidth));
+        const clampedPreview = Math.max(10, Math.min(90, previewWidth));
+        inputPane.style.flex = `0 0 ${clampedInput}%`;
+        previewPane.style.flex = `0 0 ${clampedPreview}%`;
+        localStorage.setItem('cc_pane_input_width', clampedInput);
+        localStorage.setItem('cc_pane_preview_width', clampedPreview);
+    }
+
+    function resetPaneWidths() {
+        document.getElementById('st-pane-input-width').value = 50;
+        document.getElementById('st-pane-preview-width').value = 50;
+        const inputPane = document.getElementById('pane-input');
+        const previewPane = document.getElementById('pane-preview');
+        inputPane.style.flex = '1 1 50%';
+        previewPane.style.flex = '1 1 50%';
+        localStorage.removeItem('cc_pane_input_width');
+        localStorage.removeItem('cc_pane_preview_width');
+    }
+
+    function loadPaneWidthSettings() {
+        const inputWidth = localStorage.getItem('cc_pane_input_width');
+        const previewWidth = localStorage.getItem('cc_pane_preview_width');
+        if (inputWidth) {
+            document.getElementById('st-pane-input-width').value = inputWidth;
+            document.getElementById('pane-input').style.flex = `0 0 ${inputWidth}%`;
+        }
+        if (previewWidth) {
+            document.getElementById('st-pane-preview-width').value = previewWidth;
+            document.getElementById('pane-preview').style.flex = `0 0 ${previewWidth}%`;
+        }
+    }
+
+    const pinnedPanels = new Set();
+    function togglePanel(id) {
+        const p = document.getElementById(id);
+        if (p.classList.contains('open')) {
+            p.classList.remove('open');
+        } else {
+            // Close non-pinned panels (except settings which stays separate)
+            document.querySelectorAll('.control-panel.open').forEach(x => {
+                if (!pinnedPanels.has(x.id) && x.id !== id) x.classList.remove('open');
+            });
+            p.classList.add('open');
+            if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100);
+        }
+    }
+    function togglePanelPin(id) {
+        const btn = document.querySelector(`#${id} .panel-pin-btn`);
+        if (pinnedPanels.has(id)) {
+            pinnedPanels.delete(id);
+            btn.classList.remove('pinned');
+        } else {
+            pinnedPanels.add(id);
+            btn.classList.add('pinned');
+        }
+    }
+    // Close non-pinned panels on outside click
+    document.addEventListener('click', e => {
+        if (e.target.closest('.control-panel') || e.target.closest('.btn') || e.target.closest('.dropdown')) return;
+        document.querySelectorAll('.control-panel.open').forEach(p => {
+            if (!pinnedPanels.has(p.id)) p.classList.remove('open');
+        });
+    });
+    function hidePane(t) {
+        if (t === 'input') {
+            document.getElementById('check-show-input').checked = false;
+            document.getElementById('pane-input').classList.add('hidden');
+        } else if (t === 'preview') {
+            document.getElementById('check-show-preview').checked = false;
+            document.getElementById('pane-preview').classList.add('hidden');
+        }
+        adjustPaneWidthsOnVisibility();
+    }
+
+    function adjustPaneWidthsOnVisibility() {
+        const inputPane = document.getElementById('pane-input');
+        const previewPane = document.getElementById('pane-preview');
+        const inputHidden = inputPane.classList.contains('hidden');
+        const previewHidden = previewPane.classList.contains('hidden');
+        if (inputHidden && !previewHidden) {
+            previewPane.style.flex = '1 1 100%';
+        } else if (!inputHidden && previewHidden) {
+            inputPane.style.flex = '1 1 100%';
+        } else if (!inputHidden && !previewHidden) {
+            // Restore saved widths or default 50/50
+            const savedInput = localStorage.getItem('cc_pane_input_width');
+            const savedPreview = localStorage.getItem('cc_pane_preview_width');
+            if (savedInput) inputPane.style.flex = `0 0 ${savedInput}%`;
+            else inputPane.style.flex = '1 1 50%';
+            if (savedPreview) previewPane.style.flex = `0 0 ${savedPreview}%`;
+            else previewPane.style.flex = '1 1 50%';
+        }
+    }
     function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
     document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); });
 
@@ -1405,6 +1634,36 @@
     function jumpToMatch() { const m = searchMatches[currentMatchIndex]; if (!m) return; inputArea.focus(); inputArea.setSelectionRange(m.start, m.end); scrollToCursorPosition(m.start); updateCursorLineDisplay(); }
     function replaceOne() { if (currentMatchIndex < 0) findNext(); if (currentMatchIndex < 0) return; const r = document.getElementById('replace-input').value, m = searchMatches[currentMatchIndex]; inputArea.setRangeText(r, m.start, m.end, 'select'); doSearch(); jumpToMatch(); }
     function replaceAll() { const q = document.getElementById('search-input').value, r = document.getElementById('replace-input').value; if (!q) return; inputArea.value = inputArea.value.split(q).join(r); updateInputStats(); }
+
+    // Memo Pane
+    const MEMO_KEY = 'cc_editor_memo';
+    const memoArea = document.getElementById('memo-area');
+    const memoCharCount = document.getElementById('memo-char-count');
+
+    function toggleMemoPane() {
+        const p = document.getElementById('memo-panel');
+        p.classList.toggle('open');
+    }
+
+    function loadMemo() {
+        const saved = localStorage.getItem(MEMO_KEY);
+        if (saved) memoArea.value = saved;
+        updateMemoCharCount();
+    }
+
+    function saveMemo() {
+        localStorage.setItem(MEMO_KEY, memoArea.value);
+    }
+
+    function updateMemoCharCount() {
+        const count = memoArea.value.replace(/[\n\r\s]/g, '').length;
+        memoCharCount.textContent = `${count}字`;
+    }
+
+    memoArea.addEventListener('input', () => {
+        updateMemoCharCount();
+        saveMemo();
+    });
 
     let outlineData = [];
     function toggleOutline() { const p = document.getElementById('outline-panel'); if (p.classList.contains('open')) { p.classList.remove('open'); document.getElementById('btn-toggle-outline')?.classList.remove('active'); } else { generateOutline(); p.classList.add('open'); document.getElementById('btn-toggle-outline')?.classList.add('active'); } }
@@ -1535,7 +1794,7 @@
         r.readAsText(f);
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.body.classList.contains('focus-mode')) toggleFocusMode(); closeJumpDialog(); closeAnalysis(); } if (e.key === 'F11') { e.preventDefault(); toggleFocusMode(); } if (e.ctrlKey && e.key === 'g') { e.preventDefault(); showJumpDialog(); } if (e.ctrlKey && e.key === 'f') { e.preventDefault(); togglePanel('search-bar'); } if (e.ctrlKey && e.key === 's') { e.preventDefault(); showSaveDialog(); } });
     inputArea.addEventListener('keyup', updateCursorLineDisplay);
     inputArea.addEventListener('click', updateCursorLineDisplay);
 
@@ -1586,7 +1845,9 @@
     loadTodayStart();
     loadWritingTime();
     loadBookmarks();
+    loadMemo();
     loadSettingsFromStorage();
+    loadPaneWidthSettings();
     startWritingTimer();
     applyAllSettings();
     // Apply default preview hidden setting on first load

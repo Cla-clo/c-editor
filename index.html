@@ -130,6 +130,12 @@
         color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; line-height: 1;
     }
     .panel-close-btn:hover { color: #dc2626; }
+    .panel-pin-btn {
+        position: absolute; top: 4px; right: 28px; background: transparent; border: none;
+        color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; line-height: 1; opacity: 0.6;
+    }
+    .panel-pin-btn:hover { opacity: 1; }
+    .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
     #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; }
     body.theme-dark #search-bar { background: #14532d; border-color: #166534; }
@@ -508,6 +514,7 @@
 
 <div class="controls-wrapper">
     <div id="search-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('search-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
         <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
         <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
@@ -521,6 +528,7 @@
     </div>
     
     <div id="help-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('help-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -588,6 +596,7 @@
     </div>
 
     <div id="settings-bar" class="control-panel">
+        <button class="panel-pin-btn" onclick="togglePanelPin('settings-bar')" title="固定">📌</button>
         <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
         <div class="setting-group">
             <div class="setting-title">入力エリア <button class="btn btn-apply" onclick="applyInputSettings()">適用</button></div>
@@ -1415,6 +1424,30 @@
 
     function syncPreviewPosition() { updatePreview(); const p = inputArea.selectionStart, i = (inputArea.value.substring(0, p).match(/\n/g) || []).length, b = previewContent.querySelectorAll('br'); if (b.length > 0) { const t = b[Math.min(i, b.length - 1)]; if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else { previewScroll.scrollTop = 0; } }
 
+    // Preview click to sync with input
+    previewContent.addEventListener('click', e => {
+        const brElements = previewContent.querySelectorAll('br');
+        if (brElements.length === 0) { inputArea.focus(); inputArea.setSelectionRange(0, 0); return; }
+        const clickY = e.clientY;
+        let targetLine = 0;
+        for (let i = 0; i < brElements.length; i++) {
+            const rect = brElements[i].getBoundingClientRect();
+            if (rect.top > clickY) break;
+            targetLine = i + 1;
+        }
+        // Jump to line in input
+        const lines = inputArea.value.split('\n');
+        let pos = 0;
+        for (let i = 0; i < Math.min(targetLine, lines.length); i++) {
+            pos += lines[i].length + 1;
+        }
+        pos = Math.min(pos, inputArea.value.length);
+        inputArea.focus();
+        inputArea.setSelectionRange(pos, pos);
+        scrollToCursorPosition(pos);
+        updateCursorLineDisplay();
+    });
+
     function updatePreviewAndShow() {
         updatePreview();
         const previewPane = document.getElementById('pane-preview');
@@ -1471,7 +1504,37 @@
         }
     }
 
-    function togglePanel(id) { const p = document.getElementById(id); if (p.classList.contains('open')) { p.classList.remove('open'); } else { if (id !== 'settings-bar') document.querySelectorAll('.control-panel:not(#settings-bar)').forEach(x => x.classList.remove('open')); p.classList.add('open'); if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100); } }
+    const pinnedPanels = new Set();
+    function togglePanel(id) {
+        const p = document.getElementById(id);
+        if (p.classList.contains('open')) {
+            p.classList.remove('open');
+        } else {
+            // Close non-pinned panels (except settings which stays separate)
+            document.querySelectorAll('.control-panel.open').forEach(x => {
+                if (!pinnedPanels.has(x.id) && x.id !== id) x.classList.remove('open');
+            });
+            p.classList.add('open');
+            if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100);
+        }
+    }
+    function togglePanelPin(id) {
+        const btn = document.querySelector(`#${id} .panel-pin-btn`);
+        if (pinnedPanels.has(id)) {
+            pinnedPanels.delete(id);
+            btn.classList.remove('pinned');
+        } else {
+            pinnedPanels.add(id);
+            btn.classList.add('pinned');
+        }
+    }
+    // Close non-pinned panels on outside click
+    document.addEventListener('click', e => {
+        if (e.target.closest('.control-panel') || e.target.closest('.btn') || e.target.closest('.dropdown')) return;
+        document.querySelectorAll('.control-panel.open').forEach(p => {
+            if (!pinnedPanels.has(p.id)) p.classList.remove('open');
+        });
+    });
     function hidePane(t) {
         if (t === 'input') {
             document.getElementById('check-show-input').checked = false;

@@ -180,7 +180,7 @@
     .settings-actions {
         border-right: none; margin-left: auto; display: flex; flex-direction: column;
         align-items: flex-end; gap: 8px; align-self: stretch; justify-content: flex-end;
-        text-align: right; margin-right: 2px;
+        text-align: right;
     }
     .settings-actions-row {
         display: flex; gap: 8px; flex-direction: column;
@@ -1322,12 +1322,9 @@
 
     function setPaneSplitEqual() {
         if (document.body.classList.contains('scroll-mode')) {
-            const inputHeightEl = document.getElementById('st-pane-input-height');
-            const previewHeightEl = document.getElementById('st-pane-preview-height');
-            const inputHeight = parseInt(inputHeightEl?.value, 10);
-            const previewHeight = parseInt(previewHeightEl?.value, 10);
-            const baseHeight = Math.round((Number.isFinite(inputHeight) ? inputHeight : 520) + (Number.isFinite(previewHeight) ? previewHeight : 520)) / 2;
-            const equalHeight = clampValue(baseHeight || 520, 160, 2000);
+            const inputPane = document.getElementById('pane-input');
+            const baseHeight = Math.round(inputPane?.getBoundingClientRect().height || 520);
+            const equalHeight = clampValue(baseHeight, 160, 2000);
             document.getElementById('st-pane-input-height').value = equalHeight;
             document.getElementById('st-pane-preview-height').value = equalHeight;
             localStorage.setItem(PANE_HEIGHT_KEYS.input, String(equalHeight));
@@ -1345,25 +1342,10 @@
         }
     }
 
-    const SAMPLE_TEXT = `■奉教人の死
-□芥川龍之介
-
-　去《さ》んぬる頃、日本長崎の「さんた・るちや」と申す「えけれしや」（寺院）に、「ろおれんぞ」と申すこの国の少年がござつた。これは或年御降誕の祭の夜、その「えけれしや」の戸口に、餓ゑ疲れてうち伏して居つたを、参詣の奉教人衆《ほうけうにんしゆう》が介抱し、それより伴天連《ばてれん》の憐みにて、寺中に養はれる事となつたげでござるが、何故かその身の素性《すじやう》を問へば、故郷《ふるさと》は「はらいそ」（天国）父の名は「でうす」（天主）などと、何時も事もなげな笑に紛らいて、とんとまことは明した事もござない。なれど親の代から「ぜんちよ」（異教徒）の輩《ともがら》であらなんだ事だけは、手くびにかけた青玉《あをだま》の「こんたつ」（念珠）を見ても、知れたと申す。されば伴天連はじめ、多くの「いるまん」衆（法兄弟）も、よも怪しいものではござるまいとおぼされて、ねんごろに扶持して置かれたが、その信心の堅固なは、幼いにも似ず「すぺりおれす」（長老衆）が舌を捲くばかりであつたれば、一同も「ろおれんぞ」は天童の生れがはりであらうずなど申し、いづくの生れ、たれの子とも知れぬものを、無下《むげ》にめでいつくしんで居つたげでござる。
-　して又この「ろおれんぞ」は、顔かたちが玉のやうに清らかであつたに、声ざまも女のやうに優しかつたれば、一《ひと》しほ人々のあはれみを惹《ひ》いたのでござらう。中でもこの国の「いるまん」に「しめおん」と申したは、「ろおれんぞ」を弟《おとと》のやうにもてなし、「えけれしや」の出入りにも、必《かならず》仲よう手を組み合せて居つた。この「しめおん」は、元さる大名に仕へた、槍一すぢの家がらなものぢや。されば身のたけも抜群なに、性得《しやうとく》の剛力であつたに由つて、伴天連が「ぜんちよ」ばらの石瓦にうたるるを、防いで進ぜた事も、一度二度の沙汰ではごさない。それが「ろおれんぞ」と睦《むつま》じうするさまは、とんと鳩になづむ荒鷲のやうであつたとも申さうか。或は「ればのん」山の檜《ひのき》に、葡萄《えび》かづらが纏《まと》ひついて、花咲いたやうであつたとも申さうず。
-　さる程に三年あまりの年月は、流るるやうにすぎたに由つて、「ろおれんぞ」はやがて元服もすべき時節となつた。したがその頃怪しげな噂が伝はつたと申すは、「さんた・るちや」から遠からぬ町方の傘張の娘が、「ろおれんぞ」と親しうすると云ふ事ぢや。この傘張の翁《おきな》も天主の御教を奉ずる人故、娘ともども「えけれしや」へは参る慣《ならはし》であつたに、御祈の暇にも、娘は香炉をさげた「ろおれんぞ」の姿から、眼を離したと申す事がござない。まして「えけれしや」への出入りには、必《かならず》髪かたちを美しうして、「ろおれんぞ」のゐる方へ眼づかひをするが定《ぢやう》であつた。さればおのづと奉教人衆の人目にも止り、娘が行きずりに「ろおれんぞ」の足を踏んだと云ひ出すものもあれば、二人が艶書をとりかはすをしかと見とどけたと申すものも、出て来たげでござる。
-　由つて伴天連にも、すて置かれず思《おぼ》されたのでござらう。或日「ろおれんぞ」を召されて、白ひげを噛みながら、「その方、傘張の娘と兎角の噂ある由を聞いたが、よもやまことではあるまい。どうぢや」ともの優しう尋ねられた。したが「ろおれんぞ」は、唯《ただ》憂はしげに頭を振つて、「そのやうな事は一向に存じよう筈もござらぬ」と、涙声に繰返すばかり故、伴天達もさすがに我《が》を折られて、年配と云ひ、日頃の信心と云ひ、かうまで申すものに偽はあるまいと思されたげでござる。`;
-
-    function createDefaultTabs() {
-        return [
-            { id: 1, name: 'タブはリネームできます', content: defaultText },
-            { id: 2, name: '見本', content: SAMPLE_TEXT }
-        ];
-    }
-
     // Input Tabs System
-    let inputTabs = createDefaultTabs();
+    let inputTabs = [{ id: 1, name: 'タブはリネームできます', content: '' }];
     let activeTabId = 1;
-    let nextTabId = 3;
+    let nextTabId = 2;
     let draggingInputTabId = null;
 
     function renderInputTabs() {
@@ -1541,7 +1523,6 @@
                     nextTabId = d.nextTabId || inputTabs.length + 1;
                     const activeTab = inputTabs.find(t => t.id === activeTabId);
                     if (activeTab) inputArea.value = activeTab.content;
-                    updateInputStats();
                     return true;
                 }
             } catch (e) {}
@@ -1564,18 +1545,7 @@
         return inputArea.value;
     }
 
-    function getTodayDateStr() {
-        const parts = new Intl.DateTimeFormat('ja-JP', {
-            timeZone: 'Asia/Tokyo',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).formatToParts(new Date());
-        const y = parts.find(p => p.type === 'year')?.value || '0000';
-        const m = parts.find(p => p.type === 'month')?.value || '00';
-        const d = parts.find(p => p.type === 'day')?.value || '00';
-        return `${y}-${m}-${d}`;
-    }
+    function getTodayDateStr() { const n = new Date(); return `${n.getFullYear()}-${(n.getMonth()+1).toString().padStart(2,'0')}-${n.getDate().toString().padStart(2,'0')}`; }
 
     function loadTodayStart() {
         const s = localStorage.getItem(TODAY_START_KEY);
@@ -1600,28 +1570,6 @@
     function startWritingTimer() {
         if (writingTimerInterval) return;
         writingTimerInterval = setInterval(() => { if (Date.now() - lastInputTime < 5000) { writingSeconds++; updateWritingTimeDisplay(); if (writingSeconds % 30 === 0) saveWritingTime(); } }, 1000);
-    }
-
-    function resetDailyProgressIfNeeded() {
-        const today = getTodayDateStr();
-        const todayState = localStorage.getItem(TODAY_START_KEY);
-        if (todayState) {
-            try {
-                const d = JSON.parse(todayState);
-                if (d.date === today) return;
-            } catch (e) {}
-        }
-        saveTodayStart();
-        writingSeconds = 0;
-        saveWritingTime();
-        updateWritingTimeDisplay();
-        updateInputStats();
-        updatePreview();
-    }
-
-    function startDailyResetWatcher() {
-        resetDailyProgressIfNeeded();
-        setInterval(resetDailyProgressIfNeeded, 60 * 1000);
     }
 
     function loadBookmarks() { const s = localStorage.getItem(BOOKMARKS_KEY); if (s) { try { bookmarks = JSON.parse(s); } catch (e) { bookmarks = []; } } renderBookmarks(); }
@@ -1757,16 +1705,7 @@
         reader.readAsText(file);
     }
     function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectAllSettings())); }
-    function loadSettingsFromStorage() {
-        const s = localStorage.getItem(SETTINGS_KEY);
-        if (s) {
-            try { applyImportedSettings(JSON.parse(s)); } catch (e) {}
-            return true;
-        }
-        document.getElementById('st-in-v').checked = true;
-        document.getElementById('st-pv-v').checked = true;
-        return false;
-    }
+    function loadSettingsFromStorage() { const s = localStorage.getItem(SETTINGS_KEY); if (s) { try { applyImportedSettings(JSON.parse(s)); } catch (e) {} } }
 
     const defaultText = `　C-エディタ
 
@@ -1816,9 +1755,9 @@
     }
 
     function resetInputToStartup() {
-        inputTabs = createDefaultTabs();
+        inputTabs = [{ id: 1, name: 'タブはリネームできます', content: defaultText }];
         activeTabId = 1;
-        nextTabId = 3;
+        nextTabId = 2;
         inputArea.value = defaultText;
         previewTabId = null;
         previewShowAll = false;
@@ -1952,7 +1891,6 @@
         // Try to load tabs first (new format)
         if (loadTabsFromStorage()) {
             renderInputTabs();
-            updateInputStats();
             return;
         }
         // Fallback: try old single-content format
@@ -1962,19 +1900,14 @@
                 inputTabs[0].content = s;
                 inputArea.value = s;
             } else {
-                inputTabs = createDefaultTabs();
-                activeTabId = 1;
-                nextTabId = 3;
-                inputArea.value = inputTabs[0].content;
+                inputArea.value = defaultText;
+                inputTabs[0].content = defaultText;
             }
         } else {
-            inputTabs = createDefaultTabs();
-            activeTabId = 1;
-            nextTabId = 3;
-            inputArea.value = inputTabs[0].content;
+            inputArea.value = defaultText;
+            inputTabs[0].content = defaultText;
         }
         renderInputTabs();
-        updateInputStats();
     }
     startAutoSaveTimer();
     window.addEventListener('beforeunload', e => { persistLocalState(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
@@ -2341,20 +2274,8 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
     }
 
     const fontMap = { 'font-gothic': '"Noto Sans JP", sans-serif', 'font-mincho': '"Shippori Mincho", serif', 'font-old': '"Zen Old Mincho", serif', 'font-round': '"M PLUS Rounded 1c", sans-serif', 'font-brush': '"Yuji Syuku", serif' };
-    function applyInputSettings() {
-        const s = document.getElementById('st-in-size').value + 'px', l = document.getElementById('st-in-line').value, f = fontMap[document.getElementById('st-in-font').value], v = document.getElementById('st-in-v').checked;
-        inputArea.style.fontSize = s; inputArea.style.lineHeight = l; inputArea.style.fontFamily = f;
-        inputMirror.style.fontSize = s; inputMirror.style.lineHeight = l; inputMirror.style.fontFamily = f;
-        if (v) inputArea.parentElement.classList.add('vertical-mode'); else inputArea.parentElement.classList.remove('vertical-mode');
-        saveSettingsToStorage();
-    }
-    function applyPreviewSettings() {
-        const s = document.getElementById('st-pv-size').value + 'px', l = document.getElementById('st-pv-line').value, f = fontMap[document.getElementById('st-pv-font').value], v = document.getElementById('st-pv-v').checked;
-        previewContent.style.fontSize = s; previewContent.style.lineHeight = l; previewContent.style.fontFamily = f;
-        if (v) previewScroll.classList.add('vertical-mode'); else previewScroll.classList.remove('vertical-mode');
-        saveSettingsToStorage();
-        updatePreview();
-    }
+    function applyInputSettings() { const s = document.getElementById('st-in-size').value + 'px', l = document.getElementById('st-in-line').value, f = fontMap[document.getElementById('st-in-font').value], v = document.getElementById('st-in-v').checked; inputArea.style.fontSize = s; inputArea.style.lineHeight = l; inputArea.style.fontFamily = f; inputMirror.style.fontSize = s; inputMirror.style.lineHeight = l; inputMirror.style.fontFamily = f; if (v) inputArea.parentElement.classList.add('vertical-mode'); else inputArea.parentElement.classList.remove('vertical-mode'); }
+    function applyPreviewSettings() { const s = document.getElementById('st-pv-size').value + 'px', l = document.getElementById('st-pv-line').value, f = fontMap[document.getElementById('st-pv-font').value], v = document.getElementById('st-pv-v').checked; previewContent.style.fontSize = s; previewContent.style.lineHeight = l; previewContent.style.fontFamily = f; if (v) previewScroll.classList.add('vertical-mode'); else previewScroll.classList.remove('vertical-mode'); updatePreview(); }
     function applyDisplaySettings() {
         settingsCache.showSpace = document.getElementById('st-show-space').checked;
         settingsCache.showHighlight = document.getElementById('st-show-highlight').checked;
@@ -2569,26 +2490,18 @@ function resetPaneHeights() {
     }
 }
 
-    function updateDockSplitState() {
-        const c = document.getElementById('main-container');
-        if (!c) return;
-        const memoDocked = c.classList.contains('memo-docked');
-        const outlineDocked = c.classList.contains('outline-docked');
-        const memoRight = c.classList.contains('memo-right');
-        const outlineLeft = c.classList.contains('outline-left');
-        const splitRight = memoDocked && outlineDocked && memoRight && !outlineLeft;
-        const splitLeft = memoDocked && outlineDocked && !memoRight && outlineLeft;
-        c.classList.toggle('dock-split-right', splitRight);
-        c.classList.toggle('dock-split-left', splitLeft);
-    }
-
-    function normalizePaneSplitOnLoad() {
-        const inputPane = document.getElementById('pane-input');
-        const previewPane = document.getElementById('pane-preview');
-        if (!inputPane || !previewPane) return;
-        if (inputPane.classList.contains('hidden') || previewPane.classList.contains('hidden')) return;
-        setPaneSplitEqual();
-    }
+function updateDockSplitState() {
+    const c = document.getElementById('main-container');
+    if (!c) return;
+    const memoDocked = c.classList.contains('memo-docked');
+    const outlineDocked = c.classList.contains('outline-docked');
+    const memoRight = c.classList.contains('memo-right');
+    const outlineLeft = c.classList.contains('outline-left');
+    const splitRight = memoDocked && outlineDocked && memoRight && !outlineLeft;
+    const splitLeft = memoDocked && outlineDocked && !memoRight && outlineLeft;
+    c.classList.toggle('dock-split-right', splitRight);
+    c.classList.toggle('dock-split-left', splitLeft);
+}
 
     function loadPaneWidthSettings() {
         const mainContainer = document.getElementById('main-container');
@@ -3833,9 +3746,7 @@ if (typeof applyPaneHeightSettings === 'function') {
     loadDividerSettings();
     loadNovelTitle();
     startWritingTimer();
-    startDailyResetWatcher();
     applyAllSettings();
-    normalizePaneSplitOnLoad();
     updateDockTopOffset();
     updateDockSplitState();
     // Apply default preview hidden setting on first load

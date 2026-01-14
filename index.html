@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>C-エディタ（更新テスト）</title>
+<title>ⓒエディタ（更新テスト）</title>
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -722,7 +722,7 @@
 
 <header>
     <div class="header-left">
-        <h1>C-エディタver.0.9</h1>
+        <h1>ⓒエディタver.0.95</h1>
         <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
         <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
         <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="❓ 使い方">
@@ -743,7 +743,7 @@
                 <button onclick="insertText('『』', 1)">『』 二重鉤括弧</button>
                 <button onclick="insertText('｜《》', 1)">｜《》 ルビ記法</button>
                 <button onclick="insertText('《《》》', 2)">《《》》 傍点記法</button>
-                <button onclick="insertRubyToSelection()">🔤 選択文字にルビ</button>
+                <button onclick="insertRubyToSelection()">🈂️ 選択文字にルビ</button>
                 <button onclick="insertBoutenToSelection()">⚫ 選択文字に傍点</button>
             </div>
         </div>
@@ -804,8 +804,6 @@
                 ・<b>Ctrl+S</b>：保存ダイアログ<br>
                 ・<b>Ctrl+F</b>：検索パネル<br>
                 ・<b>Ctrl+G</b>：行番号ジャンプ<br>
-                ・<b>Ctrl+T</b>：新規タブ追加<br>
-                ・<b>Ctrl+Shift+T</b>：新規メモタブ<br>
                 ・<b>Ctrl+Z</b>：元に戻す<br>
                 ・<b>Ctrl+Y</b>：やり直し<br>
                 ・<b>F11</b>：集中モード切替<br>
@@ -816,7 +814,6 @@
                 ・<b>ルビ</b>：｜漢字《かんじ》<br>
                 ・<b>傍点</b>：《《強調》》<br>
                 ・<b>傍線</b>：__下線__<br>
-                ・<b>蛍光ペン</b>：==強調==<br>
                 <small>※テキスト選択時、ポップアップからワンクリックでルビ・傍点挿入可能</small>
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -844,7 +841,6 @@
                 <div class="help-title">【保存・読込】</div>
                 ・<b>💾 保存</b>：テキスト/HTML形式で保存<br>
                 ・<b>📂 開く</b>：テキストファイルを読込<br>
-                ・<b>自動保存</b>：30秒ごとにブラウザに保存<br>
                 ・設定の📤エクスポート/📥インポート
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -910,6 +906,9 @@
             </div>
             <div class="setting-row">
                 <label><input type="checkbox" id="st-default-preview-hidden"> 起動時プレビュー非表示</label>
+            </div>
+            <div class="setting-row">
+                <label>同期矢印色: <input type="color" id="st-sync-arrow-color" value="#38bdf8" onchange="applySyncIndicatorSettings()"></label>
             </div>
         </div>
 
@@ -1359,6 +1358,7 @@
         addBtn.title = '新しいタブを追加';
         addBtn.onclick = addNewTab;
         container.appendChild(addBtn);
+        updateActiveTabTitle();
         updatePreviewTabOptions();
     }
     function sanitizeFileName(name) {
@@ -1465,6 +1465,7 @@
     function finishEditTabName(tabId, newName) {
         const tab = inputTabs.find(t => t.id === tabId);
         if (tab) tab.name = newName.trim() || tab.name;
+        updateActiveTabTitle();
         renderInputTabs();
         saveTabsToStorage();
     }
@@ -1592,7 +1593,7 @@
             version: '3.5',
             input: { size: document.getElementById('st-in-size').value, line: document.getElementById('st-in-line').value, font: document.getElementById('st-in-font').value, vertical: document.getElementById('st-in-v').checked },
             preview: { size: document.getElementById('st-pv-size').value, line: document.getElementById('st-pv-line').value, font: document.getElementById('st-pv-font').value, vertical: document.getElementById('st-pv-v').checked },
-            display: { showSpace: document.getElementById('st-show-space').checked, showHighlight: document.getElementById('st-show-highlight').checked, showInput: document.getElementById('check-show-input').checked, showPreview: document.getElementById('check-show-preview').checked, defaultPreviewHidden: document.getElementById('st-default-preview-hidden').checked },
+            display: { showSpace: document.getElementById('st-show-space').checked, showHighlight: document.getElementById('st-show-highlight').checked, showInput: document.getElementById('check-show-input').checked, showPreview: document.getElementById('check-show-preview').checked, defaultPreviewHidden: document.getElementById('st-default-preview-hidden').checked, syncArrowColor: document.getElementById('st-sync-arrow-color').value },
             writing: { typewriter: document.getElementById('st-typewriter-mode').checked, tracker: document.getElementById('st-writing-tracker').checked },
             goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, showReading: document.getElementById('st-show-reading-time').checked, celebrate: document.getElementById('st-celebrate-goal').checked },
             manuscript: { rows: document.getElementById('st-manuscript-rows').value, cols: document.getElementById('st-manuscript-cols').value, show: document.getElementById('st-show-manuscript').checked, pageLines: document.getElementById('st-show-page-lines').checked, pageNumbers: document.getElementById('st-show-page-numbers').checked },
@@ -2263,10 +2264,20 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
             const targetBr = brs[Math.min(lineNum, brs.length - 1)];
             if (targetBr) {
                 targetBr.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => showPreviewSyncIndicator(targetBr), 60);
             }
         } else {
             previewScroll.scrollTop = 0;
             previewScroll.scrollLeft = 0;
+            const indicator = document.getElementById('preview-sync-indicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+        const indicatorRect = getPreviewLineStartRect(lineNum);
+        if (indicatorRect) {
+            setTimeout(() => showPreviewSyncIndicator(indicatorRect), 60);
+        } else {
+            const indicator = document.getElementById('preview-sync-indicator');
+            if (indicator) indicator.style.display = 'none';
         }
         // Sync arrow display removed
     }
@@ -2355,6 +2366,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         document.getElementById('st-show-space').checked = true;
         document.getElementById('st-show-highlight').checked = true;
         document.getElementById('st-default-preview-hidden').checked = false;
+        document.getElementById('st-sync-arrow-color').value = '#38bdf8';
         document.getElementById('st-typewriter-mode').checked = false;
         document.getElementById('st-writing-tracker').checked = true;
         document.getElementById('st-goal-chars').value = 150000;
@@ -2796,6 +2808,48 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         if (v) inputArea.scrollLeft = mol - (inputArea.clientWidth / 2); else inputArea.scrollTop = mot - (inputArea.clientHeight / 2);
     }
 
+
+    function getPreviewLineStartRect(lineNum) {
+        const brs = previewContent.querySelectorAll('br');
+        const range = document.createRange();
+        if (lineNum <= 0) {
+            if (previewContent.firstChild) {
+                range.setStart(previewContent.firstChild, 0);
+                range.setEnd(previewContent.firstChild, 0);
+            } else {
+                return previewContent.getBoundingClientRect();
+            }
+        } else {
+            const br = brs[Math.min(lineNum - 1, brs.length - 1)];
+            if (!br) return null;
+            range.setStartAfter(br);
+            range.setEndAfter(br);
+        }
+        const rect = range.getClientRects()[0];
+        return rect || range.getBoundingClientRect();
+    }
+    function showPreviewSyncIndicator(targetRect) {
+        const indicator = document.getElementById('preview-sync-indicator');
+        if (!indicator || !targetRect) return;
+        const scrollRect = previewScroll.getBoundingClientRect();
+        const offsetTop = targetRect.top - scrollRect.top + previewScroll.scrollTop;
+        const offsetLeft = targetRect.left - scrollRect.left + previewScroll.scrollLeft;
+        const isVertical = previewScroll.classList.contains('vertical-mode');
+        if (isVertical) {
+            indicator.textContent = '←';
+            indicator.style.left = `${Math.max(8, offsetLeft - 20)}px`;
+            indicator.style.top = `${Math.max(8, offsetTop - 4)}px`;
+        } else {
+            indicator.textContent = '↓';
+            indicator.style.left = `${Math.max(8, offsetLeft - 4)}px`;
+            indicator.style.top = `${Math.max(8, offsetTop - 24)}px`;
+        }
+        indicator.style.display = 'block';
+        clearTimeout(showPreviewSyncIndicator._timer);
+        showPreviewSyncIndicator._timer = setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 1400);
+    }
 
     let searchMatches = [], currentMatchIndex = -1;
     function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }

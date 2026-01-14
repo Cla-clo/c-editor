@@ -15,9 +15,9 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment and cancel in-progress runs to avoid Pages lock errors.
+# Allow only one concurrent deployment per ref and cancel in-progress runs to avoid Pages lock errors.
 concurrency:
-  group: "pages"
+  group: pages-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

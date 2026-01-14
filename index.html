@@ -135,7 +135,7 @@
     .dropdown-content a:hover { background: #e0f2fe; }
     .sync-dropdown:hover .sync-dropdown-content { display: block; }
 
-    .controls-wrapper { padding: var(--layout-padding) var(--layout-padding) 0 var(--layout-padding); display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .controls-wrapper { padding: var(--layout-padding) var(--layout-padding) 0 var(--layout-padding); display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; position: relative; }
     .control-panel {
         background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px;
         padding: 8px 12px; font-size: 0.85rem; display: none;
@@ -171,6 +171,11 @@
     .help-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; border-bottom: 1px dashed #fcd34d; padding-bottom: 2px; }
 
     #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 48px; order: 3; }
+    body.settings-overlay #settings-bar.open {
+        position: absolute; top: 0; left: 0; right: 0;
+        z-index: 250; max-height: calc(100vh - var(--dock-top));
+        overflow-y: auto;
+    }
     .setting-group { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 12px; }
     .setting-group:last-child { border-right: none; }
     .setting-title { font-weight: bold; color: var(--text-muted); margin-bottom: 2px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
@@ -657,6 +662,11 @@
         0% { transform: translateY(0); opacity: 1; }
         100% { transform: translateY(var(--rise)); opacity: 0; }
     }
+    @keyframes sparklePop {
+        0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+        30% { opacity: 1; }
+        100% { transform: translate(6px, -8px) scale(1); opacity: 0; }
+    }
 
     .save-dialog-overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -676,6 +686,23 @@
         background: #fef9c3; color: #92400e; border: 1px solid #fcd34d;
         padding: 8px 14px; border-radius: 12px; font-weight: bold;
         box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: none;
+        overflow: visible;
+    }
+    .autosave-toast::before,
+    .autosave-toast::after {
+        position: absolute; opacity: 0; pointer-events: none;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+    }
+    .autosave-toast::before {
+        content: '✨'; top: -6px; left: -8px; font-size: 0.7rem;
+    }
+    .autosave-toast::after {
+        content: '🎉'; bottom: -8px; right: -10px; font-size: 0.6rem;
+    }
+    .autosave-toast.show::before,
+    .autosave-toast.show::after {
+        animation: sparklePop 1.1s ease-out forwards;
+        opacity: 1;
     }
     .autosave-toast.show { display: block; }
     .autosave-error-overlay {
@@ -918,6 +945,9 @@
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetTodayStart()" style="font-size:0.65rem;">開始点リセット</button>
+            </div>
+            <div class="setting-row">
+                <label>開始点自動リセット: <input type="time" id="st-daily-reset-time" value="00:00" step="60"> JST</label>
             </div>
             <div class="setting-row">
                 <label><input type="checkbox" id="st-show-reading-time" checked> 読み上げ時間</label>
@@ -1196,7 +1226,7 @@
     </div>
 </div>
 
-<div id="autosave-toast" class="autosave-toast">自動保存しました♪</div>
+<div id="autosave-toast" class="autosave-toast">自動保存しました✨</div>
 <div id="autosave-error" class="autosave-error-overlay">
     <div class="autosave-error">
         自動保存できませんでした😢　自動保存をオフにします
@@ -1256,12 +1286,13 @@
     const LAYOUT_REVERSED_KEY = 'cc_layout_reversed';
 
     let settingsCache = {
-        goalChars: 150000, todayGoal: 2000, manuscriptRows: 34, manuscriptCols: 42,
+        goalChars: 150000, todayGoal: 2000, dailyResetTime: '00:00', manuscriptRows: 34, manuscriptCols: 42,
         showReadingTime: true, showManuscript: true, showSpace: true, showHighlight: true,
         typewriterMode: false, writingTracker: true, defaultPreviewHidden: false,
         celebrateGoal: true, openMode: 'current', autosaveInterval: 60, autosaveEnabled: false
     };
     let goalAchieved = { today: false, total: false };
+    let settingsLoadedFromStorage = false;
     let previewUpdateTimeout = null;
 
     const PANE_WIDTH_KEYS = {
@@ -1564,33 +1595,86 @@
         return inputArea.value;
     }
 
-    function getTodayDateStr() {
+    function getTokyoDateParts(date = new Date()) {
         const parts = new Intl.DateTimeFormat('ja-JP', {
             timeZone: 'Asia/Tokyo',
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
-        }).formatToParts(new Date());
-        const y = parts.find(p => p.type === 'year')?.value || '0000';
-        const m = parts.find(p => p.type === 'month')?.value || '00';
-        const d = parts.find(p => p.type === 'day')?.value || '00';
-        return `${y}-${m}-${d}`;
+        }).formatToParts(date);
+        return {
+            year: parts.find(p => p.type === 'year')?.value || '0000',
+            month: parts.find(p => p.type === 'month')?.value || '00',
+            day: parts.find(p => p.type === 'day')?.value || '00'
+        };
+    }
+
+    function getTokyoDateStr(date = new Date()) {
+        const { year, month, day } = getTokyoDateParts(date);
+        return `${year}-${month}-${day}`;
+    }
+
+    function getTodayDateStr() {
+        return getTokyoDateStr();
+    }
+
+    function normalizeResetTime(value) {
+        const raw = (value || '').trim();
+        const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+        if (!match) return '00:00';
+        const hour = clampValue(parseInt(match[1], 10), 0, 23);
+        const minute = clampValue(parseInt(match[2], 10), 0, 59);
+        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    }
+
+    function getStoredResetTime() {
+        const s = localStorage.getItem(SETTINGS_KEY);
+        if (!s) return '';
+        try {
+            const parsed = JSON.parse(s);
+            return parsed?.goal?.resetTime || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function getResetTimeValue() {
+        const input = document.getElementById('st-daily-reset-time');
+        const stored = getStoredResetTime();
+        const raw = settingsLoadedFromStorage ? (input?.value || settingsCache.dailyResetTime || stored) : (stored || input?.value || settingsCache.dailyResetTime);
+        return normalizeResetTime(raw);
+    }
+
+    function getTokyoTimestampForTime(timeValue, baseDate = new Date()) {
+        const { year, month, day } = getTokyoDateParts(baseDate);
+        return Date.parse(`${year}-${month}-${day}T${timeValue}:00+09:00`);
+    }
+
+    function getResetDateStr(date = new Date()) {
+        const resetTime = getResetTimeValue();
+        const todayResetTs = getTokyoTimestampForTime(resetTime, date);
+        const nowTs = Date.now();
+        if (nowTs < todayResetTs) {
+            const prevDate = new Date(todayResetTs - 24 * 60 * 60 * 1000);
+            return getTokyoDateStr(prevDate);
+        }
+        return getTokyoDateStr(date);
     }
 
     function loadTodayStart() {
         const s = localStorage.getItem(TODAY_START_KEY);
-        if (s) { try { const d = JSON.parse(s); if (d.date === getTodayDateStr()) { todayStartChars = d.startChars; return; } } catch (e) {} }
+        if (s) { try { const d = JSON.parse(s); if (d.date === getResetDateStr()) { todayStartChars = d.startChars; return; } } catch (e) {} }
         saveTodayStart();
     }
-    function saveTodayStart() { const n = inputArea.value.replace(/[\n\s　]/g, '').length; todayStartChars = n; localStorage.setItem(TODAY_START_KEY, JSON.stringify({ date: getTodayDateStr(), startChars: n })); }
+    function saveTodayStart() { const n = inputArea.value.replace(/[\n\s　]/g, '').length; todayStartChars = n; localStorage.setItem(TODAY_START_KEY, JSON.stringify({ date: getResetDateStr(), startChars: n })); }
     function resetTodayStart() { if (confirm('今日の開始点をリセットしますか？')) { saveTodayStart(); updateInputStats(); updatePreview(); } }
 
     function loadWritingTime() {
         const s = localStorage.getItem(WRITING_TIME_KEY);
-        if (s) { try { const d = JSON.parse(s); if (d.date === getTodayDateStr()) { writingSeconds = d.seconds; return; } } catch (e) {} }
+        if (s) { try { const d = JSON.parse(s); if (d.date === getResetDateStr()) { writingSeconds = d.seconds; return; } } catch (e) {} }
         writingSeconds = 0; saveWritingTime();
     }
-    function saveWritingTime() { localStorage.setItem(WRITING_TIME_KEY, JSON.stringify({ date: getTodayDateStr(), seconds: writingSeconds })); }
+    function saveWritingTime() { localStorage.setItem(WRITING_TIME_KEY, JSON.stringify({ date: getResetDateStr(), seconds: writingSeconds })); }
     function formatTime(s) { return `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
     function updateWritingTimeDisplay() {
         const t = formatTime(writingSeconds);
@@ -1603,7 +1687,7 @@
     }
 
     function resetDailyProgressIfNeeded() {
-        const today = getTodayDateStr();
+        const today = getResetDateStr();
         const todayState = localStorage.getItem(TODAY_START_KEY);
         if (todayState) {
             try {
@@ -1683,7 +1767,7 @@
             preview: { size: document.getElementById('st-pv-size').value, line: document.getElementById('st-pv-line').value, font: document.getElementById('st-pv-font').value, vertical: document.getElementById('st-pv-v').checked },
             display: { showSpace: document.getElementById('st-show-space').checked, showHighlight: document.getElementById('st-show-highlight').checked, showInput: document.getElementById('check-show-input').checked, showPreview: document.getElementById('check-show-preview').checked, defaultPreviewHidden: document.getElementById('st-default-preview-hidden').checked },
             writing: { typewriter: document.getElementById('st-typewriter-mode').checked, tracker: document.getElementById('st-writing-tracker').checked },
-            goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, showReading: document.getElementById('st-show-reading-time').checked, celebrate: document.getElementById('st-celebrate-goal').checked },
+            goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, resetTime: document.getElementById('st-daily-reset-time').value, showReading: document.getElementById('st-show-reading-time').checked, celebrate: document.getElementById('st-celebrate-goal').checked },
             manuscript: { rows: document.getElementById('st-manuscript-rows').value, cols: document.getElementById('st-manuscript-cols').value, show: document.getElementById('st-show-manuscript').checked },
             open: { mode: document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current' },
             autosave: { interval: document.getElementById('st-autosave-interval').value, enabled: document.getElementById('st-autosave-enabled').checked },
@@ -1712,7 +1796,17 @@
             document.getElementById('st-default-preview-hidden').checked = s.display.defaultPreviewHidden || false;
         }
         if (s.writing) { document.getElementById('st-typewriter-mode').checked = s.writing.typewriter || false; document.getElementById('st-writing-tracker').checked = s.writing.tracker !== false; }
-        if (s.goal) { document.getElementById('st-goal-chars').value = s.goal.chars || 150000; document.getElementById('st-today-goal').value = s.goal.today || 2000; document.getElementById('st-show-reading-time').checked = s.goal.showReading !== false; document.getElementById('st-celebrate-goal').checked = s.goal.celebrate !== false; }
+        if (s.goal) {
+            document.getElementById('st-goal-chars').value = s.goal.chars || 150000;
+            document.getElementById('st-today-goal').value = s.goal.today || 2000;
+            const resetInput = document.getElementById('st-daily-reset-time');
+            if (resetInput) {
+                resetInput.value = normalizeResetTime(s.goal.resetTime || '00:00');
+                settingsCache.dailyResetTime = resetInput.value;
+            }
+            document.getElementById('st-show-reading-time').checked = s.goal.showReading !== false;
+            document.getElementById('st-celebrate-goal').checked = s.goal.celebrate !== false;
+        }
         if (s.manuscript) {
             document.getElementById('st-manuscript-rows').value = s.manuscript.rows || 34;
             document.getElementById('st-manuscript-cols').value = s.manuscript.cols || 42;
@@ -1760,7 +1854,7 @@
     function loadSettingsFromStorage() {
         const s = localStorage.getItem(SETTINGS_KEY);
         if (s) {
-            try { applyImportedSettings(JSON.parse(s)); } catch (e) {}
+            try { applyImportedSettings(JSON.parse(s)); settingsLoadedFromStorage = true; } catch (e) {}
             return true;
         }
         document.getElementById('st-in-v').checked = true;
@@ -2355,6 +2449,20 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         saveSettingsToStorage();
         updatePreview();
     }
+    function restoreWritingModesOnLoad() {
+        const inputToggle = document.getElementById('st-in-v');
+        if (inputToggle?.checked) {
+            inputArea.parentElement.classList.add('vertical-mode');
+        } else {
+            inputArea.parentElement.classList.remove('vertical-mode');
+        }
+        const previewToggle = document.getElementById('st-pv-v');
+        if (previewToggle?.checked) {
+            previewScroll.classList.add('vertical-mode');
+        } else {
+            previewScroll.classList.remove('vertical-mode');
+        }
+    }
     function applyDisplaySettings() {
         settingsCache.showSpace = document.getElementById('st-show-space').checked;
         settingsCache.showHighlight = document.getElementById('st-show-highlight').checked;
@@ -2366,7 +2474,21 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         updatePreview();
     }
     function applyWritingSettings() { settingsCache.typewriterMode = document.getElementById('st-typewriter-mode').checked; settingsCache.writingTracker = document.getElementById('st-writing-tracker').checked; updateWritingTimeDisplay(); }
-    function applyGoalSettings() { settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0; settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0; settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked; settingsCache.celebrateGoal = document.getElementById('st-celebrate-goal').checked; goalAchieved = { today: false, total: false }; updateInputStats(); updatePreview(); }
+    function applyGoalSettings() {
+        settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0;
+        settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0;
+        const resetInput = document.getElementById('st-daily-reset-time');
+        if (resetInput) {
+            resetInput.value = normalizeResetTime(resetInput.value);
+            settingsCache.dailyResetTime = resetInput.value;
+        }
+        settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked;
+        settingsCache.celebrateGoal = document.getElementById('st-celebrate-goal').checked;
+        goalAchieved = { today: false, total: false };
+        resetDailyProgressIfNeeded();
+        updateInputStats();
+        updatePreview();
+    }
     function applyManuscriptSettings() {
         settingsCache.manuscriptRows = parseInt(document.getElementById('st-manuscript-rows').value) || 34;
         settingsCache.manuscriptCols = parseInt(document.getElementById('st-manuscript-cols').value) || 42;
@@ -2431,6 +2553,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         document.getElementById('st-writing-tracker').checked = true;
         document.getElementById('st-goal-chars').value = 150000;
         document.getElementById('st-today-goal').value = 2000;
+        document.getElementById('st-daily-reset-time').value = '00:00';
         document.getElementById('st-celebrate-goal').checked = true;
         document.getElementById('st-show-reading-time').checked = true;
         document.getElementById('st-manuscript-rows').value = 34;
@@ -2587,7 +2710,10 @@ function resetPaneHeights() {
         const previewPane = document.getElementById('pane-preview');
         if (!inputPane || !previewPane) return;
         if (inputPane.classList.contains('hidden') || previewPane.classList.contains('hidden')) return;
-        setPaneSplitEqual();
+        requestAnimationFrame(() => {
+            setPaneSplitEqual();
+            requestAnimationFrame(() => setPaneSplitEqual());
+        });
     }
 
     function loadPaneWidthSettings() {
@@ -2646,6 +2772,8 @@ function resetPaneHeights() {
     function updateControlPanelScrollState() {
         const hasOpen = document.querySelectorAll('.control-panel.open').length > 0;
         document.body.classList.toggle('allow-scroll', hasOpen);
+        const settingsOpen = document.getElementById('settings-bar')?.classList.contains('open');
+        document.body.classList.toggle('settings-overlay', !!settingsOpen);
         updateDockTopOffset();
     }
     function getPanelStateIcon(isOpen, isPinned) {
@@ -2957,6 +3085,8 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
             panel.classList.remove('open');
         }
         applyPaneWidthSettings();
+        renderMemoTabs();
+        updateMemoCharCount();
         updatePanelButtonStates();
         updateDockSplitState();
     }
@@ -3107,6 +3237,12 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
                     memoArea.value = activeTab ? activeTab.content : '';
                 }
             } catch (e) { /* use defaults */ }
+        }
+        if (!memoTabs || memoTabs.length === 0) {
+            memoTabs = [{ id: 1, name: 'メモ1', content: '' }];
+            activeMemoTabId = 1;
+            nextMemoTabId = 2;
+            memoArea.value = '';
         }
         renderMemoTabs();
         updateMemoCharCount();
@@ -3718,29 +3854,23 @@ if (typeof applyPaneHeightSettings === 'function') {
                 if (!previewHidden) minCenter += minPaneWidth;
                 if (!inputHidden && !previewHidden) minCenter += 2;
 
-                let otherDockWidth = 0;
-                if (panelId === 'memo-panel') {
-                    const outlinePanel = document.getElementById('outline-panel');
-                    if (mainContainer.classList.contains('outline-docked') && outlinePanel.classList.contains('open')) {
-                        otherDockWidth = outlinePanel.getBoundingClientRect().width;
-                    }
-                } else {
-                    const memoPanel = document.getElementById('memo-panel');
-                    if (mainContainer.classList.contains('memo-docked') && memoPanel.classList.contains('open')) {
-                        otherDockWidth = memoPanel.getBoundingClientRect().width;
-                    }
-                }
+                const otherDocked = panelId === 'memo-panel'
+                    ? mainContainer.classList.contains('outline-docked')
+                    : mainContainer.classList.contains('memo-docked');
+                const otherPanelOpen = otherDocked && otherPanel?.classList.contains('open');
+                const lockedOtherWidth = otherPanelOpen
+                    ? clampValue(parseInt(document.getElementById(otherWidthInputId).value, 10) || 260, minDockWidth, 2000)
+                    : 0;
 
-                const maxDockWidth = Math.max(minDockWidth, containerRect.width - otherDockWidth - minCenter);
+                const maxDockWidth = Math.max(minDockWidth, containerRect.width - lockedOtherWidth - minCenter);
                 const side = getSide();
                 const rawWidth = side === 'left' ? e.clientX - panelRect.left : panelRect.right - e.clientX;
                 const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
                 panel.style.width = `${newWidth}px`;
                 panel.style.flexBasis = `${newWidth}px`;
-                if (otherDockWidth > 0 && otherPanel) {
-                    const lockedWidth = clampValue(parseInt(document.getElementById(otherWidthInputId).value, 10) || 260, minDockWidth, 2000);
-                    otherPanel.style.width = `${lockedWidth}px`;
-                    otherPanel.style.flexBasis = `${lockedWidth}px`;
+                if (otherPanelOpen && otherPanel) {
+                    otherPanel.style.width = `${lockedOtherWidth}px`;
+                    otherPanel.style.flexBasis = `${lockedOtherWidth}px`;
                 }
             });
 
@@ -3836,6 +3966,7 @@ if (typeof applyPaneHeightSettings === 'function') {
     startDailyResetWatcher();
     applyAllSettings();
     normalizePaneSplitOnLoad();
+    restoreWritingModesOnLoad();
     updateDockTopOffset();
     updateDockSplitState();
     // Apply default preview hidden setting on first load

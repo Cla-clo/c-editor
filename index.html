@@ -393,7 +393,7 @@
     }
     .main-container.memo-docked #memo-panel.open { display: flex; }
     .main-container.memo-docked.memo-right #memo-panel { order: 10; border-right: none; border-left: 1px solid #fcd34d; }
-    .main-container.memo-docked #memo-panel.open + #resizer-memo { display: flex; }
+    .main-container.memo-docked #memo-panel.open ~ #resizer-memo { display: flex; }
     .main-container.memo-docked.memo-right #resizer-memo { order: 9; }
     .main-container.memo-docked:not(.memo-right) #resizer-memo { order: -9; }
     .memo-header {

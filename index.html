@@ -20,6 +20,7 @@
         --col-sym-bg: #ede9fe; --col-sym-tx: #7c3aed;
         --layout-padding: 6px;
         --layout-gap: 0px;
+        --dock-top: 46px;
     }
     body.theme-dark {
         --bg-color: #1f2937; --panel-bg: #374151; --border-color: #4b5563;
@@ -169,6 +170,12 @@
     .setting-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .setting-row.vertical { flex-direction: column; align-items: flex-start; gap: 6px; }
     input[type="number"] { width: 50px; }
+    .settings-actions {
+        border-right: none; margin-left: auto; display: flex; flex-direction: column;
+        align-items: flex-end; gap: 8px;
+    }
+    .settings-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .settings-action-btn { min-width: 140px; justify-content: center; }
 
     .main-container { display: flex; flex: 1; gap: var(--layout-gap); overflow: hidden; padding: var(--layout-padding); position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
     .pane-stack { display: flex; flex: 1; min-width: 0; min-height: 0; gap: 0; }
@@ -288,6 +295,11 @@
         width: max-content; text-align: center;
     }
     .selection-overlay.show { display: block; }
+    .sync-indicator {
+        position: absolute; display: none; z-index: 60; pointer-events: none;
+        font-size: 1rem; color: #2563eb; font-weight: bold;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
 
     /* Quick Insert Popup */
     .quick-insert-popup {
@@ -363,7 +375,7 @@
 
     /* Memo Panel */
     #memo-panel {
-        position: fixed; top: 46px; left: 0; bottom: 0; width: 260px;
+        position: fixed; top: var(--dock-top); left: 0; bottom: 0; width: 260px;
         background: #fefce8; border-right: 1px solid #fcd34d;
         box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
@@ -420,7 +432,7 @@
     body.focus-mode #memo-panel { display: none !important; }
 
     #outline-panel {
-        position: fixed; top: 46px; right: 0; bottom: 0; width: 260px;
+        position: fixed; top: var(--dock-top); right: 0; bottom: 0; width: 260px;
         background: var(--panel-bg); border-left: 1px solid var(--border-color);
         box-shadow: -2px 0 5px rgba(0,0,0,0.1);
         z-index: 200; transform: translateX(100%); transition: transform 0.3s ease;
@@ -454,6 +466,17 @@
         opacity: 0; pointer-events: none; visibility: hidden;
     }
     .panel-swap-btn.is-active { opacity: 1; pointer-events: auto; visibility: visible; }
+    .dock-pin-checkbox { display: none; }
+    .main-container.dock-split-right #resizer-memo-outline,
+    .main-container.dock-split-left #resizer-memo-outline { display: flex; }
+    .main-container.dock-split-right #resizer-outline,
+    .main-container.dock-split-left #resizer-outline { display: none; }
+    .main-container.dock-split-right #memo-panel { order: 10; }
+    .main-container.dock-split-right #resizer-memo-outline { order: 11; }
+    .main-container.dock-split-right #outline-panel { order: 12; }
+    .main-container.dock-split-left #memo-panel { order: -12; }
+    .main-container.dock-split-left #resizer-memo-outline { order: -11; }
+    .main-container.dock-split-left #outline-panel { order: -10; }
     .outline-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
     .outline-tab {
         flex: 1; padding: 8px; text-align: center; cursor: pointer;
@@ -873,12 +896,21 @@
             </div>
         </div>
 
-        <div class="setting-group" style="border-right:none; margin-left:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <button class="btn" onclick="exportSettings()" style="font-size:0.7rem;">📤 設定をエクスポート</button>
+        <div class="setting-group settings-actions">
+            <div class="settings-actions-row">
+                <div class="dropdown settings-dropdown">
+                    <button class="btn settings-action-btn dropdown-btn" onclick="toggleDropdown('settings-transfer-dropdown')">📦 設定の移行</button>
+                    <div id="settings-transfer-dropdown" class="dropdown-content">
+                        <button onclick="exportSettings()">📤 設定をエクスポート</button>
+                        <button onclick="document.getElementById('settings-file-input').click()">📥 設定をインポート</button>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-actions-row">
+                <button class="btn settings-action-btn" onclick="resetAllSettings()" style="font-size:0.7rem; background:#fee2e2; color:#dc2626; border-color:#fecaca;">🔄 設定を初期化</button>
+                <button class="btn btn-apply-all settings-action-btn" onclick="applyAllSettings()">⚡ 一括適用</button>
+            </div>
             <input type="file" id="settings-file-input" accept=".json" onchange="importSettings(this)" style="display:none;">
-            <button class="btn" onclick="document.getElementById('settings-file-input').click()" style="font-size:0.7rem;">📥 設定をインポート</button>
-            <button class="btn" onclick="resetAllSettings()" style="font-size:0.7rem; background:#fee2e2; color:#dc2626; border-color:#fecaca;">🔄 設定を初期化</button>
-            <button class="btn btn-apply-all" onclick="applyAllSettings()">⚡ 全体適用</button>
         </div>
     </div>
 </div>
@@ -901,6 +933,7 @@
                 <div id="input-mirror-container"></div>
                 <textarea id="input-area" spellcheck="false"></textarea>
                 <div id="input-sel-overlay" class="selection-overlay"></div>
+                <div id="input-sync-indicator" class="sync-indicator">↓</div>
             </div>
             <div class="pane-footer">
                 <span id="char-count">全体: 0</span>
@@ -951,7 +984,8 @@
             <span>📝 メモ</span>
             <div class="memo-controls">
                 <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
-                <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-memo-dock" onchange="toggleMemoDock()"> 📌固定</label>
+                <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
+                <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定">📌</button>
                 <button class="panel-close-btn" onclick="closeMemoPanel()">✕</button>
             </div>
         </div>
@@ -969,6 +1003,7 @@
         </div>
     </div>
 
+    <div class="dock-resizer" id="resizer-memo-outline"></div>
     <div class="dock-resizer" id="resizer-memo"></div>
 
     <div id="outline-panel">
@@ -976,7 +1011,8 @@
             <span>📑 目次</span>
             <div class="outline-controls">
                 <button id="btn-outline-swap" class="btn panel-swap-btn" onclick="swapOutlineSide()">左右入替</button>
-                <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-outline-dock" onchange="toggleOutlineDock()"> 📌固定</label>
+                <input type="checkbox" id="check-outline-dock" class="dock-pin-checkbox" onchange="toggleOutlineDock()">
+                <button class="panel-pin-btn" id="btn-outline-pin" onclick="toggleOutlineDockPin()" title="固定">📌</button>
                 <button class="panel-close-btn" onclick="closeOutlinePanel()">✕</button>
             </div>
         </div>
@@ -1799,6 +1835,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         const end = inputArea.selectionEnd;
         const targetPos = start === end ? start : Math.floor((start + end) / 2);
         const lineNum = (inputArea.value.substring(0, targetPos).match(/\n/g) || []).length;
+        showSyncIndicator(targetPos);
 
         const brs = previewContent.querySelectorAll('br');
         if (brs.length > 0) {
@@ -1818,6 +1855,14 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         if (previewPane.classList.contains('hidden')) {
             previewPane.classList.remove('hidden');
             document.getElementById('check-show-preview').checked = true;
+            const mainContainer = document.getElementById('main-container');
+            const containerWidth = mainContainer.getBoundingClientRect().width || 1000;
+            const halfWidth = clampValue(Math.round(containerWidth / 2), 120, 3000);
+            document.getElementById('st-pane-input-width').value = halfWidth;
+            document.getElementById('st-pane-preview-width').value = halfWidth;
+            localStorage.setItem(PANE_WIDTH_KEYS.input, halfWidth);
+            localStorage.setItem(PANE_WIDTH_KEYS.preview, halfWidth);
+            applyPaneWidthSettings();
         }
     }
 
@@ -1835,14 +1880,14 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
     function resetAllSettings() {
         if (!confirm('全ての設定を初期状態に戻しますか？')) return;
         // Reset to defaults
-        document.getElementById('st-in-size').value = 16;
-        document.getElementById('st-in-line').value = 2.0;
-        document.getElementById('st-in-font').value = 'font-mincho';
-        document.getElementById('st-in-v').checked = false;
-        document.getElementById('st-pv-size').value = 16;
-        document.getElementById('st-pv-line').value = 2.0;
-        document.getElementById('st-pv-font').value = 'font-mincho';
-        document.getElementById('st-pv-v').checked = false;
+        document.getElementById('st-in-size').value = 17;
+        document.getElementById('st-in-line').value = 1.7;
+        document.getElementById('st-in-font').value = 'font-gothic';
+        document.getElementById('st-in-v').checked = true;
+        document.getElementById('st-pv-size').value = 17;
+        document.getElementById('st-pv-line').value = 1.7;
+        document.getElementById('st-pv-font').value = 'font-gothic';
+        document.getElementById('st-pv-v').checked = true;
         document.getElementById('check-show-input').checked = true;
         document.getElementById('check-show-preview').checked = true;
         document.getElementById('st-show-space').checked = true;
@@ -1915,6 +1960,7 @@ if (previewH) previewH.value = 420;
 
         applyDockedPanelWidths();
         adjustPaneWidthsOnVisibility();
+        updateDockSplitState();
     }
 
 	function applyPaneHeightSettings() {
@@ -1982,6 +2028,19 @@ function resetPaneHeights() {
     }
 }
 
+function updateDockSplitState() {
+    const c = document.getElementById('main-container');
+    if (!c) return;
+    const memoDocked = c.classList.contains('memo-docked');
+    const outlineDocked = c.classList.contains('outline-docked');
+    const memoRight = c.classList.contains('memo-right');
+    const outlineLeft = c.classList.contains('outline-left');
+    const splitRight = memoDocked && outlineDocked && memoRight && !outlineLeft;
+    const splitLeft = memoDocked && outlineDocked && !memoRight && outlineLeft;
+    c.classList.toggle('dock-split-right', splitRight);
+    c.classList.toggle('dock-split-left', splitLeft);
+}
+
     function loadPaneWidthSettings() {
         const mainContainer = document.getElementById('main-container');
         const containerWidth = mainContainer.getBoundingClientRect().width || 1000;
@@ -2030,6 +2089,7 @@ function resetPaneHeights() {
     function updateControlPanelScrollState() {
         const hasOpen = document.querySelectorAll('.control-panel.open').length > 0;
         document.body.classList.toggle('allow-scroll', hasOpen);
+        updateDockTopOffset();
     }
     function getPanelStateIcon(isOpen, isPinned) {
         if (isPinned) return '📌';
@@ -2094,6 +2154,15 @@ function resetPaneHeights() {
         }
         updateControlPanelScrollState();
         updatePanelButtonStates();
+    }
+    function updateDockTopOffset() {
+        const header = document.querySelector('header');
+        const controls = document.querySelector('.controls-wrapper');
+        const padding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--layout-padding')) || 0;
+        const headerHeight = header ? header.getBoundingClientRect().height : 0;
+        const controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
+        const top = Math.round(headerHeight + controlsHeight + padding);
+        document.documentElement.style.setProperty('--dock-top', `${top}px`);
     }
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {
@@ -2225,6 +2294,46 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         if (v) inputArea.scrollLeft = mol - (inputArea.clientWidth / 2); else inputArea.scrollTop = mot - (inputArea.clientHeight / 2);
     }
 
+    function showSyncIndicator(idx) {
+        const indicator = document.getElementById('input-sync-indicator');
+        if (!indicator) return;
+        const t = inputArea.value;
+        const lineStart = t.lastIndexOf('\n', idx - 1) + 1;
+        const cs = window.getComputedStyle(inputArea);
+        inputMirror.style.fontSize = cs.fontSize;
+        inputMirror.style.lineHeight = cs.lineHeight;
+        inputMirror.style.fontFamily = cs.fontFamily;
+        inputMirror.style.width = inputArea.clientWidth + 'px';
+        inputMirror.style.height = inputArea.clientHeight + 'px';
+        const marker = document.createElement('span');
+        marker.textContent = '■';
+        inputMirror.innerHTML = '';
+        inputMirror.appendChild(document.createTextNode(t.substring(0, lineStart)));
+        inputMirror.appendChild(marker);
+        const markerRect = marker.getBoundingClientRect();
+        const mirrorRect = inputMirror.getBoundingClientRect();
+        const inputRect = inputArea.getBoundingClientRect();
+        const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
+        const offsetX = markerRect.left - mirrorRect.left - inputArea.scrollLeft;
+        const offsetY = markerRect.top - mirrorRect.top - inputArea.scrollTop;
+        const baseLeft = inputRect.left + offsetX;
+        const baseTop = inputRect.top + offsetY;
+        const arrowOffset = 24;
+
+        if (isVertical) {
+            indicator.style.left = `${baseLeft + 8}px`;
+            indicator.style.top = `${baseTop - 12}px`;
+        } else {
+            indicator.style.left = `${baseLeft + 8}px`;
+            indicator.style.top = `${baseTop - arrowOffset}px`;
+        }
+        indicator.style.display = 'block';
+        clearTimeout(showSyncIndicator._timer);
+        showSyncIndicator._timer = setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 1200);
+    }
+
     let searchMatches = [], currentMatchIndex = -1;
     function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }
     function updateSearchInfo() { const i = document.getElementById('search-match-info'); if (searchMatches.length === 0) { i.innerText = '0 / 0'; i.style.color = '#999'; } else { i.innerText = `${currentMatchIndex + 1} / ${searchMatches.length}`; i.style.color = '#15803d'; } }
@@ -2266,6 +2375,7 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         }
         applyPaneWidthSettings();
         updatePanelButtonStates();
+        updateDockSplitState();
     }
 
     function closeMemoPanel() {
@@ -2273,12 +2383,14 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         panel.classList.remove('open');
         applyPaneWidthSettings();
         updatePanelButtonStates();
+        updateDockSplitState();
     }
 
     function toggleMemoDock() {
         const d = document.getElementById('check-memo-dock').checked;
         const c = document.getElementById('main-container');
         const b = document.getElementById('btn-memo-swap');
+        const pinBtn = document.getElementById('btn-memo-pin');
         if (d) {
             c.classList.add('memo-docked');
             b.classList.add('is-active');
@@ -2287,12 +2399,21 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
             b.classList.remove('is-active');
             document.getElementById('memo-panel').style.width = '260px';
         }
+        if (pinBtn) pinBtn.classList.toggle('pinned', d);
         applyPaneWidthSettings();
         updatePanelButtonStates();
+        updateDockSplitState();
+    }
+
+    function toggleMemoDockPin() {
+        const checkbox = document.getElementById('check-memo-dock');
+        checkbox.checked = !checkbox.checked;
+        toggleMemoDock();
     }
 
     function swapMemoSide() {
         document.getElementById('main-container').classList.toggle('memo-right');
+        updateDockSplitState();
     }
 
     function renderMemoTabs() {
@@ -2520,6 +2641,7 @@ function toggleOutlinePanel() {
 
     applyPaneWidthSettings();
     updatePanelButtonStates();
+    updateDockSplitState();
 }
 
 function closeOutlinePanel() {
@@ -2527,12 +2649,14 @@ function closeOutlinePanel() {
     panel.classList.remove('open');
     applyPaneWidthSettings();
     updatePanelButtonStates();
+    updateDockSplitState();
 }
 
     function toggleOutlineDock() {
         const d = document.getElementById('check-outline-dock').checked;
         const c = document.getElementById('main-container');
         const b = document.getElementById('btn-outline-swap');
+        const pinBtn = document.getElementById('btn-outline-pin');
         if (d) {
             c.classList.add('outline-docked');
             b.classList.add('is-active');
@@ -2541,10 +2665,21 @@ function closeOutlinePanel() {
             b.classList.remove('is-active');
             document.getElementById('outline-panel').style.width = '260px';
         }
+        if (pinBtn) pinBtn.classList.toggle('pinned', d);
         applyPaneWidthSettings();
         updatePanelButtonStates();
+        updateDockSplitState();
     }
-    function swapOutlineSide() { document.getElementById('main-container').classList.toggle('outline-left'); }
+
+    function toggleOutlineDockPin() {
+        const checkbox = document.getElementById('check-outline-dock');
+        checkbox.checked = !checkbox.checked;
+        toggleOutlineDock();
+    }
+    function swapOutlineSide() {
+        document.getElementById('main-container').classList.toggle('outline-left');
+        updateDockSplitState();
+    }
     function switchOutlineTab(tab) {
         document.querySelectorAll('#outline-panel .outline-tabs-inner .memo-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.outline-tab-content').forEach(c => c.classList.remove('active'));
@@ -2914,6 +3049,43 @@ if (typeof applyPaneHeightSettings === 'function') {
         );
     })();
 
+    (function setupMemoOutlineSplitResizer() {
+        const resizer = document.getElementById('resizer-memo-outline');
+        const memoPanel = document.getElementById('memo-panel');
+        if (!resizer || !memoPanel) return;
+        let isResizing = false;
+
+        const onMouseMove = e => {
+            if (!isResizing) return;
+            const rect = memoPanel.getBoundingClientRect();
+            const rawWidth = e.clientX - rect.left;
+            const newWidth = clampValue(Math.round(rawWidth), 160, 2000);
+            memoPanel.style.width = `${newWidth}px`;
+            memoPanel.style.flexBasis = `${newWidth}px`;
+            document.getElementById('st-pane-memo-width').value = newWidth;
+            localStorage.setItem(PANE_WIDTH_KEYS.memo, newWidth);
+        };
+
+        const onMouseUp = () => {
+            if (!isResizing) return;
+            isResizing = false;
+            resizer.classList.remove('resizing');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        resizer.addEventListener('mousedown', e => {
+            if (!document.getElementById('main-container').classList.contains('dock-split-right') &&
+                !document.getElementById('main-container').classList.contains('dock-split-left')) {
+                return;
+            }
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    })();
+
     // 初期化
     loadAutoSave();
     loadTodayStart();
@@ -2925,6 +3097,8 @@ if (typeof applyPaneHeightSettings === 'function') {
     loadPaneHeightSettings();
     startWritingTimer();
     applyAllSettings();
+    updateDockTopOffset();
+    updateDockSplitState();
     // Apply default preview hidden setting on first load
     if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
         document.getElementById('check-show-preview').checked = false;
@@ -2936,6 +3110,7 @@ if (typeof applyPaneHeightSettings === 'function') {
     updatePreview();
     updatePanelButtonStates();
     updateWritingTimeDisplay();
+    window.addEventListener('resize', updateDockTopOffset);
 </script>
 </body>
 </html>

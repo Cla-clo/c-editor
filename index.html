@@ -168,7 +168,7 @@
 
     .main-container { display: flex; flex: 1; gap: 6px; overflow: hidden; padding: 10px; position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
     /* .main-container.reverse-row uses order property for swapping */
-    body.scroll-mode .main-container { flex-direction: column; overflow-y: visible; overflow-x: hidden; height: auto; max-height: none; width: 100%; max-width: 100vw; }
+    body.scroll-mode .main-container { flex-direction: column; overflow-y: auto; overflow-x: hidden; height: auto; max-height: calc(100vh - 150px); width: 100%; max-width: 100vw; }
     body.scroll-mode .main-container.reverse-col { flex-direction: column-reverse; }
 
     .pane {
@@ -1548,17 +1548,30 @@
         lastSelectionRange = { start: s, end: e };
         const overlayRect = inputSelOverlay.getBoundingClientRect();
         const inputRect = inputArea.getBoundingClientRect();
+        const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
         const margin = 8;
 
         quickInsertPopup.classList.add('show');
         quickInsertPopup.style.visibility = 'hidden';
         const popupRect = quickInsertPopup.getBoundingClientRect();
 
-        let popupLeft = overlayRect.left + (overlayRect.width / 2) - (popupRect.width / 2);
-        let popupTop = overlayRect.top - popupRect.height - 8;
+let popupLeft;
+let popupTop;
 
-        popupLeft = Math.min(Math.max(popupLeft, margin), window.innerWidth - popupRect.width - margin);
-        popupTop = Math.min(Math.max(popupTop, inputRect.top + margin), window.innerHeight - popupRect.height - margin);
+if (isVertical) {
+    // 縦書き：選択範囲の左に出したいので、overlayRect.left を基準に左側へ
+    popupLeft = overlayRect.left - popupRect.width - 12;
+    // 位置は選択範囲の上端あたりに合わせる
+    popupTop = overlayRect.top;
+} else {
+    // 横書き：選択範囲の上に中央寄せ（元のPR挙動）
+    popupLeft = overlayRect.left + (overlayRect.width / 2) - (popupRect.width / 2);
+    popupTop = overlayRect.top - popupRect.height - 8;
+}
+
+popupLeft = Math.min(Math.max(popupLeft, margin), window.innerWidth - popupRect.width - margin);
+popupTop = Math.min(Math.max(popupTop, inputRect.top + margin), window.innerHeight - popupRect.height - margin);
+
 
         quickInsertPopup.style.top = `${popupTop}px`;
         quickInsertPopup.style.left = `${popupLeft}px`;
@@ -1774,8 +1787,11 @@
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 280;
         document.getElementById('st-pane-outline-width').value = 300;
-        document.getElementById('st-pane-input-height').value = 420;
-        document.getElementById('st-pane-preview-height').value = 320;
+const inputH = document.getElementById('st-pane-input-height');
+const previewH = document.getElementById('st-pane-preview-height');
+if (inputH) inputH.value = 420;
+if (previewH) previewH.value = 320;
+
         applyAllSettings();
         resetPaneWidths();
         resetPaneHeights();
@@ -1837,29 +1853,37 @@
         adjustPaneWidthsOnVisibility();
     }
 
-    function applyPaneHeightSettings() {
-        const inputHeightRaw = parseInt(document.getElementById('st-pane-input-height').value);
-        const previewHeightRaw = parseInt(document.getElementById('st-pane-preview-height').value);
-        const inputHeight = clampValue(inputHeightRaw || 420, 160, 2000);
-        const previewHeight = clampValue(previewHeightRaw || 320, 160, 2000);
-        const inputPane = document.getElementById('pane-input');
-        const previewPane = document.getElementById('pane-preview');
+function applyPaneHeightSettings() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
+    const inputPane = document.getElementById('pane-input');
+    const previewPane = document.getElementById('pane-preview');
 
-        document.getElementById('st-pane-input-height').value = inputHeight;
-        document.getElementById('st-pane-preview-height').value = previewHeight;
+    // 必要な要素が無いなら何もしない（落ちないように）
+    if (!inputHeightEl || !previewHeightEl || !inputPane || !previewPane) return;
 
-        if (document.body.classList.contains('scroll-mode')) {
-            inputPane.style.height = `${inputHeight}px`;
-            previewPane.style.height = `${previewHeight}px`;
-        } else {
-            inputPane.style.height = '';
-            previewPane.style.height = '';
-        }
+    const inputHeightRaw = parseInt(inputHeightEl.value, 10);
+    const previewHeightRaw = parseInt(previewHeightEl.value, 10);
 
-        localStorage.setItem(PANE_HEIGHT_KEYS.input, inputHeight);
-        localStorage.setItem(PANE_HEIGHT_KEYS.preview, previewHeight);
-        adjustPaneHeightsOnVisibility();
+    const inputHeight = clampValue(inputHeightRaw || 420, 160, 2000);
+    const previewHeight = clampValue(previewHeightRaw || 320, 160, 2000);
+
+    inputHeightEl.value = inputHeight;
+    previewHeightEl.value = previewHeight;
+
+    if (document.body.classList.contains('scroll-mode')) {
+        inputPane.style.height = `${inputHeight}px`;
+        previewPane.style.height = `${previewHeight}px`;
+    } else {
+        inputPane.style.height = '';
+        previewPane.style.height = '';
     }
+
+    localStorage.setItem(PANE_HEIGHT_KEYS.input, String(inputHeight));
+    localStorage.setItem(PANE_HEIGHT_KEYS.preview, String(previewHeight));
+
+    adjustPaneHeightsOnVisibility();
+}
 
     function resetPaneWidths() {
         document.getElementById('st-pane-input-width').value = 520;
@@ -1873,14 +1897,21 @@
         localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
         localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
         applyPaneWidthSettings();
-    }
+function resetPaneHeights() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
 
-    function resetPaneHeights() {
-        document.getElementById('st-pane-input-height').value = 420;
-        document.getElementById('st-pane-preview-height').value = 320;
-        localStorage.removeItem(PANE_HEIGHT_KEYS.input);
-        localStorage.removeItem(PANE_HEIGHT_KEYS.preview);
+    if (inputHeightEl) inputHeightEl.value = 420;
+    if (previewHeightEl) previewHeightEl.value = 320;
+
+    localStorage.removeItem(PANE_HEIGHT_KEYS.input);
+    localStorage.removeItem(PANE_HEIGHT_KEYS.preview);
+
+    if (typeof applyPaneHeightSettings === 'function') {
         applyPaneHeightSettings();
+    }
+}
+
     }
 
     function loadPaneWidthSettings() {
@@ -1896,26 +1927,24 @@
         if (inputWidth || legacyInput) {
             const converted = inputWidth || Math.round(containerWidth * (legacyInput / 100));
             document.getElementById('st-pane-input-width').value = converted;
-        }
-        if (previewWidth || legacyPreview) {
-            const converted = previewWidth || Math.round(containerWidth * (legacyPreview / 100));
-            document.getElementById('st-pane-preview-width').value = converted;
-        }
-        if (memoWidth) document.getElementById('st-pane-memo-width').value = memoWidth;
-        if (outlineWidth) document.getElementById('st-pane-outline-width').value = outlineWidth;
-        if (legacyInput || legacyPreview) {
-            localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
-            localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
-        }
-        applyPaneWidthSettings();
-    }
+function loadPaneHeightSettings() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
 
-    function loadPaneHeightSettings() {
-        const inputHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input));
-        const previewHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview));
-        if (inputHeight) document.getElementById('st-pane-input-height').value = inputHeight;
-        if (previewHeight) document.getElementById('st-pane-preview-height').value = previewHeight;
+    // UIが無いなら何もしない（落ちないように）
+    if (!inputHeightEl || !previewHeightEl) return;
+
+    const inputHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input), 10);
+    const previewHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview), 10);
+
+    if (Number.isFinite(inputHeight)) inputHeightEl.value = inputHeight;
+    if (Number.isFinite(previewHeight)) previewHeightEl.value = previewHeight;
+
+    if (typeof applyPaneHeightSettings === 'function') {
         applyPaneHeightSettings();
+    }
+}
+
     }
 
     const pinnedPanels = new Set();
@@ -2006,7 +2035,10 @@
             previewPane.style.flex = '1 1 auto';
             inputPane.style.width = '100%';
             previewPane.style.width = '100%';
-            adjustPaneHeightsOnVisibility();
+if (typeof adjustPaneHeightsOnVisibility === 'function') {
+    adjustPaneHeightsOnVisibility();
+}
+
             return;
         }
         const inputHidden = inputPane.classList.contains('hidden');
@@ -2026,19 +2058,37 @@
             previewPane.style.width = `${savedPreview}px`;
         }
     }
+
     function adjustPaneHeightsOnVisibility() {
         const inputPane = document.getElementById('pane-input');
         const previewPane = document.getElementById('pane-preview');
+        const inputHeightEl = document.getElementById('st-pane-input-height');
+        const previewHeightEl = document.getElementById('st-pane-preview-height');
+
+        // 必要な要素が無いなら何もしない（落ちないように）
+        if (!inputPane || !previewPane || !inputHeightEl || !previewHeightEl) return;
+
         if (!document.body.classList.contains('scroll-mode')) {
             inputPane.style.height = '';
             previewPane.style.height = '';
             return;
         }
+
         const inputHidden = inputPane.classList.contains('hidden');
         const previewHidden = previewPane.classList.contains('hidden');
-        const inputHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input)) || parseInt(document.getElementById('st-pane-input-height').value) || 420;
-        const previewHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview)) || parseInt(document.getElementById('st-pane-preview-height').value) || 320;
+
+        const inputHeight =
+            parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input), 10) ||
+            parseInt(inputHeightEl.value, 10) ||
+            420;
+
+        const previewHeight =
+            parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview), 10) ||
+            parseInt(previewHeightEl.value, 10) ||
+            320;
+
         const combinedHeight = inputHeight + previewHeight;
+
         if (inputHidden && !previewHidden) {
             previewPane.style.height = `${combinedHeight}px`;
         } else if (!inputHidden && previewHidden) {
@@ -2339,36 +2389,44 @@
     });
 
     let outlineData = [];
-    function toggleOutlinePanel() {
-        const panel = document.getElementById('outline-panel');
-        const checkbox = document.getElementById('check-outline-dock');
-        const isOpen = panel.classList.contains('open');
-        const isDocked = checkbox.checked;
+function toggleOutlinePanel() {
+    const panel = document.getElementById('outline-panel');
+    const checkbox = document.getElementById('check-outline-dock');
+    const btn = document.getElementById('btn-toggle-outline');
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
 
-        if (!isOpen) {
-            generateOutline();
-            panel.classList.add('open');
-            if (isDocked) {
-                checkbox.checked = false;
-                toggleOutlineDock();
-            }
-        } else if (!isDocked) {
-            checkbox.checked = true;
-            toggleOutlineDock();
-            panel.classList.add('open');
-        } else {
+    if (!isOpen) {
+        generateOutline();
+        panel.classList.add('open');
+        btn?.classList.add('active');
+
+        if (isDocked) {
             checkbox.checked = false;
             toggleOutlineDock();
-            panel.classList.remove('open');
         }
-        applyPaneWidthSettings();
+    } else if (!isDocked) {
+        checkbox.checked = true;
+        toggleOutlineDock();
+        panel.classList.add('open');
+        btn?.classList.add('active');
+    } else {
+        checkbox.checked = false;
+        toggleOutlineDock();
+        panel.classList.remove('open');
+        btn?.classList.remove('active');
     }
 
-    function closeOutlinePanel() {
-        const panel = document.getElementById('outline-panel');
-        panel.classList.remove('open');
-        applyPaneWidthSettings();
-    }
+    applyPaneWidthSettings();
+}
+
+function closeOutlinePanel() {
+    const panel = document.getElementById('outline-panel');
+    panel.classList.remove('open');
+    document.getElementById('btn-toggle-outline')?.classList.remove('active');
+    applyPaneWidthSettings();
+}
+
     function toggleOutlineDock() {
         const d = document.getElementById('check-outline-dock').checked;
         const c = document.getElementById('main-container');
@@ -2443,7 +2501,10 @@
         c.classList.remove('reverse-row', 'reverse-col');
         layoutReversed = false;
         applyPaneWidthSettings();
-        applyPaneHeightSettings();
+if (typeof applyPaneHeightSettings === 'function') {
+    applyPaneHeightSettings();
+}
+
     }
     function toggleLayoutOrder() { const c = document.getElementById('main-container'); layoutReversed = !layoutReversed; c.classList.remove('reverse-row', 'reverse-col'); if (layoutReversed) c.classList.add(layoutAxis === 'row' ? 'reverse-row' : 'reverse-col'); }
 

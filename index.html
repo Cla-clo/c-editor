@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>C-エディタ（更新テスト）</title>
+<title>ⓒエディタ（更新テスト）</title>
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -697,7 +697,7 @@
 
 <header>
     <div class="header-left">
-        <h1>C-エディタver.0.9</h1>
+        <h1>ⓒエディタver.0.95</h1>
         <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
         <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
         <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="❓ 使い方">
@@ -1623,7 +1623,7 @@
     function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectAllSettings())); }
     function loadSettingsFromStorage() { const s = localStorage.getItem(SETTINGS_KEY); if (s) { try { applyImportedSettings(JSON.parse(s)); } catch (e) {} } }
 
-    const defaultText = `　C-エディタ
+    const defaultText = `　ⓒエディタ
 
 ■ 新機能・変更点
 ・原稿用紙の初期設定を42字×34行に変更

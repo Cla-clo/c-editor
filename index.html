@@ -1088,24 +1088,26 @@
     </div>
 
  <div id="memo-panel">
-    <div class="memo-header">
-        <span>📝 メモ</span>
-        <div class="memo-controls">
-            <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動">📌</button>
-            <button class="btn" id="btn-memo-swap" onclick="swapMemoSide()" style="padding:0 4px; font-size:0.8rem;" title="左右入替">⇄</button>
-            <label><input type="checkbox" id="check-memo-dock" onchange="toggleMemoDock()"> ドッキング</label>
-            <button class="panel-close-btn" onclick="closeMemoPanel()">✕</button>
+    <div class="memo-header" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color);">
+        <span style="font-weight: bold; font-family: var(--font-ui);">📝 メモ</span>
+        <div class="memo-controls" style="display: flex; gap: 4px;">
+            <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え" style="background:none; border:none; cursor:pointer;">📌</button>
+            <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✕</button>
         </div>
     </div>
-    
-    <div class="memo-toolbar">
-        <div id="memo-tabs-container" class="memo-tabs"></div>
+
+    <div class="memo-toolbar" style="background: var(--bg-color); padding: 4px 4px 0 4px; border-bottom: 1px solid var(--border-color);">
+        <div id="memo-tabs-container" class="memo-tabs" style="display: flex; gap: 2px; overflow-x: auto;">
+            </div>
     </div>
-    <textarea id="memo-area" placeholder="メモを入力..." oninput="updateMemoCharCount(); saveMemoTabs()"></textarea>
+
+    <textarea id="memo-area" placeholder="ここに入力..." oninput="updateMemoCharCount(); saveMemoTabs()" style="flex: 1; width: 100%; resize: none; border: none; padding: 8px; font-family: inherit; box-sizing: border-box; outline: none;"></textarea>
     
-    <div class="pane-footer">
+    <div class="memo-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between;">
         <span id="memo-char-count">0字</span>
-        <button class="btn" onclick="showMemoSaveDialog()">保存</button>
+        <div class="memo-file-btns">
+            <button onclick="showMemoSaveDialog()" style="font-size:0.7rem; cursor:pointer;">保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-memo" class="dock-resizer"></div>
@@ -3776,6 +3778,125 @@ if (typeof applyPaneHeightSettings === 'function') {
     window.addEventListener('resize', () => {
         updateDockTopOffset();
     });
+</script>
+	<style>
+    /* メモタブの見た目を「入力タブ」に似せるCSS */
+    .memo-tab {
+        padding: 4px 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: #e5e7eb;
+        border-radius: 4px 4px 0 0;
+        border: 1px solid transparent;
+        color: #6b7280;
+        user-select: none;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .memo-tab.active {
+        background: #ffffff;
+        color: #1f2937;
+        font-weight: bold;
+        border-top: 2px solid #2563eb; /* 青いライン */
+    }
+    .memo-tab-close {
+        font-size: 0.7rem; border-radius: 50%; width: 16px; height: 16px;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #9ca3af;
+    }
+    .memo-tab-close:hover { background: #fee2e2; color: #ef4444; }
+    .memo-tab-add {
+        padding: 4px 8px; cursor: pointer; color: #6b7280; font-weight: bold;
+    }
+    .memo-tab-add:hover { color: #2563eb; background: #dbeafe; border-radius: 4px; }
+</style>
+
+<script>
+    // メモのタブ管理データ
+    let memoTabs = JSON.parse(localStorage.getItem('cc_memo_tabs')) || [
+        { id: 'm1', title: 'メモ1', content: '' }
+    ];
+    let currentMemoId = localStorage.getItem('cc_memo_current_id') || memoTabs[0].id;
+
+    // タブを描画する機能（これを実行するとタブが表示されます）
+    function renderMemoTabs() {
+        const container = document.getElementById('memo-tabs-container');
+        if (!container) return;
+        
+        let html = '';
+        memoTabs.forEach(tab => {
+            const isActive = tab.id === currentMemoId ? 'active' : '';
+            html += `
+                <div class="memo-tab ${isActive}" onclick="switchMemoTab('${tab.id}')">
+                    <span>${tab.title}</span>
+                    <span class="memo-tab-close" onclick="deleteMemoTab(event, '${tab.id}')">✕</span>
+                </div>
+            `;
+        });
+        // プラスボタン
+        html += `<div class="memo-tab-add" onclick="addMemoTab()">＋</div>`;
+        container.innerHTML = html;
+
+        // 現在のメモの内容をエリアに表示
+        const currentTab = memoTabs.find(t => t.id === currentMemoId);
+        if (currentTab) {
+            document.getElementById('memo-area').value = currentTab.content;
+            updateMemoCharCount();
+        }
+    }
+
+    // タブを切り替える
+    function switchMemoTab(id) {
+        saveMemoTabs(); // 切り替え前に保存
+        currentMemoId = id;
+        localStorage.setItem('cc_memo_current_id', id);
+        renderMemoTabs();
+    }
+
+    // 新しいタブを追加する
+    function addMemoTab() {
+        saveMemoTabs();
+        const newId = 'm' + Date.now();
+        const newNum = memoTabs.length + 1;
+        memoTabs.push({ id: newId, title: `メモ${newNum}`, content: '' });
+        switchMemoTab(newId);
+    }
+
+    // タブを削除する
+    function deleteMemoTab(e, id) {
+        e.stopPropagation(); // タブ切り替えの発動を防ぐ
+        if (memoTabs.length <= 1) {
+            alert("最後の1つは削除できません");
+            return;
+        }
+        if(!confirm("このメモを削除しますか？")) return;
+
+        memoTabs = memoTabs.filter(t => t.id !== id);
+        if (currentMemoId === id) {
+            currentMemoId = memoTabs[0].id;
+        }
+        saveMemoTabs();
+        renderMemoTabs();
+    }
+
+    // 内容を保存する
+    function saveMemoTabs() {
+        const currentTab = memoTabs.find(t => t.id === currentMemoId);
+        if (currentTab) {
+            const val = document.getElementById('memo-area').value;
+            currentTab.content = val;
+        }
+        localStorage.setItem('cc_memo_tabs', JSON.stringify(memoTabs));
+        localStorage.setItem('cc_memo_current_id', currentMemoId);
+    }
+
+    // 文字数カウント
+    function updateMemoCharCount() {
+        const val = document.getElementById('memo-area').value;
+        document.getElementById('memo-char-count').innerText = val.length + '字';
+    }
+
+    // 起動時に実行
+    setTimeout(renderMemoTabs, 500); // 画面読み込み後に少し待ってから実行
 </script>
 </body>
 </html>

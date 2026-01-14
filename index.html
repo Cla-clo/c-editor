@@ -1823,36 +1823,6 @@ if (previewH) previewH.value = 320;
         localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
     }
 
-    function applyPaneWidthSettings() {
-        const inputWidthRaw = parseInt(document.getElementById('st-pane-input-width').value);
-        const previewWidthRaw = parseInt(document.getElementById('st-pane-preview-width').value);
-        const inputWidth = clampValue(inputWidthRaw || 520, 120, 3000);
-        const previewWidth = clampValue(previewWidthRaw || 520, 120, 3000);
-        const inputPane = document.getElementById('pane-input');
-        const previewPane = document.getElementById('pane-preview');
-        const isScrollMode = document.body.classList.contains('scroll-mode');
-
-        document.getElementById('st-pane-input-width').value = inputWidth;
-        document.getElementById('st-pane-preview-width').value = previewWidth;
-
-        if (isScrollMode) {
-            inputPane.style.flex = '1 1 auto';
-            previewPane.style.flex = '1 1 auto';
-            inputPane.style.width = '100%';
-            previewPane.style.width = '100%';
-        } else {
-            inputPane.style.flex = `1 1 ${inputWidth}px`;
-            previewPane.style.flex = `1 1 ${previewWidth}px`;
-            inputPane.style.width = `${inputWidth}px`;
-            previewPane.style.width = `${previewWidth}px`;
-        }
-
-        localStorage.setItem(PANE_WIDTH_KEYS.input, inputWidth);
-        localStorage.setItem(PANE_WIDTH_KEYS.preview, previewWidth);
-        applyDockedPanelWidths();
-        adjustPaneWidthsOnVisibility();
-    }
-
 function applyPaneHeightSettings() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
@@ -1882,21 +1852,27 @@ function applyPaneHeightSettings() {
     localStorage.setItem(PANE_HEIGHT_KEYS.input, String(inputHeight));
     localStorage.setItem(PANE_HEIGHT_KEYS.preview, String(previewHeight));
 
-    adjustPaneHeightsOnVisibility();
+    if (typeof adjustPaneHeightsOnVisibility === 'function') {
+        adjustPaneHeightsOnVisibility();
+    }
 }
 
-    function resetPaneWidths() {
-        document.getElementById('st-pane-input-width').value = 520;
-        document.getElementById('st-pane-preview-width').value = 520;
-        document.getElementById('st-pane-memo-width').value = 280;
-        document.getElementById('st-pane-outline-width').value = 300;
-        localStorage.removeItem(PANE_WIDTH_KEYS.input);
-        localStorage.removeItem(PANE_WIDTH_KEYS.preview);
-        localStorage.removeItem(PANE_WIDTH_KEYS.memo);
-        localStorage.removeItem(PANE_WIDTH_KEYS.outline);
-        localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
-        localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
-        applyPaneWidthSettings();
+function resetPaneWidths() {
+    document.getElementById('st-pane-input-width').value = 520;
+    document.getElementById('st-pane-preview-width').value = 520;
+    document.getElementById('st-pane-memo-width').value = 280;
+    document.getElementById('st-pane-outline-width').value = 300;
+
+    localStorage.removeItem(PANE_WIDTH_KEYS.input);
+    localStorage.removeItem(PANE_WIDTH_KEYS.preview);
+    localStorage.removeItem(PANE_WIDTH_KEYS.memo);
+    localStorage.removeItem(PANE_WIDTH_KEYS.outline);
+    localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
+    localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
+
+    applyPaneWidthSettings();
+}
+
 function resetPaneHeights() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
@@ -1911,9 +1887,6 @@ function resetPaneHeights() {
         applyPaneHeightSettings();
     }
 }
-
-    }
-
     function loadPaneWidthSettings() {
         const mainContainer = document.getElementById('main-container');
         const containerWidth = mainContainer.getBoundingClientRect().width || 1000;

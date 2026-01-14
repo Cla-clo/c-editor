@@ -181,7 +181,11 @@
         border-right: none; margin-left: auto; display: flex; flex-direction: column;
         align-items: flex-end; gap: 8px; align-self: stretch; justify-content: flex-end;
     }
-    .settings-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .settings-actions-row {
+        display: flex; gap: 8px; flex-direction: column;
+        align-items: flex-end; justify-content: flex-end;
+    }
+    .settings-actions-row .btn-apply-all { margin-top: auto; }
     .settings-action-btn { min-width: 140px; justify-content: center; }
 
     .main-container { display: flex; flex: 1; gap: var(--layout-gap); overflow: hidden; padding: var(--layout-padding); position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
@@ -308,6 +312,11 @@
         font-size: 1rem; padding: 0 4px; line-height: 1;
     }
     .pane-close-btn:hover { color: #dc2626; }
+    .pane-layout-btn {
+        background: #e0f2fe; border: 1px solid #bae6fd; color: #0c4a6e;
+        cursor: pointer; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;
+    }
+    .pane-layout-btn:hover { background: #bae6fd; }
     .pane-subheader {
         background: #f0f9ff; color: #0369a1; font-size: 0.75rem; padding: 2px 10px;
         border-bottom: 1px solid #e0f2fe; text-align: right; font-family: monospace; flex-shrink: 0;
@@ -339,15 +348,6 @@
         width: max-content; text-align: center;
     }
     .selection-overlay.show { display: block; }
-    .sync-indicator {
-        position: absolute; display: none; z-index: 60; pointer-events: none;
-        font-size: 1rem; color: #2563eb; font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-    }
-    .preview-sync-indicator {
-        z-index: 40; color: var(--sync-arrow-color, #38bdf8); font-size: 1.4rem;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
 
     /* Quick Insert Popup */
     .quick-insert-popup {
@@ -387,11 +387,11 @@
     #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; min-width: 0; box-sizing: border-box; }
     #preview-page-overlay {
         position: absolute; top: 0; left: 0;
-        pointer-events: none; z-index: 2;
+        pointer-events: none; z-index: 5;
     }
     .page-divider-line { position: absolute; background: rgba(148, 163, 184, 0.6); }
     .page-number {
-        position: absolute; font-size: 0.7rem; color: var(--text-muted);
+        position: absolute; font-size: 0.7rem; color: var(--text-muted); z-index: 6;
         background: rgba(255, 255, 255, 0.7); border: 1px solid var(--border-color);
         border-radius: 999px; padding: 1px 6px;
         transform: translateX(-50%);
@@ -681,6 +681,28 @@
     .save-dialog-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
     .save-dialog-buttons button { padding: 10px 20px; font-size: 1rem; }
 
+    .autosave-toast {
+        position: fixed; top: 16px; right: 16px; z-index: 1200;
+        background: #fef9c3; color: #92400e; border: 1px solid #fcd34d;
+        padding: 8px 14px; border-radius: 12px; font-weight: bold;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: none;
+    }
+    .autosave-toast.show { display: block; }
+    .autosave-error-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+        display: none; align-items: center; justify-content: center; z-index: 1300;
+    }
+    .autosave-error-overlay.show { display: flex; }
+    .autosave-error {
+        background: var(--panel-bg); border: 2px solid #fca5a5;
+        padding: 20px 26px; border-radius: 14px; text-align: center;
+        font-weight: bold; color: #b91c1c; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .autosave-error button {
+        margin-top: 12px; background: #fee2e2; border: 1px solid #fecaca;
+        color: #991b1b; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    }
+
     @media print {
         header, .controls-wrapper, .pane-subheader, .pane-footer, #outline-panel, #pane-input, .selection-overlay { display: none !important; }
         body, body.scroll-mode { height: auto; overflow: visible; background: white; }
@@ -842,10 +864,10 @@
                 <label>文字: <input type="number" id="st-in-size" value="17" min="10" max="60"></label>
                 <label>行間: <input type="number" id="st-in-line" value="1.7" step="0.1" min="1.0" max="5.0"></label>
                 <label><input type="checkbox" id="st-in-v" checked> 縦書き</label>
-                <label>フォント: 
+                    <label>フォント: 
                     <select id="st-in-font">
-                        <option value="font-gothic">ゴシック</option>
-                        <option value="font-mincho" selected>明朝体</option>
+                        <option value="font-gothic" selected>ゴシック</option>
+                        <option value="font-mincho">明朝体</option>
                         <option value="font-old">アンティーク</option>
                         <option value="font-round">丸ゴシック</option>
                         <option value="font-brush">筆文字</option>
@@ -860,10 +882,10 @@
                 <label>文字: <input type="number" id="st-pv-size" value="17" min="10" max="60"></label>
                 <label>行間: <input type="number" id="st-pv-line" value="1.7" step="0.1" min="1.0" max="5.0"></label>
                 <label><input type="checkbox" id="st-pv-v" checked> 縦書き</label>
-                <label>フォント: 
+                    <label>フォント: 
                     <select id="st-pv-font">
-                        <option value="font-gothic">ゴシック</option>
-                        <option value="font-mincho" selected>明朝体</option>
+                        <option value="font-gothic" selected>ゴシック</option>
+                        <option value="font-mincho">明朝体</option>
                         <option value="font-old">アンティーク</option>
                         <option value="font-round">丸ゴシック</option>
                         <option value="font-brush">筆文字</option>
@@ -963,7 +985,8 @@
         <div class="setting-group">
             <div class="setting-title">保存 <button class="btn btn-apply" onclick="applyAutoSaveSettings()">適用</button></div>
             <div class="setting-row vertical">
-                <label>自動保存間隔: <input type="number" id="st-autosave-interval" value="30" min="5" max="600" style="width:70px;"> 秒</label>
+                <label><input type="checkbox" id="st-autosave-enabled" onchange="applyAutoSaveSettings()"> 自動保存を有効にする</label>
+                <label>自動保存間隔: <input type="number" id="st-autosave-interval" value="60" min="5" max="600" style="width:70px;" onchange="applyAutoSaveSettings()"> 秒</label>
             </div>
         </div>
 
@@ -1003,6 +1026,7 @@
             <h2><span class="novel-title-name" id="novel-title" ondblclick="startEditNovelTitle()" title="ダブルクリックで作品名を変更">ここにプロジェクトタイトルを入力してください。</span></h2>
             <span class="pane-total-stats" id="input-total-stats">全タブ: 0字 / 0行</span>
         </div>
+                <button class="pane-layout-btn" onclick="toggleLayoutAxis()" title="縦横切替">縦横</button>
                 <button class="pane-close-btn" onclick="hidePane('input')">✕</button>
             </div>
             <div class="input-tabs-container" id="input-tabs-container">
@@ -1013,7 +1037,6 @@
                 <div id="input-mirror-container"></div>
                 <textarea id="input-area" spellcheck="false"></textarea>
                 <div id="input-sel-overlay" class="selection-overlay"></div>
-                <div id="input-sync-indicator" class="sync-indicator">↓</div>
             </div>
             <div class="pane-footer">
                 <span id="char-count">全体: 0</span>
@@ -1035,6 +1058,7 @@
                     <h2>プレビュー</h2>
                     <span class="pane-total-stats" id="preview-total-stats">全タブ: 0字 / 0行</span>
                 </div>
+                <button class="pane-layout-btn" onclick="toggleLayoutAxis()" title="縦横切替">縦横</button>
                 <button class="pane-close-btn" onclick="hidePane('preview')">✕</button>
             </div>
             <div class="preview-tabs-container" id="preview-tabs-container">
@@ -1045,7 +1069,6 @@
                 <div id="preview-scroll">
                     <div id="preview-content"></div>
                     <div id="preview-page-overlay"></div>
-                    <div id="preview-sync-indicator" class="sync-indicator preview-sync-indicator">↓</div>
                 </div>
                 <div id="preview-sel-overlay" class="selection-overlay"></div>
             </div>
@@ -1185,6 +1208,14 @@
     </div>
 </div>
 
+<div id="autosave-toast" class="autosave-toast">自動保存しました♪</div>
+<div id="autosave-error" class="autosave-error-overlay">
+    <div class="autosave-error">
+        自動保存できませんでした😢　自動保存をオフにします
+        <div><button onclick="closeAutoSaveError()">OK</button></div>
+    </div>
+</div>
+
 <div id="analysis-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header"><h3>📊 テキスト分析</h3><button class="modal-close" onclick="closeAnalysis()">✕</button></div>
@@ -1239,7 +1270,7 @@
         showReadingTime: true, showManuscript: true, showSpace: true, showHighlight: true,
         typewriterMode: false, writingTracker: true, defaultPreviewHidden: false,
         celebrateGoal: true, openMode: 'current', showPageLines: false,
-        showPageNumbers: false, syncArrowColor: '#38bdf8', autosaveInterval: 30
+        showPageNumbers: false, autosaveInterval: 60, autosaveEnabled: false
     };
     let goalAchieved = { today: false, total: false };
     let previewUpdateTimeout = null;
@@ -1270,6 +1301,7 @@
     let lastTextSaveHandle = null;
     let lastHtmlSaveHandle = null;
     let lastMemoSaveHandle = null;
+    let autoSaveTarget = { handle: null, type: null };
 
     // Utility function - must be defined before use in renderInputTabs
     function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
@@ -1566,7 +1598,7 @@
             goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, showReading: document.getElementById('st-show-reading-time').checked, celebrate: document.getElementById('st-celebrate-goal').checked },
             manuscript: { rows: document.getElementById('st-manuscript-rows').value, cols: document.getElementById('st-manuscript-cols').value, show: document.getElementById('st-show-manuscript').checked, pageLines: document.getElementById('st-show-page-lines').checked, pageNumbers: document.getElementById('st-show-page-numbers').checked },
             open: { mode: document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current' },
-            autosave: { interval: document.getElementById('st-autosave-interval').value },
+            autosave: { interval: document.getElementById('st-autosave-interval').value, enabled: document.getElementById('st-autosave-enabled').checked },
             theme: document.getElementById('st-theme-preset').value,
             divider: { width: document.getElementById('st-divider-width').value },
             paneWidths: {
@@ -1590,7 +1622,6 @@
             document.getElementById('check-show-input').checked = s.display.showInput !== false;
             document.getElementById('check-show-preview').checked = s.display.showPreview !== false;
             document.getElementById('st-default-preview-hidden').checked = s.display.defaultPreviewHidden || false;
-            document.getElementById('st-sync-arrow-color').value = s.display.syncArrowColor || '#38bdf8';
         }
         if (s.writing) { document.getElementById('st-typewriter-mode').checked = s.writing.typewriter || false; document.getElementById('st-writing-tracker').checked = s.writing.tracker !== false; }
         if (s.goal) { document.getElementById('st-goal-chars').value = s.goal.chars || 150000; document.getElementById('st-today-goal').value = s.goal.today || 2000; document.getElementById('st-show-reading-time').checked = s.goal.showReading !== false; document.getElementById('st-celebrate-goal').checked = s.goal.celebrate !== false; }
@@ -1607,9 +1638,12 @@
             if (openInput) openInput.checked = true;
         }
         if (s.autosave) {
-            const autosaveInterval = clampValue(parseInt(s.autosave.interval, 10) || 30, 5, 600);
+            const autosaveInterval = clampValue(parseInt(s.autosave.interval, 10) || 60, 5, 600);
+            const autosaveEnabled = s.autosave.enabled === true;
             document.getElementById('st-autosave-interval').value = autosaveInterval;
+            document.getElementById('st-autosave-enabled').checked = autosaveEnabled;
             settingsCache.autosaveInterval = autosaveInterval;
+            settingsCache.autosaveEnabled = autosaveEnabled;
         }
         if (s.theme !== undefined) document.getElementById('st-theme-preset').value = s.theme;
         if (s.divider) document.getElementById('st-divider-width').value = s.divider.width || 2;
@@ -1639,19 +1673,7 @@
     function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectAllSettings())); }
     function loadSettingsFromStorage() { const s = localStorage.getItem(SETTINGS_KEY); if (s) { try { applyImportedSettings(JSON.parse(s)); } catch (e) {} } }
 
-    const defaultText = `　ⓒエディタ
-
-■ まずはここから（基本操作）
-・画面上部の「ここにプロジェクトタイトルを入力してください。」をダブルクリックして作品名を設定できます
-・入力エリアに文章を入力すると自動で統計が更新されます
-・「🔄 プレビュー更新」で整形表示（非表示時は自動で開きます）
-・「📲 同期」でカーソル位置にプレビューを移動
-・「縦横切替」「入替」でレイアウト変更
-
-■ タブ操作
-・タブ名はダブルクリックでリネーム可能です
-・「＋」でタブ追加、×で削除
-・Ctrl+Tで新規タブ、Ctrl+Shift+Tで新規メモタブ
+    const defaultText = `　C-エディタ
 
 ■ まずはここから（基本操作）
 ・画面上部の「ここにプロジェクトタイトルを入力してください。」をダブルクリックして作品名を設定できます
@@ -1713,6 +1735,10 @@
         nextMemoTabId = 2;
         memoArea.value = '';
         setNovelTitle(DEFAULT_NOVEL_TITLE);
+        autoSaveTarget = { handle: null, type: null, scope: 'current' };
+        settingsCache.autosaveInterval = 60;
+        setAutoSaveEnabled(false);
+        document.getElementById('st-autosave-interval').value = 60;
         localStorage.removeItem(TABS_KEY);
         localStorage.removeItem(AUTOSAVE_KEY);
         localStorage.removeItem(TODAY_START_KEY);
@@ -1724,6 +1750,19 @@
         document.getElementById('st-pv-v').checked = true;
         applyInputSettings();
         applyPreviewSettings();
+        document.getElementById('st-pane-memo-width').value = 260;
+        document.getElementById('st-pane-outline-width').value = 260;
+        if (document.getElementById('check-memo-dock').checked) {
+            document.getElementById('check-memo-dock').checked = false;
+            toggleMemoDock();
+        }
+        if (document.getElementById('check-outline-dock').checked) {
+            document.getElementById('check-outline-dock').checked = false;
+            toggleOutlineDock();
+        }
+        closeMemoPanel();
+        closeOutlinePanel();
+        applyPaneWidthSettings();
         renderInputTabs();
         renderPreviewTabs();
         renderBookmarks();
@@ -1738,10 +1777,78 @@
 
     const AUTOSAVE_KEY = 'cc_editor_autosave';
     let autosaveTimerId = null;
-    function autoSave() { saveTabsToStorage(); saveSettingsToStorage(); }
+    function persistLocalState() { saveTabsToStorage(); saveSettingsToStorage(); }
+    function showAutoSaveToast() {
+        const toast = document.getElementById('autosave-toast');
+        if (!toast) return;
+        toast.classList.add('show');
+        clearTimeout(showAutoSaveToast._timer);
+        showAutoSaveToast._timer = setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+    function closeAutoSaveError() {
+        const overlay = document.getElementById('autosave-error');
+        if (overlay) overlay.classList.remove('show');
+    }
+    function showAutoSaveError() {
+        const overlay = document.getElementById('autosave-error');
+        if (overlay) overlay.classList.add('show');
+    }
+    function setAutoSaveEnabled(enabled) {
+        settingsCache.autosaveEnabled = enabled;
+        const checkbox = document.getElementById('st-autosave-enabled');
+        if (checkbox) checkbox.checked = enabled;
+        startAutoSaveTimer();
+    }
+    function buildHtmlExport(scope) {
+        const v = document.getElementById('st-pv-v').checked;
+        const fk = document.getElementById('st-pv-font').value;
+        const fs = document.getElementById('st-pv-size').value;
+        const lh = document.getElementById('st-pv-line').value;
+        let htmlContent = '';
+        if (scope === 'all') {
+            const currentTab = inputTabs.find(t => t.id === activeTabId);
+            if (currentTab) currentTab.content = inputArea.value;
+            inputTabs.forEach((tab, idx) => {
+                if (idx > 0) htmlContent += '<div style="page-break-before: always; margin-top: 40px;"></div>';
+                htmlContent += `<h2 style="font-size: 1.5em; margin-bottom: 1em;">${escapeHtml(tab.name)}</h2>`;
+                htmlContent += renderTextToHTML(tab.content);
+            });
+        } else {
+            updatePreview();
+            htmlContent = previewContent.innerHTML;
+        }
+        return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${escapeHtml(getNovelBaseName())}</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${htmlContent}</body></html>`;
+    }
+    function getAutoSavePayload() {
+        if (!autoSaveTarget.handle || !autoSaveTarget.type) return null;
+        const scope = autoSaveTarget.scope || 'current';
+        if (autoSaveTarget.type === 'html') {
+            return { blob: new Blob([buildHtmlExport(scope)], { type: 'text/html' }) };
+        }
+        return { blob: new Blob([scope === 'all' ? getAllTabsContent() : getCurrentTabContent()], { type: 'text/plain' }) };
+    }
+    async function autoSave() {
+        if (!settingsCache.autosaveEnabled) return;
+        persistLocalState();
+        if (!autoSaveTarget.handle) {
+            showAutoSaveError();
+            setAutoSaveEnabled(false);
+            return;
+        }
+        const payload = getAutoSavePayload();
+        if (!payload) return;
+        const handled = await saveWithHandle(autoSaveTarget.handle, payload.blob);
+        if (handled) {
+            showAutoSaveToast();
+            return;
+        }
+        showAutoSaveError();
+        setAutoSaveEnabled(false);
+    }
     function startAutoSaveTimer() {
         if (autosaveTimerId) clearInterval(autosaveTimerId);
-        const seconds = settingsCache.autosaveInterval || 30;
+        if (!settingsCache.autosaveEnabled) return;
+        const seconds = settingsCache.autosaveInterval || 60;
         autosaveTimerId = setInterval(autoSave, seconds * 1000);
     }
     function loadAutoSave() {
@@ -1767,7 +1874,7 @@
         renderInputTabs();
     }
     startAutoSaveTimer();
-    window.addEventListener('beforeunload', e => { autoSave(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
+    window.addEventListener('beforeunload', e => { persistLocalState(); saveWritingTime(); e.preventDefault(); e.returnValue = ''; });
 
     function undoInput() { inputArea.focus(); document.execCommand('undo'); }
     function redoInput() { inputArea.focus(); document.execCommand('redo'); }
@@ -2129,7 +2236,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
                 if (isVertical) {
                     const leftPos = clampValue(pageEndPos - 12, 12, contentWidth - 12);
                     label.style.left = `${leftPos}px`;
-                    label.style.top = `${Math.max(8, contentHeight - 26)}px`;
+                    label.style.top = '8px';
                 } else {
                     label.style.left = `${contentWidth / 2}px`;
                     label.style.top = `${Math.max(8, pageEndPos - 26)}px`;
@@ -2151,7 +2258,6 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         const end = inputArea.selectionEnd;
         const targetPos = start === end ? start : Math.floor((start + end) / 2);
         const lineNum = (inputArea.value.substring(0, targetPos).match(/\n/g) || []).length;
-        showSyncIndicator(targetPos);
 
         const brs = previewContent.querySelectorAll('br');
         if (brs.length > 0) {
@@ -2173,6 +2279,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
             const indicator = document.getElementById('preview-sync-indicator');
             if (indicator) indicator.style.display = 'none';
         }
+        // Sync arrow display removed
     }
 
     function updatePreviewAndShow() {
@@ -2203,7 +2310,6 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         if (si) document.getElementById('pane-input').classList.remove('hidden'); else document.getElementById('pane-input').classList.add('hidden');
         if (sp) document.getElementById('pane-preview').classList.remove('hidden'); else document.getElementById('pane-preview').classList.add('hidden');
         adjustPaneWidthsOnVisibility();
-        applySyncIndicatorSettings();
         updatePreview();
     }
     function applyWritingSettings() { settingsCache.typewriterMode = document.getElementById('st-typewriter-mode').checked; settingsCache.writingTracker = document.getElementById('st-writing-tracker').checked; updateWritingTimeDisplay(); }
@@ -2219,10 +2325,6 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
     }
     function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
     function applyOpenSettings() { settingsCache.openMode = document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current'; }
-    function applySyncIndicatorSettings() {
-        settingsCache.syncArrowColor = document.getElementById('st-sync-arrow-color').value;
-        document.documentElement.style.setProperty('--sync-arrow-color', settingsCache.syncArrowColor);
-    }
     function applyDividerSettings() {
         const dividerWidthRaw = parseInt(document.getElementById('st-divider-width').value, 10);
         const dividerWidth = clampValue(dividerWidthRaw || 2, 1, 12);
@@ -2239,13 +2341,14 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         const input = document.getElementById('st-autosave-interval');
         if (!input) return;
         const secondsRaw = parseInt(input.value, 10);
-        const seconds = clampValue(secondsRaw || 30, 5, 600);
+        const seconds = clampValue(secondsRaw || 60, 5, 600);
         input.value = seconds;
         settingsCache.autosaveInterval = seconds;
+        settingsCache.autosaveEnabled = document.getElementById('st-autosave-enabled').checked;
         startAutoSaveTimer();
     }
     function applyPaperSettings() { applyManuscriptSettings(); applyThemeSettings(); }
-    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyOpenSettings(); applySyncIndicatorSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); applyDividerSettings(); applyAutoSaveSettings(); }
+    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyOpenSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); applyDividerSettings(); applyAutoSaveSettings(); }
 
     function resetAllSettings() {
         if (!confirm('全ての設定を初期状態に戻しますか？')) return;
@@ -2276,7 +2379,8 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         document.getElementById('st-show-page-lines').checked = false;
         document.getElementById('st-show-page-numbers').checked = false;
         document.querySelector('input[name="st-open-mode"][value="current"]').checked = true;
-        document.getElementById('st-autosave-interval').value = 30;
+        document.getElementById('st-autosave-interval').value = 60;
+        document.getElementById('st-autosave-enabled').checked = false;
         document.getElementById('st-theme-preset').value = '';
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
@@ -2289,6 +2393,8 @@ if (inputH) inputH.value = 520;
 if (previewH) previewH.value = 420;
 
         applyAllSettings();
+        autoSaveTarget = { handle: null, type: null, scope: 'current' };
+        setAutoSaveEnabled(false);
         resetPaneWidths();
         resetPaneHeights();
         localStorage.removeItem(DIVIDER_WIDTH_KEY);
@@ -2702,45 +2808,6 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         if (v) inputArea.scrollLeft = mol - (inputArea.clientWidth / 2); else inputArea.scrollTop = mot - (inputArea.clientHeight / 2);
     }
 
-    function showSyncIndicator(idx) {
-        const indicator = document.getElementById('input-sync-indicator');
-        if (!indicator) return;
-        const t = inputArea.value;
-        const lineStart = t.lastIndexOf('\n', idx - 1) + 1;
-        const cs = window.getComputedStyle(inputArea);
-        inputMirror.style.fontSize = cs.fontSize;
-        inputMirror.style.lineHeight = cs.lineHeight;
-        inputMirror.style.fontFamily = cs.fontFamily;
-        inputMirror.style.width = inputArea.clientWidth + 'px';
-        inputMirror.style.height = inputArea.clientHeight + 'px';
-        const marker = document.createElement('span');
-        marker.textContent = '■';
-        inputMirror.innerHTML = '';
-        inputMirror.appendChild(document.createTextNode(t.substring(0, lineStart)));
-        inputMirror.appendChild(marker);
-        const markerRect = marker.getBoundingClientRect();
-        const mirrorRect = inputMirror.getBoundingClientRect();
-        const inputRect = inputArea.getBoundingClientRect();
-        const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
-        const offsetX = markerRect.left - mirrorRect.left - inputArea.scrollLeft;
-        const offsetY = markerRect.top - mirrorRect.top - inputArea.scrollTop;
-        const baseLeft = inputRect.left + offsetX;
-        const baseTop = inputRect.top + offsetY;
-        const arrowOffset = 24;
-
-        if (isVertical) {
-            indicator.style.left = `${baseLeft + 8}px`;
-            indicator.style.top = `${baseTop - 12}px`;
-        } else {
-            indicator.style.left = `${baseLeft + 8}px`;
-            indicator.style.top = `${baseTop - arrowOffset}px`;
-        }
-        indicator.style.display = 'block';
-        clearTimeout(showSyncIndicator._timer);
-        showSyncIndicator._timer = setTimeout(() => {
-            indicator.style.display = 'none';
-        }, 1200);
-    }
 
     function getPreviewLineStartRect(lineNum) {
         const brs = previewContent.querySelectorAll('br');
@@ -3341,9 +3408,22 @@ if (typeof applyPaneHeightSettings === 'function') {
         return base || 'novel';
     }
     function getSaveScope() { return document.querySelector('input[name="save-scope"]:checked')?.value || 'current'; }
-    function getContentToSave() { return getSaveScope() === 'all' ? getAllTabsContent() : getCurrentTabContent(); }
+    function getContentToSave(scope = getSaveScope()) { return scope === 'all' ? getAllTabsContent() : getCurrentTabContent(); }
+    function setAutoSaveTarget(handle, type, scope) {
+        autoSaveTarget = { handle, type, scope };
+    }
+    function maybePromptEnableAutoSave() {
+        if (settingsCache.autosaveEnabled) return;
+        if (!autoSaveTarget.handle) return;
+        const enable = confirm('自動保存をオンにしますか？');
+        if (enable) {
+            document.getElementById('st-autosave-enabled').checked = true;
+            applyAutoSaveSettings();
+        }
+    }
     async function saveAsText() {
-        const content = getContentToSave();
+        const scope = getSaveScope();
+        const content = getContentToSave(scope);
         const b = new Blob([content], { type: 'text/plain' });
         const name = `${getNovelBaseName()}.txt`;
         const result = await saveBlobWithPicker(b, name, [{ description: 'Text', accept: { 'text/plain': ['.txt'] } }], lastTextSaveHandle);
@@ -3356,25 +3436,15 @@ if (typeof applyPaneHeightSettings === 'function') {
             a.click();
             document.body.removeChild(a);
         }
+        if (result.handle) {
+            setAutoSaveTarget(result.handle, 'text', scope);
+            maybePromptEnableAutoSave();
+        }
         closeSaveDialog();
     }
     async function saveAsHTML() {
         const scope = getSaveScope();
-        const v = document.getElementById('st-pv-v').checked, fk = document.getElementById('st-pv-font').value, fs = document.getElementById('st-pv-size').value, lh = document.getElementById('st-pv-line').value;
-        let htmlContent = '';
-        if (scope === 'all') {
-            const currentTab = inputTabs.find(t => t.id === activeTabId);
-            if (currentTab) currentTab.content = inputArea.value;
-            inputTabs.forEach((tab, idx) => {
-                if (idx > 0) htmlContent += '<div style="page-break-before: always; margin-top: 40px;"></div>';
-                htmlContent += `<h2 style="font-size: 1.5em; margin-bottom: 1em;">${escapeHtml(tab.name)}</h2>`;
-                htmlContent += renderTextToHTML(tab.content);
-            });
-        } else {
-            updatePreview();
-            htmlContent = previewContent.innerHTML;
-        }
-        const h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${escapeHtml(getNovelBaseName())}</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${htmlContent}</body></html>`;
+        const h = buildHtmlExport(scope);
         const b = new Blob([h], { type: 'text/html' });
         const name = `${getNovelBaseName()}.html`;
         const result = await saveBlobWithPicker(b, name, [{ description: 'HTML', accept: { 'text/html': ['.html'] } }], lastHtmlSaveHandle);
@@ -3386,6 +3456,10 @@ if (typeof applyPaneHeightSettings === 'function') {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+        if (result.handle) {
+            setAutoSaveTarget(result.handle, 'html', scope);
+            maybePromptEnableAutoSave();
         }
         closeSaveDialog();
     }
@@ -3630,18 +3704,27 @@ if (typeof applyPaneHeightSettings === 'function') {
     (function setupMemoOutlineSplitResizer() {
         const resizer = document.getElementById('resizer-memo-outline');
         const memoPanel = document.getElementById('memo-panel');
-        if (!resizer || !memoPanel) return;
+        const outlinePanel = document.getElementById('outline-panel');
+        if (!resizer || !memoPanel || !outlinePanel) return;
         let isResizing = false;
 
         const onMouseMove = e => {
             if (!isResizing) return;
-            const rect = memoPanel.getBoundingClientRect();
-            const rawWidth = e.clientX - rect.left;
-            const newWidth = clampValue(Math.round(rawWidth), 160, 2000);
-            memoPanel.style.width = `${newWidth}px`;
-            memoPanel.style.flexBasis = `${newWidth}px`;
-            document.getElementById('st-pane-memo-width').value = newWidth;
-            localStorage.setItem(PANE_WIDTH_KEYS.memo, newWidth);
+            const memoRect = memoPanel.getBoundingClientRect();
+            const outlineRect = outlinePanel.getBoundingClientRect();
+            const totalWidth = memoRect.width + outlineRect.width;
+            const minWidth = 160;
+            const rawWidth = e.clientX - memoRect.left;
+            const memoWidth = clampValue(Math.round(rawWidth), minWidth, totalWidth - minWidth);
+            const outlineWidth = Math.max(minWidth, totalWidth - memoWidth);
+            memoPanel.style.width = `${memoWidth}px`;
+            memoPanel.style.flexBasis = `${memoWidth}px`;
+            outlinePanel.style.width = `${outlineWidth}px`;
+            outlinePanel.style.flexBasis = `${outlineWidth}px`;
+            document.getElementById('st-pane-memo-width').value = memoWidth;
+            document.getElementById('st-pane-outline-width').value = outlineWidth;
+            localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
+            localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
         };
 
         const onMouseUp = () => {

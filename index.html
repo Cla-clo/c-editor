@@ -990,7 +990,7 @@
         <div class="pane" id="pane-input">
             <div class="pane-header">
         <div class="pane-title">
-            <h2><span class="novel-title-name" id="novel-title" ondblclick="startEditNovelTitle()" title="ダブルクリックで作品名を変更">入力</span></h2>
+            <h2><span class="novel-title-name" id="novel-title" ondblclick="startEditNovelTitle()" title="ダブルクリックで作品名を変更">ここにプロジェクトタイトルを入力してください。</span></h2>
             <span class="pane-total-stats" id="input-total-stats">全タブ: 0字 / 0行</span>
         </div>
                 <button class="pane-close-btn" onclick="hidePane('input')">✕</button>
@@ -1130,12 +1130,12 @@
 </div>
 
 <div id="quick-insert-popup" class="quick-insert-popup">
-    <button class="qip-ruby" onclick="quickInsertRuby()">🈂️</button>
-    <button class="qip-bouten" onclick="quickInsertBouten()">⚫</button>
+    <button class="qip-ruby" onclick="quickInsertRuby()">🔤ルビ</button>
+    <button class="qip-bouten" onclick="quickInsertBouten()">⚫傍点</button>
     <button onclick="quickWrapSelection('「', '」')">「」</button>
     <button onclick="quickWrapSelection('『', '』')">『』</button>
     <button onclick="quickWrapSelection('（', '）')">（）</button>
-    <button style="color:#d97706;" onclick="quickAddBookmark()">🔖</button>
+    <button style="color:#d97706;" onclick="quickAddBookmark()">🔖しおり</button>
 </div>
 
 <div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
@@ -1251,7 +1251,7 @@
     const SETTINGS_KEY = 'cc_editor_settings';
     const TABS_KEY = 'cc_editor_tabs';
     const NOVEL_TITLE_KEY = 'cc_editor_novel_title';
-    const DEFAULT_NOVEL_TITLE = '入力';
+    const DEFAULT_NOVEL_TITLE = 'ここにプロジェクトタイトルを入力してください。';
     let todayStartChars = 0, writingSeconds = 0, lastInputTime = 0, writingTimerInterval = null, bookmarks = [];
     let novelTitle = DEFAULT_NOVEL_TITLE;
 
@@ -1259,7 +1259,7 @@
     function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
 
     // Input Tabs System
-    let inputTabs = [{ id: 1, name: 'タブ1', content: '' }];
+    let inputTabs = [{ id: 1, name: 'タブはリネームできます', content: '' }];
     let activeTabId = 1;
     let nextTabId = 2;
     let draggingInputTabId = null;
@@ -1350,12 +1350,6 @@
         span.ondblclick = startEditNovelTitle;
         span.textContent = novelTitle;
         input.replaceWith(span);
-    }
-
-    function updateActiveTabTitle() {
-        const titleEl = document.getElementById('active-tab-title');
-        const activeTab = inputTabs.find(t => t.id === activeTabId);
-        if (titleEl && activeTab) titleEl.textContent = activeTab.name;
     }
 
     function switchTab(tabId) {
@@ -1625,23 +1619,38 @@
 
     const defaultText = `　ⓒエディタ
 
-■ 新機能・変更点
-・原稿用紙の初期設定を42字×34行に変更
-・設定のエクスポート/インポート機能を追加
-・ミニマップ機能を削除（安定性向上のため）
+■ まずはここから（基本操作）
+・画面上部の「ここにプロジェクトタイトルを入力してください。」をダブルクリックして作品名を設定できます
+・入力エリアに文章を入力すると自動で統計が更新されます
+・「🔄 プレビュー更新」で整形表示（非表示時は自動で開きます）
+・「📲 同期」でカーソル位置にプレビューを移動
+・「縦横切替」「入替」でレイアウト変更
 
-□ 設定管理機能
-設定パネルの「設定管理」から：
-・📤 エクスポート：現在の設定をJSONファイルで保存
-・📥 インポート：保存した設定ファイルを読み込み
+■ タブ操作
+・タブ名はダブルクリックでリネーム可能です
+・「＋」でタブ追加、×で削除
+・Ctrl+Tで新規タブ、Ctrl+Shift+Tで新規メモタブ
 
-□ 執筆支援機能
-・🧘 集中モード（ESCで解除）
-・タイプライターモード
-・執筆時間トラッカー
-・📊 分析機能
+■ 検索・置換
+・Ctrl+Fで検索パネルを開きます
+・Enterで次へ、▲/▼で移動、置換で内容を更新
 
-□ 入力補助
+■ ルビ/傍点などの記法
+・ルビ：｜漢字《かんじ》
+・傍点：《《強調》》
+・下線：__下線__ / 強調：==強調==
+・選択文字に対してポップアップからルビ・傍点挿入ができます
+
+■ 保存・読込
+・💾 保存：テキスト/HTML形式で保存
+・📂 開く：テキストファイルを読み込み（タブ分割も対応）
+・自動保存は30秒ごとにブラウザへ保存されます
+
+■ 執筆支援
+・🧘 集中モード（Escで解除）
+・タイプライターモード／執筆時間トラッカー／📊 分析
+
+■ 入力補助
 ・改行時に全角スペースを自動挿入
 　（この行のように全角スペースで始まる行で改行すると、次の行にも自動で入ります）
 
@@ -1656,7 +1665,7 @@
     }
 
     function resetInputToStartup() {
-        inputTabs = [{ id: 1, name: 'タブ1', content: defaultText }];
+        inputTabs = [{ id: 1, name: 'タブはリネームできます', content: defaultText }];
         activeTabId = 1;
         nextTabId = 2;
         inputArea.value = defaultText;
@@ -1677,6 +1686,10 @@
         localStorage.removeItem(MEMO_KEY);
         localStorage.removeItem(NOVEL_TITLE_KEY);
         sessionStorage.removeItem('cc_editor_session_started');
+        document.getElementById('st-in-v').checked = true;
+        document.getElementById('st-pv-v').checked = true;
+        applyInputSettings();
+        applyPreviewSettings();
         renderInputTabs();
         renderPreviewTabs();
         renderBookmarks();

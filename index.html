@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>C-エディタ（更新テスト）</title>
+<title>ⓒエディタ（更新テスト）</title>
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -700,7 +700,7 @@
 
 <header>
     <div class="header-left">
-        <h1>C-エディタver.0.9</h1>
+        <h1>ⓒエディタver.0.95</h1>
         <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
         <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
         <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="❓ 使い方">
@@ -721,7 +721,7 @@
                 <button onclick="insertText('『』', 1)">『』 二重鉤括弧</button>
                 <button onclick="insertText('｜《》', 1)">｜《》 ルビ記法</button>
                 <button onclick="insertText('《《》》', 2)">《《》》 傍点記法</button>
-                <button onclick="insertRubyToSelection()">🔤 選択文字にルビ</button>
+                <button onclick="insertRubyToSelection()">🈂️ 選択文字にルビ</button>
                 <button onclick="insertBoutenToSelection()">⚫ 選択文字に傍点</button>
             </div>
         </div>
@@ -782,8 +782,6 @@
                 ・<b>Ctrl+S</b>：保存ダイアログ<br>
                 ・<b>Ctrl+F</b>：検索パネル<br>
                 ・<b>Ctrl+G</b>：行番号ジャンプ<br>
-                ・<b>Ctrl+T</b>：新規タブ追加<br>
-                ・<b>Ctrl+Shift+T</b>：新規メモタブ<br>
                 ・<b>Ctrl+Z</b>：元に戻す<br>
                 ・<b>Ctrl+Y</b>：やり直し<br>
                 ・<b>F11</b>：集中モード切替<br>
@@ -794,7 +792,6 @@
                 ・<b>ルビ</b>：｜漢字《かんじ》<br>
                 ・<b>傍点</b>：《《強調》》<br>
                 ・<b>傍線</b>：__下線__<br>
-                ・<b>蛍光ペン</b>：==強調==<br>
                 <small>※テキスト選択時、ポップアップからワンクリックでルビ・傍点挿入可能</small>
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -822,7 +819,6 @@
                 <div class="help-title">【保存・読込】</div>
                 ・<b>💾 保存</b>：テキスト/HTML形式で保存<br>
                 ・<b>📂 開く</b>：テキストファイルを読込<br>
-                ・<b>自動保存</b>：30秒ごとにブラウザに保存<br>
                 ・設定の📤エクスポート/📥インポート
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -1330,6 +1326,7 @@
         addBtn.title = '新しいタブを追加';
         addBtn.onclick = addNewTab;
         container.appendChild(addBtn);
+        updateActiveTabTitle();
         updatePreviewTabOptions();
     }
     function sanitizeFileName(name) {
@@ -1436,6 +1433,7 @@
     function finishEditTabName(tabId, newName) {
         const tab = inputTabs.find(t => t.id === tabId);
         if (tab) tab.name = newName.trim() || tab.name;
+        updateActiveTabTitle();
         renderInputTabs();
         saveTabsToStorage();
     }
@@ -1641,7 +1639,19 @@
     function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectAllSettings())); }
     function loadSettingsFromStorage() { const s = localStorage.getItem(SETTINGS_KEY); if (s) { try { applyImportedSettings(JSON.parse(s)); } catch (e) {} } }
 
-    const defaultText = `　C-エディタ
+    const defaultText = `　ⓒエディタ
+
+■ まずはここから（基本操作）
+・画面上部の「ここにプロジェクトタイトルを入力してください。」をダブルクリックして作品名を設定できます
+・入力エリアに文章を入力すると自動で統計が更新されます
+・「🔄 プレビュー更新」で整形表示（非表示時は自動で開きます）
+・「📲 同期」でカーソル位置にプレビューを移動
+・「縦横切替」「入替」でレイアウト変更
+
+■ タブ操作
+・タブ名はダブルクリックでリネーム可能です
+・「＋」でタブ追加、×で削除
+・Ctrl+Tで新規タブ、Ctrl+Shift+Tで新規メモタブ
 
 ■ まずはここから（基本操作）
 ・画面上部の「ここにプロジェクトタイトルを入力してください。」をダブルクリックして作品名を設定できます
@@ -2148,10 +2158,13 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
             const targetBr = brs[Math.min(lineNum, brs.length - 1)];
             if (targetBr) {
                 targetBr.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => showPreviewSyncIndicator(targetBr), 60);
             }
         } else {
             previewScroll.scrollTop = 0;
             previewScroll.scrollLeft = 0;
+            const indicator = document.getElementById('preview-sync-indicator');
+            if (indicator) indicator.style.display = 'none';
         }
         const indicatorRect = getPreviewLineStartRect(lineNum);
         if (indicatorRect) {

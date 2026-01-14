@@ -1087,29 +1087,28 @@
         </div>
     </div>
 
-    <div id="memo-panel">
-        <div class="memo-header">
-            <span>📝 メモ</span>
-            <div class="memo-controls">
-                <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
-                <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
-                <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定">📌</button>
-                <button class="panel-close-btn" onclick="closeMemoPanel()">✕</button>
-            </div>
-        </div>
-        <div class="memo-toolbar">
-            <div id="memo-tabs-container" class="memo-tabs"></div>
-            <div class="memo-file-btns">
-                <input type="file" id="memo-file-input" accept=".txt" style="display:none;" onchange="loadMemoFile(this)">
-                <button class="btn" onclick="document.getElementById('memo-file-input').click()" title="メモを開く" style="padding:2px 6px; font-size:0.7rem;">📂</button>
-                <button class="btn" onclick="showMemoSaveDialog()" title="メモを保存" style="padding:2px 6px; font-size:0.7rem;">💾</button>
-            </div>
-        </div>
-        <textarea id="memo-area" placeholder="メモを入力..."></textarea>
-        <div class="memo-footer">
-            <span id="memo-char-count" style="font-size: 0.75rem; color: var(--text-muted);">0字</span>
+ <div id="memo-panel">
+    <div class="memo-header">
+        <span>📝 メモ</span>
+        <div class="memo-controls">
+            <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動">📌</button>
+            <button class="btn" id="btn-memo-swap" onclick="swapMemoSide()" style="padding:0 4px; font-size:0.8rem;" title="左右入替">⇄</button>
+            <label><input type="checkbox" id="check-memo-dock" onchange="toggleMemoDock()"> ドッキング</label>
+            <button class="panel-close-btn" onclick="closeMemoPanel()">✕</button>
         </div>
     </div>
+    
+    <div class="memo-toolbar">
+        <div id="memo-tabs-container" class="memo-tabs"></div>
+    </div>
+    <textarea id="memo-area" placeholder="メモを入力..." oninput="updateMemoCharCount(); saveMemoTabs()"></textarea>
+    
+    <div class="pane-footer">
+        <span id="memo-char-count">0字</span>
+        <button class="btn" onclick="showMemoSaveDialog()">保存</button>
+    </div>
+</div>
+<div id="resizer-memo" class="dock-resizer"></div>
 
     <div class="dock-resizer" id="resizer-memo-outline"></div>
     <div class="dock-resizer" id="resizer-memo"></div>

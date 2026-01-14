@@ -18,6 +18,8 @@
         --col-han-bg: #d1fae5; --col-han-tx: #059669;
         --col-mute-bg: transparent; --col-mute-tx: #d1d5db;
         --col-sym-bg: #ede9fe; --col-sym-tx: #7c3aed;
+        --layout-padding: 6px;
+        --layout-gap: 0px;
     }
     body.theme-dark {
         --bg-color: #1f2937; --panel-bg: #374151; --border-color: #4b5563;
@@ -125,7 +127,7 @@
     .dropdown-content a:hover { background: #e0f2fe; }
     .sync-dropdown:hover .sync-dropdown-content { display: block; }
 
-    .controls-wrapper { padding: 10px 10px 0 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .controls-wrapper { padding: var(--layout-padding) var(--layout-padding) 0 var(--layout-padding); display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
     .control-panel {
         background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px;
         padding: 8px 12px; font-size: 0.85rem; display: none;
@@ -133,32 +135,34 @@
     }
     .control-panel.open { display: flex; animation: slideDown 0.2s ease-out; }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    .panel-close-btn {
-        position: absolute; top: 4px; right: 8px; background: transparent; border: none;
-        color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; line-height: 1;
+    .panel-action-buttons {
+        position: absolute; top: 4px; right: 8px; display: flex; align-items: center;
+        gap: 6px; z-index: 2;
+    }
+    .panel-close-btn,
+    .panel-pin-btn {
+        background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+        font-size: 1rem; padding: 4px 6px; line-height: 1; min-width: 22px;
     }
     .panel-close-btn:hover { color: #dc2626; }
-    .panel-pin-btn {
-        position: absolute; top: 4px; right: 28px; background: transparent; border: none;
-        color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; line-height: 1; opacity: 0.6;
-    }
+    .panel-pin-btn { font-size: 0.9rem; opacity: 0.7; }
     .panel-pin-btn:hover { opacity: 1; }
     .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
-    #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; order: 2; }
+    #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 48px; order: 2; }
     body.theme-dark #search-bar { background: #14532d; border-color: #166534; }
     #search-bar input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem; }
     #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
     .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
 
-    #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 30px; order: 1; }
+    #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 48px; order: 1; }
     #help-bar.open { display: flex; }
     body.theme-dark #help-bar { background: #451a03; border-color: #854d0e; color: #fcd34d; }
     .help-section { margin-bottom: 12px; }
     .help-section:last-child { margin-bottom: 0; }
     .help-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; border-bottom: 1px dashed #fcd34d; padding-bottom: 2px; }
 
-    #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 30px; order: 3; }
+    #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 48px; order: 3; }
     .setting-group { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 12px; }
     .setting-group:last-child { border-right: none; }
     .setting-title { font-weight: bold; color: var(--text-muted); margin-bottom: 2px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
@@ -166,7 +170,7 @@
     .setting-row.vertical { flex-direction: column; align-items: flex-start; gap: 6px; }
     input[type="number"] { width: 50px; }
 
-    .main-container { display: flex; flex: 1; gap: 6px; overflow: hidden; padding: 10px; position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
+    .main-container { display: flex; flex: 1; gap: var(--layout-gap); overflow: hidden; padding: var(--layout-padding); position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
     .pane-stack { display: flex; flex: 1; min-width: 0; min-height: 0; gap: 0; }
     /* .pane-stack.reverse-row uses order property for swapping */
     body.scroll-mode .main-container { overflow: visible; height: auto; max-height: none; width: 100%; max-width: 100vw; }
@@ -210,7 +214,13 @@
         display: flex; justify-content: space-between; align-items: center;
         border-bottom: 1px solid var(--border-color); flex-shrink: 0;
     }
+    .pane-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; }
+    .pane-total-stats {
+        font-size: 0.7rem; color: var(--text-muted);
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 999px; padding: 1px 6px; white-space: nowrap;
+    }
 
     /* Input Tabs */
     .input-tabs-container {
@@ -275,6 +285,7 @@
         background: rgba(37, 99, 235, 0.9); color: white; padding: 6px 16px;
         border-radius: 20px; font-size: 0.85rem; font-weight: bold; z-index: 50;
         pointer-events: none; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        width: max-content; text-align: center;
     }
     .selection-overlay.show { display: block; }
 
@@ -378,7 +389,8 @@
         font-weight: bold; display: flex; justify-content: space-between; align-items: center;
     }
     body.theme-dark .memo-header { background: #713f12; border-color: #854d0e; }
-    .memo-controls { display: flex; align-items: center; gap: 8px; }
+    .memo-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .memo-controls label { display: inline-flex; align-items: center; gap: 4px; }
     .memo-toolbar {
         display: flex; justify-content: space-between; align-items: center;
         padding: 4px 8px; background: #fef3c7; border-bottom: 1px solid #fcd34d;
@@ -435,6 +447,13 @@
         font-size: 0.85rem; flex-wrap: wrap; gap: 4px;
     }
     .outline-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .outline-controls label { display: inline-flex; align-items: center; gap: 4px; }
+    .panel-swap-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: 2px 6px; font-size: 0.7rem; min-width: 60px;
+        opacity: 0; pointer-events: none; visibility: hidden;
+    }
+    .panel-swap-btn.is-active { opacity: 1; pointer-events: auto; visibility: visible; }
     .outline-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
     .outline-tab {
         flex: 1; padding: 8px; text-align: center; cursor: pointer;
@@ -598,14 +617,14 @@
         <h1>C-エディタver.0.9</h1>
         <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
         <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
-        <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="使い方">
-            <span class="panel-label">使い方</span><span class="panel-state-icon">▸</span>
+        <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="❓ 使い方">
+            <span class="panel-label">❓ 使い方</span><span class="panel-state-icon">▾</span>
         </button>
         <button class="btn panel-toggle" id="btn-toggle-search" onclick="togglePanel('search-bar')" data-label="🔍 検索">
-            <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▸</span>
+            <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▾</span>
         </button>
-        <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="設定">
-            <span class="panel-label">設定</span><span class="panel-state-icon">▸</span>
+        <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="⚙️ 設定">
+            <span class="panel-label">⚙️ 設定</span><span class="panel-state-icon">▾</span>
         </button>
         <div class="dropdown">
             <button class="btn dropdown-btn" onclick="toggleDropdown('insert-dropdown')">📝 挿入</button>
@@ -629,10 +648,10 @@
     </div>
     <div class="header-right">
         <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
-            <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▸</span>
+            <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
         </button>
         <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
-            <span class="panel-label">📑 目次</span><span class="panel-state-icon">▸</span>
+            <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
@@ -642,8 +661,10 @@
 
 <div class="controls-wrapper">
     <div id="search-bar" class="control-panel">
-        <button class="panel-pin-btn" onclick="togglePanelPin('search-bar')" title="固定">📌</button>
-        <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
+        <div class="panel-action-buttons">
+            <button class="panel-pin-btn" onclick="togglePanelPin('search-bar')" title="固定">📌</button>
+            <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
+        </div>
         <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
         <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
         <button class="btn" onclick="findPrev()">▲ 前へ</button>
@@ -656,8 +677,10 @@
     </div>
     
     <div id="help-bar" class="control-panel">
-        <button class="panel-pin-btn" onclick="togglePanelPin('help-bar')" title="固定">📌</button>
-        <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
+        <div class="panel-action-buttons">
+            <button class="panel-pin-btn" onclick="togglePanelPin('help-bar')" title="固定">📌</button>
+            <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
+        </div>
         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
             <div class="help-section" style="flex: 1; min-width: 180px;">
                 <div class="help-title">【基本操作】</div>
@@ -726,8 +749,10 @@
     </div>
 
     <div id="settings-bar" class="control-panel">
-        <button class="panel-pin-btn" onclick="togglePanelPin('settings-bar')" title="固定">📌</button>
-        <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
+        <div class="panel-action-buttons">
+            <button class="panel-pin-btn" onclick="togglePanelPin('settings-bar')" title="固定">📌</button>
+            <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
+        </div>
         <div class="setting-group">
             <div class="setting-title">入力エリア <button class="btn btn-apply" onclick="applyInputSettings()">適用</button></div>
             <div class="setting-row vertical">
@@ -861,7 +886,13 @@
 <div class="main-container" id="main-container">
     <div class="pane-stack" id="pane-stack">
         <div class="pane" id="pane-input">
-            <div class="pane-header"><h2>入力</h2><button class="pane-close-btn" onclick="hidePane('input')">✕</button></div>
+            <div class="pane-header">
+                <div class="pane-title">
+                    <h2>入力</h2>
+                    <span class="pane-total-stats" id="input-total-stats">全タブ: 0字 / 0行</span>
+                </div>
+                <button class="pane-close-btn" onclick="hidePane('input')">✕</button>
+            </div>
             <div class="input-tabs-container" id="input-tabs-container">
                 <!-- Tabs will be dynamically generated -->
             </div>
@@ -887,7 +918,10 @@
 
         <div class="pane" id="pane-preview">
             <div class="pane-header">
-                <h2>プレビュー</h2>
+                <div class="pane-title">
+                    <h2>プレビュー</h2>
+                    <span class="pane-total-stats" id="preview-total-stats">全タブ: 0字 / 0行</span>
+                </div>
                 <button class="pane-close-btn" onclick="hidePane('preview')">✕</button>
             </div>
             <div class="preview-tabs-container" id="preview-tabs-container">
@@ -916,9 +950,9 @@
         <div class="memo-header">
             <span>📝 メモ</span>
             <div class="memo-controls">
+                <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
                 <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-memo-dock" onchange="toggleMemoDock()"> 📌固定</label>
-                <button id="btn-memo-swap" class="btn" style="display:none; padding:2px 6px; font-size:0.7rem;" onclick="swapMemoSide()">左右入替</button>
-                <button class="btn" onclick="closeMemoPanel()" style="border:none; background:transparent;">✕</button>
+                <button class="panel-close-btn" onclick="closeMemoPanel()">✕</button>
             </div>
         </div>
         <div class="memo-toolbar">
@@ -941,9 +975,9 @@
         <div class="outline-header">
             <span>📑 目次</span>
             <div class="outline-controls">
+                <button id="btn-outline-swap" class="btn panel-swap-btn" onclick="swapOutlineSide()">左右入替</button>
                 <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-outline-dock" onchange="toggleOutlineDock()"> 📌固定</label>
-                <button id="btn-outline-swap" class="btn" style="display:none; padding:2px 6px; font-size:0.7rem;" onclick="swapOutlineSide()">左右入替</button>
-                <button class="btn" onclick="closeOutlinePanel()" style="border:none; background:transparent;">✕</button>
+                <button class="panel-close-btn" onclick="closeOutlinePanel()">✕</button>
             </div>
         </div>
         <div class="outline-toolbar" style="display:flex; padding:4px 8px; background:var(--pane-header-bg); border-bottom:1px solid var(--border-color); gap:4px; align-items:center;">
@@ -1548,8 +1582,30 @@
         updateCursorLineDisplay();
         // Check goal achievement
         checkGoalAchievement(tw, tg, nl, g);
+        updateAllTabsStats();
     }
     function updateCursorLineDisplay() { const p = inputArea.selectionStart, c = (inputArea.value.substring(0, p).match(/\n/g) || []).length + 1; inputPosBar.innerText = `現在: ${c} 行目`; }
+
+    function updateAllTabsStats() {
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.content = inputArea.value;
+        const allText = inputTabs.map(t => t.content || '').join('\n');
+        const totalChars = allText.replace(/[\n\r]/g, '').length;
+        const totalNet = allText.replace(/[\n\s　]/g, '').length;
+        const totalLines = allText.split('\n').length;
+        const display = `全タブ: ${totalChars}字 / ${totalLines}行`;
+        const title = `全タブ: ${totalChars}字 / 実質 ${totalNet}字 / ${totalLines}行`;
+        const inputTotal = document.getElementById('input-total-stats');
+        const previewTotal = document.getElementById('preview-total-stats');
+        if (inputTotal) {
+            inputTotal.innerText = display;
+            inputTotal.title = title;
+        }
+        if (previewTotal) {
+            previewTotal.innerText = display;
+            previewTotal.title = title;
+        }
+    }
 
     const quickInsertPopup = document.getElementById('quick-insert-popup');
     let lastSelectionRange = { start: 0, end: 0 };
@@ -1978,7 +2034,7 @@ function resetPaneHeights() {
     function getPanelStateIcon(isOpen, isPinned) {
         if (isPinned) return '📌';
         if (isOpen) return '▾';
-        return '▸';
+        return '▾';
     }
     function updateControlPanelButton(panelId, btnId) {
         const panel = document.getElementById(panelId);
@@ -2048,20 +2104,11 @@ function resetPaneHeights() {
         updateControlPanelScrollState();
         updatePanelButtonStates();
     });
-    // Close non-docked memo/outline when clicking on panes
-    document.getElementById('pane-input').addEventListener('click', e => {
-        if (e.target.closest('.input-tab') || e.target.closest('.input-tab-add')) return;
-        const mainContainer = document.getElementById('main-container');
-        if (!mainContainer.classList.contains('memo-docked')) {
-            document.getElementById('memo-panel').classList.remove('open');
-        }
-        if (!mainContainer.classList.contains('outline-docked')) {
-            document.getElementById('outline-panel').classList.remove('open');
-        }
-        updatePanelButtonStates();
-    });
-    document.getElementById('pane-preview').addEventListener('click', e => {
-        if (e.target.closest('.preview-tab')) return;
+    // Close non-docked memo/outline on outside click
+    document.addEventListener('click', e => {
+        if (e.target.closest('#memo-panel') || e.target.closest('#outline-panel')) return;
+        if (e.target.closest('#btn-toggle-memo') || e.target.closest('#btn-toggle-outline')) return;
+        if (e.target.closest('#resizer-memo') || e.target.closest('#resizer-outline')) return;
         const mainContainer = document.getElementById('main-container');
         if (!mainContainer.classList.contains('memo-docked')) {
             document.getElementById('memo-panel').classList.remove('open');
@@ -2234,10 +2281,10 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         const b = document.getElementById('btn-memo-swap');
         if (d) {
             c.classList.add('memo-docked');
-            b.style.display = 'inline-block';
+            b.classList.add('is-active');
         } else {
             c.classList.remove('memo-docked', 'memo-right');
-            b.style.display = 'none';
+            b.classList.remove('is-active');
             document.getElementById('memo-panel').style.width = '260px';
         }
         applyPaneWidthSettings();
@@ -2488,10 +2535,10 @@ function closeOutlinePanel() {
         const b = document.getElementById('btn-outline-swap');
         if (d) {
             c.classList.add('outline-docked');
-            b.style.display = 'inline-block';
+            b.classList.add('is-active');
         } else {
             c.classList.remove('outline-docked', 'outline-left');
-            b.style.display = 'none';
+            b.classList.remove('is-active');
             document.getElementById('outline-panel').style.width = '260px';
         }
         applyPaneWidthSettings();

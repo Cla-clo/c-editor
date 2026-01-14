@@ -462,16 +462,22 @@
         gap: 4px;
     }
     body.theme-dark .memo-toolbar { background: #713f12; border-color: #854d0e; }
-    .memo-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+    body.theme-dark .memo-tab { background: #a16207; border-color: #d97706; color: #fef3c7; }
+    body.theme-dark .memo-tab.active { background: #1f2937; border-bottom-color: #1f2937; }
+    body.theme-dark .memo-tab-add { border-color: #f59e0b; color: #fbbf24; }
+    .memo-tabs {
+        display: flex; gap: 4px; flex: 1; overflow-x: auto;
+        align-items: flex-end; padding: 2px 2px 0; min-height: 24px; min-width: 0;
+    }
     .memo-tabs::-webkit-scrollbar { height: 3px; }
     .memo-tabs::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 3px; }
     .memo-tab {
-        padding: 2px 8px; font-size: 0.75rem; background: #fef9c3; border: 1px solid #fcd34d;
+        padding: 2px 8px; font-size: 0.75rem; background: #fff3b3; border: 1px solid #f59e0b;
         border-radius: 4px 4px 0 0; cursor: pointer; white-space: nowrap;
         display: inline-flex; align-items: center; gap: 4px;
     }
-    .memo-tab.active { background: #fefce8; border-bottom-color: #fefce8; }
-    .memo-tab-add { background: transparent; border: 1px dashed #fcd34d; color: #92400e; }
+    .memo-tab.active { background: #ffffff; border-bottom-color: #ffffff; }
+    .memo-tab-add { background: transparent; border: 1px dashed #f59e0b; color: #92400e; }
     .memo-tab .tab-close {
         margin-left: 2px; padding: 0 4px; border-radius: 4px; font-size: 0.65rem;
     }

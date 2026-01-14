@@ -21,6 +21,8 @@
         --layout-padding: 6px;
         --layout-gap: 0px;
         --dock-top: 46px;
+        --divider-size: 2px;
+        --divider-hit-area: 10px;
     }
     body.theme-dark {
         --bg-color: #1f2937; --panel-bg: #374151; --border-color: #4b5563;
@@ -90,6 +92,11 @@
     .btn-sync:hover { background: #fef08a; }
     .btn-save { background: #2563eb; color: white; border: 1px solid #1d4ed8; }
     .btn-save:hover { background: #1d4ed8; color: white; }
+    .btn-reset-input {
+        background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
+        font-weight: bold; padding: 4px 8px;
+    }
+    .btn-reset-input:hover { background: #fecaca; color: #991b1b; }
     .btn-undo { background: #f3e8ff; color: #7c3aed; border-color: #d8b4fe; }
     .btn-undo:hover { background: #ede9fe; }
     .btn-apply { background: #dcfce7; color: #166534; border-color: #86efac; font-size: 0.7rem; padding: 2px 6px; height: 22px; }
@@ -172,7 +179,7 @@
     input[type="number"] { width: 50px; }
     .settings-actions {
         border-right: none; margin-left: auto; display: flex; flex-direction: column;
-        align-items: flex-end; gap: 8px;
+        align-items: flex-end; gap: 8px; align-self: stretch; justify-content: flex-end;
     }
     .settings-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .settings-action-btn { min-width: 140px; justify-content: center; }
@@ -200,21 +207,48 @@
 
     /* Pane Resizer */
     .pane-resizer {
-        width: 2px; background: var(--border-color); cursor: col-resize;
+        width: var(--divider-hit-area); cursor: col-resize;
         position: relative; flex-shrink: 0; z-index: 10;
-        margin: 0 -4px; padding: 0 4px; /* 操作領域を保ちつつ見た目は細く */
-        background-clip: content-box;
+        margin: 0 calc(-1 * (var(--divider-hit-area) / 2));
+        display: flex; align-items: center; justify-content: center;
+        background: transparent;
     }
-    .pane-resizer:hover, .pane-resizer.resizing { background: #3b82f6; background-clip: content-box; }
-    body.scroll-mode .pane-stack .pane-resizer { display: none; }
+    .pane-resizer::before {
+        content: "";
+        width: var(--divider-size);
+        height: 100%;
+        background: var(--border-color);
+        border-radius: 999px;
+    }
+    .pane-resizer:hover::before,
+    .pane-resizer.resizing::before { background: #3b82f6; }
+    body.scroll-mode .pane-stack .pane-resizer {
+        width: 100%;
+        height: var(--divider-hit-area);
+        cursor: row-resize;
+        margin: calc(-1 * (var(--divider-hit-area) / 2)) 0;
+    }
+    body.scroll-mode .pane-stack .pane-resizer::before {
+        width: 100%;
+        height: var(--divider-size);
+    }
 
     .dock-resizer {
-        width: 2px; background: var(--border-color); cursor: col-resize;
+        width: var(--divider-hit-area); cursor: col-resize;
         position: relative; flex-shrink: 0; z-index: 10;
-        margin: 0 -4px; padding: 0 4px;
-        background-clip: content-box; display: none;
+        margin: 0 calc(-1 * (var(--divider-hit-area) / 2));
+        display: none; align-items: center; justify-content: center;
+        background: transparent;
     }
-    .dock-resizer:hover, .dock-resizer.resizing { background: #3b82f6; background-clip: content-box; }
+    .dock-resizer::before {
+        content: "";
+        width: var(--divider-size);
+        height: 100%;
+        background: var(--border-color);
+        border-radius: 999px;
+    }
+    .dock-resizer:hover::before,
+    .dock-resizer.resizing::before { background: #3b82f6; }
 
     .pane-header {
         background: var(--pane-header-bg); padding: 0 10px; color: var(--text-muted); height: 28px;
@@ -322,21 +356,21 @@
         width: 100%; height: 100%; border: none; outline: none; resize: none;
         padding: 20px; background: transparent; font-family: inherit; line-height: inherit; font-size: inherit;
         white-space: pre-wrap; word-wrap: break-word; z-index: 2; position: relative; color: var(--text-color);
-        overflow-x: hidden; overflow-y: auto;
+        overflow: auto; box-sizing: border-box;
     }
     textarea::selection { background-color: #bae6fd; color: #000; }
     .vertical-mode textarea { overflow-x: auto; overflow-y: hidden; }
     #input-mirror-container {
         position: absolute; top: 0; left: 0; right: 0; bottom: 0;
         visibility: hidden; pointer-events: none;
-        white-space: pre-wrap; word-wrap: break-word; overflow: hidden; padding: 20px;
+        white-space: pre-wrap; word-wrap: break-word; overflow: hidden; padding: 20px; box-sizing: border-box;
     }
     .vertical-mode textarea, .vertical-mode #input-mirror-container { writing-mode: vertical-rl; text-orientation: upright; }
 
     #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: auto; overflow-y: auto; box-sizing: border-box; min-width: 0; }
     #preview-scroll.vertical-mode { overflow-x: auto !important; overflow-y: hidden !important; height: 100%; width: 100%; max-width: 100%; }
     #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; min-height: 100%; width: max-content; max-width: none; }
-    #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; min-width: 0; }
+    #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; min-width: 0; box-sizing: border-box; }
     body.scroll-mode #preview-scroll { height: 100%; overflow-y: auto; }
     body.scroll-mode #preview-scroll.vertical-mode { overflow-x: auto !important; }
     #pane-preview .pane-body { overflow: auto; }
@@ -678,6 +712,7 @@
         </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
+        <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
         <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
     </div>
 </header>
@@ -686,7 +721,7 @@
     <div id="search-bar" class="control-panel">
         <div class="panel-action-buttons">
             <button class="panel-pin-btn" onclick="togglePanelPin('search-bar')" title="固定">📌</button>
-            <button class="panel-close-btn" onclick="togglePanel('search-bar')">✕</button>
+            <button class="panel-close-btn" onclick="closeControlPanel('search-bar')">✕</button>
         </div>
         <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
         <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
@@ -702,7 +737,7 @@
     <div id="help-bar" class="control-panel">
         <div class="panel-action-buttons">
             <button class="panel-pin-btn" onclick="togglePanelPin('help-bar')" title="固定">📌</button>
-            <button class="panel-close-btn" onclick="togglePanel('help-bar')">✕</button>
+            <button class="panel-close-btn" onclick="closeControlPanel('help-bar')">✕</button>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -774,7 +809,7 @@
     <div id="settings-bar" class="control-panel">
         <div class="panel-action-buttons">
             <button class="panel-pin-btn" onclick="togglePanelPin('settings-bar')" title="固定">📌</button>
-            <button class="panel-close-btn" onclick="togglePanel('settings-bar')">✕</button>
+            <button class="panel-close-btn" onclick="closeControlPanel('settings-bar')">✕</button>
         </div>
         <div class="setting-group">
             <div class="setting-title">入力エリア <button class="btn btn-apply" onclick="applyInputSettings()">適用</button></div>
@@ -873,15 +908,25 @@
         </div>
 
         <div class="setting-group">
+            <div class="setting-title">開く</div>
+            <div class="setting-row vertical">
+                <label><input type="radio" name="st-open-mode" value="current" checked onchange="applyOpenSettings()"> 現在のタブに開く</label>
+                <label><input type="radio" name="st-open-mode" value="new" onchange="applyOpenSettings()"> 新しいタブに開く</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
             <div class="setting-title">ペイン幅 <button class="btn btn-apply" onclick="applyPaneWidthSettings()">適用</button></div>
             <div class="setting-row vertical">
                 <label>入力: <input type="number" id="st-pane-input-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>プレビュー: <input type="number" id="st-pane-preview-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>メモ: <input type="number" id="st-pane-memo-width" value="260" min="160" max="1200" style="width:70px;">px</label>
                 <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
+                <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;">px</label>
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
+                <button class="btn btn-apply" onclick="applyDividerSettings()" style="font-size:0.65rem;">仕切り適用</button>
             </div>
         </div>
 
@@ -905,8 +950,6 @@
                         <button onclick="document.getElementById('settings-file-input').click()">📥 設定をインポート</button>
                     </div>
                 </div>
-            </div>
-            <div class="settings-actions-row">
                 <button class="btn settings-action-btn" onclick="resetAllSettings()" style="font-size:0.7rem; background:#fee2e2; color:#dc2626; border-color:#fecaca;">🔄 設定を初期化</button>
                 <button class="btn btn-apply-all settings-action-btn" onclick="applyAllSettings()">⚡ 一括適用</button>
             </div>
@@ -1058,6 +1101,9 @@
 <div id="quick-insert-popup" class="quick-insert-popup">
     <button class="qip-ruby" onclick="quickInsertRuby()">🔤ルビ</button>
     <button class="qip-bouten" onclick="quickInsertBouten()">⚫傍点</button>
+    <button onclick="quickWrapSelection('「', '」')">「」</button>
+    <button onclick="quickWrapSelection('『', '』')">『』</button>
+    <button onclick="quickWrapSelection('（', '）')">（）</button>
     <button style="color:#d97706;" onclick="quickAddBookmark()">🔖しおり</button>
 </div>
 
@@ -1148,7 +1194,7 @@
         goalChars: 150000, todayGoal: 2000, manuscriptRows: 34, manuscriptCols: 42,
         showReadingTime: true, showManuscript: true, showSpace: true, showHighlight: true,
         typewriterMode: false, writingTracker: true, defaultPreviewHidden: false,
-        celebrateGoal: true
+        celebrateGoal: true, openMode: 'current'
     };
     let goalAchieved = { today: false, total: false };
     let previewUpdateTimeout = null;
@@ -1165,6 +1211,7 @@
         input: 'cc_pane_input_height_px',
         preview: 'cc_pane_preview_height_px'
     };
+    const DIVIDER_WIDTH_KEY = 'cc_divider_width_px';
 
     const TODAY_START_KEY = 'cc_editor_today_start';
     const WRITING_TIME_KEY = 'cc_editor_writing_time';
@@ -1427,7 +1474,9 @@
             writing: { typewriter: document.getElementById('st-typewriter-mode').checked, tracker: document.getElementById('st-writing-tracker').checked },
             goal: { chars: document.getElementById('st-goal-chars').value, today: document.getElementById('st-today-goal').value, showReading: document.getElementById('st-show-reading-time').checked, celebrate: document.getElementById('st-celebrate-goal').checked },
             manuscript: { rows: document.getElementById('st-manuscript-rows').value, cols: document.getElementById('st-manuscript-cols').value, show: document.getElementById('st-show-manuscript').checked },
+            open: { mode: document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current' },
             theme: document.getElementById('st-theme-preset').value,
+            divider: { width: document.getElementById('st-divider-width').value },
             paneWidths: {
                 input: document.getElementById('st-pane-input-width').value,
                 preview: document.getElementById('st-pane-preview-width').value,
@@ -1447,7 +1496,13 @@
         if (s.writing) { document.getElementById('st-typewriter-mode').checked = s.writing.typewriter || false; document.getElementById('st-writing-tracker').checked = s.writing.tracker !== false; }
         if (s.goal) { document.getElementById('st-goal-chars').value = s.goal.chars || 150000; document.getElementById('st-today-goal').value = s.goal.today || 2000; document.getElementById('st-show-reading-time').checked = s.goal.showReading !== false; document.getElementById('st-celebrate-goal').checked = s.goal.celebrate !== false; }
         if (s.manuscript) { document.getElementById('st-manuscript-rows').value = s.manuscript.rows || 34; document.getElementById('st-manuscript-cols').value = s.manuscript.cols || 42; document.getElementById('st-show-manuscript').checked = s.manuscript.show !== false; }
+        if (s.open) {
+            const openMode = s.open.mode || 'current';
+            const openInput = document.querySelector(`input[name="st-open-mode"][value="${openMode}"]`);
+            if (openInput) openInput.checked = true;
+        }
         if (s.theme !== undefined) document.getElementById('st-theme-preset').value = s.theme;
+        if (s.divider) document.getElementById('st-divider-width').value = s.divider.width || 2;
         if (s.paneWidths) {
             document.getElementById('st-pane-input-width').value = s.paneWidths.input || 520;
             document.getElementById('st-pane-preview-width').value = s.paneWidths.preview || 520;
@@ -1497,6 +1552,38 @@
 　（この行のように全角スペースで始まる行で改行すると、次の行にも自動で入ります）
 
 　ご執筆にお役立てください。`;
+
+    function confirmResetInput() {
+        const first = confirm('入力を初期化しますが、よろしいですか？');
+        if (!first) return;
+        const second = confirm('本当に初期化します。全部消えますよ？');
+        if (!second) return;
+        resetInputToStartup();
+    }
+
+    function resetInputToStartup() {
+        inputTabs = [{ id: 1, name: '第1章', content: defaultText }];
+        activeTabId = 1;
+        nextTabId = 2;
+        inputArea.value = defaultText;
+        previewTabId = null;
+        previewShowAll = false;
+        bookmarks = [];
+        todayStartChars = 0;
+        writingSeconds = 0;
+        localStorage.removeItem(TABS_KEY);
+        localStorage.removeItem(AUTOSAVE_KEY);
+        localStorage.removeItem(TODAY_START_KEY);
+        localStorage.removeItem(BOOKMARKS_KEY);
+        sessionStorage.removeItem('cc_editor_session_started');
+        renderInputTabs();
+        renderPreviewTabs();
+        renderBookmarks();
+        updateInputStats();
+        updatePreview();
+        saveTabsToStorage();
+        saveWritingTime();
+    }
 
     const AUTOSAVE_KEY = 'cc_editor_autosave', AUTOSAVE_INTERVAL = 30000;
     function autoSave() { saveTabsToStorage(); saveSettingsToStorage(); }
@@ -1773,6 +1860,7 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
     });
 
     let previewTabId = null; // null = follow input, or specific tab id
+    let previewShowAll = false;
 
     function renderPreviewTabs() {
         const container = document.getElementById('preview-tabs-container');
@@ -1874,8 +1962,17 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
     function applyGoalSettings() { settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0; settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0; settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked; settingsCache.celebrateGoal = document.getElementById('st-celebrate-goal').checked; goalAchieved = { today: false, total: false }; updateInputStats(); updatePreview(); }
     function applyManuscriptSettings() { settingsCache.manuscriptRows = parseInt(document.getElementById('st-manuscript-rows').value) || 34; settingsCache.manuscriptCols = parseInt(document.getElementById('st-manuscript-cols').value) || 42; settingsCache.showManuscript = document.getElementById('st-show-manuscript').checked; updateInputStats(); updatePreview(); }
     function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
+    function applyOpenSettings() { settingsCache.openMode = document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current'; }
+    function applyDividerSettings() {
+        const dividerWidthRaw = parseInt(document.getElementById('st-divider-width').value, 10);
+        const dividerWidth = clampValue(dividerWidthRaw || 2, 1, 12);
+        document.getElementById('st-divider-width').value = dividerWidth;
+        document.documentElement.style.setProperty('--divider-size', `${dividerWidth}px`);
+        document.documentElement.style.setProperty('--divider-hit-area', `${Math.max(10, dividerWidth + 8)}px`);
+        localStorage.setItem(DIVIDER_WIDTH_KEY, String(dividerWidth));
+    }
     function applyPaperSettings() { applyManuscriptSettings(); applyThemeSettings(); }
-    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); }
+    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyOpenSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); applyDividerSettings(); }
 
     function resetAllSettings() {
         if (!confirm('全ての設定を初期状態に戻しますか？')) return;
@@ -1902,11 +1999,13 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         document.getElementById('st-manuscript-rows').value = 34;
         document.getElementById('st-manuscript-cols').value = 42;
         document.getElementById('st-show-manuscript').checked = true;
+        document.querySelector('input[name="st-open-mode"][value="current"]').checked = true;
         document.getElementById('st-theme-preset').value = '';
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-divider-width').value = 2;
 const inputH = document.getElementById('st-pane-input-height');
 const previewH = document.getElementById('st-pane-preview-height');
 if (inputH) inputH.value = 520;
@@ -1915,6 +2014,7 @@ if (previewH) previewH.value = 420;
         applyAllSettings();
         resetPaneWidths();
         resetPaneHeights();
+        localStorage.removeItem(DIVIDER_WIDTH_KEY);
         localStorage.removeItem(SETTINGS_KEY);
     }
 
@@ -2067,6 +2167,14 @@ function updateDockSplitState() {
         }
     }
 
+    function loadDividerSettings() {
+        const dividerWidth = parseInt(localStorage.getItem(DIVIDER_WIDTH_KEY), 10);
+        if (Number.isFinite(dividerWidth)) {
+            document.getElementById('st-divider-width').value = dividerWidth;
+        }
+        applyDividerSettings();
+    }
+
 	function loadPaneHeightSettings() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
@@ -2140,6 +2248,16 @@ function updateDockSplitState() {
             p.classList.add('open');
             if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100);
         }
+        updateControlPanelScrollState();
+        updatePanelButtonStates();
+    }
+    function closeControlPanel(id) {
+        const p = document.getElementById(id);
+        const btn = document.querySelector(`#${id} .panel-pin-btn`);
+        if (!p) return;
+        p.classList.remove('open');
+        pinnedPanels.delete(id);
+        if (btn) btn.classList.remove('pinned');
         updateControlPanelScrollState();
         updatePanelButtonStates();
     }
@@ -2285,6 +2403,19 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     function insertText(t, o = 0) { const s = inputArea.selectionStart, e = inputArea.selectionEnd, b = inputArea.value.substring(0, s), a = inputArea.value.substring(e); inputArea.value = b + t + a; const np = s + t.length - o; inputArea.setSelectionRange(np, np); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
     function insertRubyToSelection() { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s === e) { alert('ルビを付けたい文字を選択してください。'); return; } const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e), rt = `｜${st}《》`; inputArea.value = b + rt + a; inputArea.setSelectionRange(s + st.length + 2, s + st.length + 2); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
     function insertBoutenToSelection() { const s = inputArea.selectionStart, e = inputArea.selectionEnd; if (s === e) { alert('傍点を付けたい文字を選択してください。'); return; } const st = inputArea.value.substring(s, e), b = inputArea.value.substring(0, s), a = inputArea.value.substring(e), bt = `《《${st}》》`; inputArea.value = b + bt + a; inputArea.setSelectionRange(s + bt.length, s + bt.length); inputArea.focus(); updateInputStats(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+    function quickWrapSelection(left, right) {
+        const s = inputArea.selectionStart, e = inputArea.selectionEnd;
+        if (s === e) { alert('範囲を選択してください。'); return; }
+        const st = inputArea.value.substring(s, e);
+        const b = inputArea.value.substring(0, s);
+        const a = inputArea.value.substring(e);
+        const wrapped = `${left}${st}${right}`;
+        inputArea.value = b + wrapped + a;
+        inputArea.setSelectionRange(s + wrapped.length, s + wrapped.length);
+        inputArea.focus();
+        updateInputStats();
+        hideQuickInsertPopup();
+    }
 
     function scrollToCursorPosition(idx) {
         const t = inputArea.value, v = document.getElementById('st-in-v').checked, cs = window.getComputedStyle(inputArea);
@@ -2551,7 +2682,7 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     function closeMemoSaveDialog() {
         document.getElementById('memo-save-dialog').style.display = 'none';
     }
-    function executeMemoSave() {
+    async function executeMemoSave() {
         const scope = document.querySelector('input[name="memo-save-scope"]:checked')?.value || 'current';
         const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
         if (currentTab) currentTab.content = memoArea.value;
@@ -2562,13 +2693,17 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
             content = currentTab ? currentTab.content : '';
         }
         const blob = new Blob([content], { type: 'text/plain' });
-        const a = document.createElement('a');
         const n = new Date();
-        a.href = URL.createObjectURL(blob);
-        a.download = `memo_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const name = `memo_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`;
+        const handled = await saveBlobWithPicker(blob, name, [{ description: 'Text', accept: { 'text/plain': ['.txt'] } }]);
+        if (!handled) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
         closeMemoSaveDialog();
     }
 
@@ -2695,9 +2830,23 @@ function closeOutlinePanel() {
         const tabName = currentTab?.name || '';
         const t = inputArea.value, ls = t.split('\n'), rx = /^([#＃■□▲△▼▽◆◇○◎●§・※☆★]+|第[一二三四五六七八九十百千\d]+[章話節部編]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+)/;
         let cl = 0, lm = new Map(), ca = 0, found = false;
+        if (tabName.trim()) {
+            outlineData.push({ text: tabName.trim(), level: 1, pos: 0, length: 0, collapsed: false, index: 0, directCharCount: 0, charCount: 0, tabId: activeTabId, tabName, isTabTitle: true });
+            found = true;
+            cl = 1;
+        }
         ls.forEach(line => { const c = line.trim(), cp = ca; ca += line.length + 1; const m = c.match(rx); if (m) { found = true; let sk = m[1]; if (sk.match(/^第.+[章話節部編]$/)) sk = '___CHAPTER___'; else if (sk.match(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+$/)) sk = '___CIRCLED___'; else if (sk.match(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/)) sk = '___ROMAN___'; if (!lm.has(sk)) { cl++; lm.set(sk, cl); } outlineData.push({ text: c, level: lm.get(sk), pos: cp, length: c.length, collapsed: false, index: outlineData.length, directCharCount: 0, charCount: 0, tabId: activeTabId, tabName }); } });
         const tl = t.length; for (let i = 0; i < outlineData.length; i++) { const sp = outlineData[i].pos, ep = (i + 1 < outlineData.length) ? outlineData[i + 1].pos : tl; outlineData[i].directCharCount = t.substring(sp, ep).replace(/[\n\s　]/g, '').length; }
-        for (let i = outlineData.length - 1; i >= 0; i--) { const clv = outlineData[i].level; let tc = outlineData[i].directCharCount; for (let j = i + 1; j < outlineData.length; j++) { if (outlineData[j].level <= clv) break; if (outlineData[j].level === clv + 1) tc += outlineData[j].charCount; else { let hp = false; for (let k = j - 1; k > i; k--) { if (outlineData[k].level === outlineData[j].level - 1) { hp = true; break; } if (outlineData[k].level <= clv) break; } if (!hp) tc += outlineData[j].charCount; } } outlineData[i].charCount = tc; }
+        const tabTitleItem = outlineData.find(it => it.isTabTitle);
+        if (tabTitleItem) {
+            tabTitleItem.directCharCount = t.replace(/[\n\s　]/g, '').length;
+        }
+        for (let i = outlineData.length - 1; i >= 0; i--) {
+            if (outlineData[i].isTabTitle) {
+                outlineData[i].charCount = outlineData[i].directCharCount;
+                continue;
+            }
+            const clv = outlineData[i].level; let tc = outlineData[i].directCharCount; for (let j = i + 1; j < outlineData.length; j++) { if (outlineData[j].level <= clv) break; if (outlineData[j].level === clv + 1) tc += outlineData[j].charCount; else { let hp = false; for (let k = j - 1; k > i; k--) { if (outlineData[k].level === outlineData[j].level - 1) { hp = true; break; } if (outlineData[k].level <= clv) break; } if (!hp) tc += outlineData[j].charCount; } } outlineData[i].charCount = tc; }
         let lc = new Map(); outlineData.forEach(it => { if (!lc.has(it.level)) lc.set(it.level, 0); lc.set(it.level, lc.get(it.level) + it.directCharCount); });
         if (found) { let st = '文字数: '; Array.from(lc.keys()).sort((a,b) => a-b).forEach((lv, i, a) => { st += `Lv${lv}: ${lc.get(lv).toLocaleString()}`; if (i < a.length - 1) st += ' / '; }); sm.innerHTML = st; sm.style.display = 'block'; } else { sm.style.display = 'none'; }
         renderOutline(); if (!found) l.innerHTML = '<div class="outline-empty">見出しが見つかりません。</div>';
@@ -2708,7 +2857,7 @@ function closeOutlinePanel() {
             const d = document.createElement('div'); d.className = `outline-item outline-level-${Math.min(it.level, 3)}`;
             const hc = outlineData.some((x, i) => i > idx && x.level > it.level && !outlineData.slice(idx + 1, i).some(m => m.level <= it.level));
             const tg = document.createElement('span'); tg.className = 'outline-toggle'; if (hc) { tg.textContent = it.collapsed ? '▶' : '▼'; tg.onclick = e => { e.stopPropagation(); toggleOutlineItem(idx); }; } d.appendChild(tg);
-            if (it.tabName) {
+            if (it.tabName && !it.isTabTitle) {
                 const tl = document.createElement('span');
                 tl.className = 'outline-tab-label';
                 tl.textContent = `【${it.tabName}】`;
@@ -2845,10 +2994,38 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
     function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
+    async function saveBlobWithPicker(blob, suggestedName, types) {
+        if (!window.showSaveFilePicker) return false;
+        try {
+            const handle = await window.showSaveFilePicker({ suggestedName, types });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return true;
+        } catch (err) {
+            if (err && err.name === 'AbortError') return true;
+            return false;
+        }
+    }
     function getSaveScope() { return document.querySelector('input[name="save-scope"]:checked')?.value || 'current'; }
     function getContentToSave() { return getSaveScope() === 'all' ? getAllTabsContent() : getCurrentTabContent(); }
-    function saveAsText() { const content = getContentToSave(); const b = new Blob([content], { type: 'text/plain' }), a = document.createElement('a'), n = new Date(); a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog(); }
-    function saveAsHTML() {
+    async function saveAsText() {
+        const content = getContentToSave();
+        const b = new Blob([content], { type: 'text/plain' });
+        const n = new Date();
+        const name = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.txt`;
+        const handled = await saveBlobWithPicker(b, name, [{ description: 'Text', accept: { 'text/plain': ['.txt'] } }]);
+        if (!handled) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(b);
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        closeSaveDialog();
+    }
+    async function saveAsHTML() {
         const scope = getSaveScope();
         const v = document.getElementById('st-pv-v').checked, fk = document.getElementById('st-pv-font').value, fs = document.getElementById('st-pv-size').value, lh = document.getElementById('st-pv-line').value;
         let htmlContent = '';
@@ -2865,9 +3042,19 @@ if (typeof applyPaneHeightSettings === 'function') {
             htmlContent = previewContent.innerHTML;
         }
         const h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>エクスポート</title><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&display=swap" rel="stylesheet"><style>body{margin:40px;background:#fdfcf0;font-family:${fontMap[fk]};font-size:${fs}px;line-height:${lh};${v?'writing-mode:vertical-rl;min-height:100vh;':''}}ruby{ruby-align:space-between;}rt{font-size:0.5em;color:#555;}.bouten-ruby rt{font-size:0.8em;font-weight:bold;}.underline-text{text-decoration:underline;text-decoration-color:#dc2626;}.highlight-text{background:linear-gradient(transparent 60%,#fef08a 60%);}</style></head><body>${htmlContent}</body></html>`;
-        const b = new Blob([h], { type: 'text/html' }), a = document.createElement('a'), n = new Date();
-        a.href = URL.createObjectURL(b); a.download = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.html`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); closeSaveDialog();
+        const b = new Blob([h], { type: 'text/html' });
+        const n = new Date();
+        const name = `novel_${n.getFullYear()}${(n.getMonth()+1).toString().padStart(2,'0')}${n.getDate().toString().padStart(2,'0')}.html`;
+        const handled = await saveBlobWithPicker(b, name, [{ description: 'HTML', accept: { 'text/html': ['.html'] } }]);
+        if (!handled) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(b);
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        closeSaveDialog();
     }
     function renderTextToHTML(text) {
         const ss = settingsCache.showSpace, sh = settingsCache.showHighlight;
@@ -2885,9 +3072,22 @@ if (typeof applyPaneHeightSettings === 'function') {
         const f = input.files[0]; if (!f) return;
         const r = new FileReader();
         r.onload = e => {
-            inputArea.value = e.target.result;
-            const currentTab = inputTabs.find(t => t.id === activeTabId);
-            if (currentTab) currentTab.content = e.target.result;
+            const content = e.target.result;
+            const openMode = settingsCache.openMode || 'current';
+            if (openMode === 'new') {
+                const baseName = f.name.replace(/\.[^/.]+$/, '') || `第${inputTabs.length + 1}章`;
+                const newTab = { id: nextTabId++, name: baseName, content };
+                const currentTab = inputTabs.find(t => t.id === activeTabId);
+                if (currentTab) currentTab.content = inputArea.value;
+                inputTabs.push(newTab);
+                activeTabId = newTab.id;
+                inputArea.value = content;
+                renderInputTabs();
+            } else {
+                inputArea.value = content;
+                const currentTab = inputTabs.find(t => t.id === activeTabId);
+                if (currentTab) currentTab.content = content;
+            }
             updateInputStats();
             updatePreview();
             saveTabsToStorage();
@@ -2918,33 +3118,48 @@ if (typeof applyPaneHeightSettings === 'function') {
         resizer.addEventListener('mousedown', e => {
             isResizing = true;
             resizer.classList.add('resizing');
-            document.body.style.cursor = 'col-resize';
+            document.body.style.cursor = document.body.classList.contains('scroll-mode') ? 'row-resize' : 'col-resize';
             document.body.style.userSelect = 'none';
             e.preventDefault();
         });
 
         document.addEventListener('mousemove', e => {
             if (!isResizing) return;
-            const minPaneWidth = 120;
-            const inputRect = inputPane.getBoundingClientRect();
-            const previewRect = previewPane.getBoundingClientRect();
-            const totalWidth = inputRect.width + previewRect.width;
-            if (totalWidth <= minPaneWidth * 2) return;
-
-            if (paneStack.classList.contains('reverse-row')) {
-                const newPreviewWidth = clampValue(e.clientX - previewRect.left, minPaneWidth, totalWidth - minPaneWidth);
-                const newInputWidth = totalWidth - newPreviewWidth;
-                previewPane.style.flex = `1 1 ${newPreviewWidth}px`;
-                inputPane.style.flex = `1 1 ${newInputWidth}px`;
-                previewPane.style.width = `${newPreviewWidth}px`;
-                inputPane.style.width = `${newInputWidth}px`;
+            if (document.body.classList.contains('scroll-mode')) {
+                const minPaneHeight = 160;
+                const inputRect = inputPane.getBoundingClientRect();
+                const previewRect = previewPane.getBoundingClientRect();
+                const totalHeight = inputRect.height + previewRect.height;
+                if (totalHeight <= minPaneHeight * 2) return;
+                const stackRect = paneStack.getBoundingClientRect();
+                const topPane = paneStack.classList.contains('reverse-col') ? previewPane : inputPane;
+                const bottomPane = paneStack.classList.contains('reverse-col') ? inputPane : previewPane;
+                const newTopHeight = clampValue(e.clientY - stackRect.top, minPaneHeight, totalHeight - minPaneHeight);
+                const newBottomHeight = totalHeight - newTopHeight;
+                topPane.style.height = `${newTopHeight}px`;
+                bottomPane.style.height = `${newBottomHeight}px`;
             } else {
-                const newInputWidth = clampValue(e.clientX - inputRect.left, minPaneWidth, totalWidth - minPaneWidth);
-                const newPreviewWidth = totalWidth - newInputWidth;
-                inputPane.style.flex = `1 1 ${newInputWidth}px`;
-                previewPane.style.flex = `1 1 ${newPreviewWidth}px`;
-                inputPane.style.width = `${newInputWidth}px`;
-                previewPane.style.width = `${newPreviewWidth}px`;
+                const minPaneWidth = 120;
+                const inputRect = inputPane.getBoundingClientRect();
+                const previewRect = previewPane.getBoundingClientRect();
+                const totalWidth = inputRect.width + previewRect.width;
+                if (totalWidth <= minPaneWidth * 2) return;
+
+                if (paneStack.classList.contains('reverse-row')) {
+                    const newPreviewWidth = clampValue(e.clientX - previewRect.left, minPaneWidth, totalWidth - minPaneWidth);
+                    const newInputWidth = totalWidth - newPreviewWidth;
+                    previewPane.style.flex = `1 1 ${newPreviewWidth}px`;
+                    inputPane.style.flex = `1 1 ${newInputWidth}px`;
+                    previewPane.style.width = `${newPreviewWidth}px`;
+                    inputPane.style.width = `${newInputWidth}px`;
+                } else {
+                    const newInputWidth = clampValue(e.clientX - inputRect.left, minPaneWidth, totalWidth - minPaneWidth);
+                    const newPreviewWidth = totalWidth - newInputWidth;
+                    inputPane.style.flex = `1 1 ${newInputWidth}px`;
+                    previewPane.style.flex = `1 1 ${newPreviewWidth}px`;
+                    inputPane.style.width = `${newInputWidth}px`;
+                    previewPane.style.width = `${newPreviewWidth}px`;
+                }
             }
         });
 
@@ -2954,14 +3169,25 @@ if (typeof applyPaneHeightSettings === 'function') {
                 resizer.classList.remove('resizing');
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
-                const inputRect = inputPane.getBoundingClientRect();
-                const previewRect = previewPane.getBoundingClientRect();
-                const inputWidth = Math.round(inputRect.width);
-                const previewWidth = Math.round(previewRect.width);
-                document.getElementById('st-pane-input-width').value = inputWidth;
-                document.getElementById('st-pane-preview-width').value = previewWidth;
-                localStorage.setItem(PANE_WIDTH_KEYS.input, inputWidth);
-                localStorage.setItem(PANE_WIDTH_KEYS.preview, previewWidth);
+                if (document.body.classList.contains('scroll-mode')) {
+                    const inputRect = inputPane.getBoundingClientRect();
+                    const previewRect = previewPane.getBoundingClientRect();
+                    const inputHeight = Math.round(inputRect.height);
+                    const previewHeight = Math.round(previewRect.height);
+                    document.getElementById('st-pane-input-height').value = inputHeight;
+                    document.getElementById('st-pane-preview-height').value = previewHeight;
+                    localStorage.setItem(PANE_HEIGHT_KEYS.input, String(inputHeight));
+                    localStorage.setItem(PANE_HEIGHT_KEYS.preview, String(previewHeight));
+                } else {
+                    const inputRect = inputPane.getBoundingClientRect();
+                    const previewRect = previewPane.getBoundingClientRect();
+                    const inputWidth = Math.round(inputRect.width);
+                    const previewWidth = Math.round(previewRect.width);
+                    document.getElementById('st-pane-input-width').value = inputWidth;
+                    document.getElementById('st-pane-preview-width').value = previewWidth;
+                    localStorage.setItem(PANE_WIDTH_KEYS.input, inputWidth);
+                    localStorage.setItem(PANE_WIDTH_KEYS.preview, previewWidth);
+                }
             }
         });
     })();
@@ -3095,6 +3321,7 @@ if (typeof applyPaneHeightSettings === 'function') {
     loadSettingsFromStorage();
     loadPaneWidthSettings();
     loadPaneHeightSettings();
+    loadDividerSettings();
     startWritingTimer();
     applyAllSettings();
     updateDockTopOffset();

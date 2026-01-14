@@ -257,6 +257,12 @@
     }
     .pane-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; }
+    .tab-title-name {
+        font-weight: bold; color: var(--text-color);
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 4px; padding: 1px 6px; margin-left: 6px;
+        cursor: text;
+    }
     .pane-total-stats {
         font-size: 0.7rem; color: var(--text-muted);
         background: var(--panel-bg); border: 1px solid var(--border-color);
@@ -922,7 +928,7 @@
                 <label>プレビュー: <input type="number" id="st-pane-preview-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>メモ: <input type="number" id="st-pane-memo-width" value="260" min="160" max="1200" style="width:70px;">px</label>
                 <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
-                <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;">px</label>
+                <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;" onchange="applyDividerSettings()">px</label>
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
@@ -962,10 +968,10 @@
     <div class="pane-stack" id="pane-stack">
         <div class="pane" id="pane-input">
             <div class="pane-header">
-                <div class="pane-title">
-                    <h2>入力</h2>
-                    <span class="pane-total-stats" id="input-total-stats">全タブ: 0字 / 0行</span>
-                </div>
+        <div class="pane-title">
+            <h2>入力 <span class="tab-title-name" id="active-tab-title" ondblclick="startEditTabName(activeTabId)" title="ダブルクリックでタブ名を変更">タブ1</span></h2>
+            <span class="pane-total-stats" id="input-total-stats">全タブ: 0字 / 0行</span>
+        </div>
                 <button class="pane-close-btn" onclick="hidePane('input')">✕</button>
             </div>
             <div class="input-tabs-container" id="input-tabs-container">
@@ -1224,7 +1230,7 @@
     function escapeHtml(s) { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
 
     // Input Tabs System
-    let inputTabs = [{ id: 1, name: '第1章', content: '' }];
+    let inputTabs = [{ id: 1, name: 'タブ1', content: '' }];
     let activeTabId = 1;
     let nextTabId = 2;
     let draggingInputTabId = null;
@@ -1275,7 +1281,14 @@
         addBtn.title = '新しいタブを追加';
         addBtn.onclick = addNewTab;
         container.appendChild(addBtn);
+        updateActiveTabTitle();
         updatePreviewTabOptions();
+    }
+
+    function updateActiveTabTitle() {
+        const titleEl = document.getElementById('active-tab-title');
+        const activeTab = inputTabs.find(t => t.id === activeTabId);
+        if (titleEl && activeTab) titleEl.textContent = activeTab.name;
     }
 
     function switchTab(tabId) {
@@ -1299,7 +1312,7 @@
     function addNewTab() {
         const currentTab = inputTabs.find(t => t.id === activeTabId);
         if (currentTab) currentTab.content = inputArea.value;
-        const newTab = { id: nextTabId++, name: `第${inputTabs.length + 1}章`, content: '' };
+        const newTab = { id: nextTabId++, name: `タブ${inputTabs.length + 1}`, content: '' };
         inputTabs.push(newTab);
         activeTabId = newTab.id;
         inputArea.value = '';
@@ -1343,6 +1356,7 @@
     function finishEditTabName(tabId, newName) {
         const tab = inputTabs.find(t => t.id === tabId);
         if (tab) tab.name = newName.trim() || tab.name;
+        updateActiveTabTitle();
         renderInputTabs();
         saveTabsToStorage();
     }
@@ -1562,7 +1576,7 @@
     }
 
     function resetInputToStartup() {
-        inputTabs = [{ id: 1, name: '第1章', content: defaultText }];
+        inputTabs = [{ id: 1, name: 'タブ1', content: defaultText }];
         activeTabId = 1;
         nextTabId = 2;
         inputArea.value = defaultText;
@@ -1571,17 +1585,26 @@
         bookmarks = [];
         todayStartChars = 0;
         writingSeconds = 0;
+        memoTabs = [{ id: 1, name: 'メモ1', content: '' }];
+        activeMemoTabId = 1;
+        nextMemoTabId = 2;
+        memoArea.value = '';
         localStorage.removeItem(TABS_KEY);
         localStorage.removeItem(AUTOSAVE_KEY);
         localStorage.removeItem(TODAY_START_KEY);
         localStorage.removeItem(BOOKMARKS_KEY);
+        localStorage.removeItem(MEMO_KEY);
         sessionStorage.removeItem('cc_editor_session_started');
         renderInputTabs();
+        updateActiveTabTitle();
         renderPreviewTabs();
         renderBookmarks();
+        renderMemoTabs();
         updateInputStats();
+        updateMemoCharCount();
         updatePreview();
         saveTabsToStorage();
+        saveMemoTabs();
         saveWritingTime();
     }
 
@@ -3075,7 +3098,7 @@ if (typeof applyPaneHeightSettings === 'function') {
             const content = e.target.result;
             const openMode = settingsCache.openMode || 'current';
             if (openMode === 'new') {
-                const baseName = f.name.replace(/\.[^/.]+$/, '') || `第${inputTabs.length + 1}章`;
+                const baseName = f.name.replace(/\.[^/.]+$/, '') || `タブ${inputTabs.length + 1}`;
                 const newTab = { id: nextTabId++, name: baseName, content };
                 const currentTab = inputTabs.find(t => t.id === activeTabId);
                 if (currentTab) currentTab.content = inputArea.value;

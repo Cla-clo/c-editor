@@ -779,8 +779,6 @@
                 ・<b>Ctrl+S</b>：保存ダイアログ<br>
                 ・<b>Ctrl+F</b>：検索パネル<br>
                 ・<b>Ctrl+G</b>：行番号ジャンプ<br>
-                ・<b>Ctrl+T</b>：新規タブ追加<br>
-                ・<b>Ctrl+Shift+T</b>：新規メモタブ<br>
                 ・<b>Ctrl+Z</b>：元に戻す<br>
                 ・<b>Ctrl+Y</b>：やり直し<br>
                 ・<b>F11</b>：集中モード切替<br>
@@ -791,7 +789,6 @@
                 ・<b>ルビ</b>：｜漢字《かんじ》<br>
                 ・<b>傍点</b>：《《強調》》<br>
                 ・<b>傍線</b>：__下線__<br>
-                ・<b>蛍光ペン</b>：==強調==<br>
                 <small>※テキスト選択時、ポップアップからワンクリックでルビ・傍点挿入可能</small>
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -819,7 +816,6 @@
                 <div class="help-title">【保存・読込】</div>
                 ・<b>💾 保存</b>：テキスト/HTML形式で保存<br>
                 ・<b>📂 開く</b>：テキストファイルを読込<br>
-                ・<b>自動保存</b>：30秒ごとにブラウザに保存<br>
                 ・設定の📤エクスポート/📥インポート
             </div>
             <div class="help-section" style="flex: 1; min-width: 180px;">
@@ -1314,6 +1310,7 @@
         addBtn.title = '新しいタブを追加';
         addBtn.onclick = addNewTab;
         container.appendChild(addBtn);
+        updateActiveTabTitle();
         updatePreviewTabOptions();
     }
     function sanitizeFileName(name) {
@@ -1353,6 +1350,12 @@
         span.ondblclick = startEditNovelTitle;
         span.textContent = novelTitle;
         input.replaceWith(span);
+    }
+
+    function updateActiveTabTitle() {
+        const titleEl = document.getElementById('active-tab-title');
+        const activeTab = inputTabs.find(t => t.id === activeTabId);
+        if (titleEl && activeTab) titleEl.textContent = activeTab.name;
     }
 
     function switchTab(tabId) {
@@ -1420,6 +1423,7 @@
     function finishEditTabName(tabId, newName) {
         const tab = inputTabs.find(t => t.id === tabId);
         if (tab) tab.name = newName.trim() || tab.name;
+        updateActiveTabTitle();
         renderInputTabs();
         saveTabsToStorage();
     }

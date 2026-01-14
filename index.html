@@ -50,6 +50,7 @@
         height: 100vh; overflow: hidden; display: flex; flex-direction: column;
     }
     body.scroll-mode { height: auto; overflow-y: auto; display: block; }
+    body.allow-scroll { height: auto; overflow-y: auto; }
     body.focus-mode header, body.focus-mode .controls-wrapper, body.focus-mode .pane-header,
     body.focus-mode .pane-subheader, body.focus-mode .pane-footer, body.focus-mode #outline-panel { display: none !important; }
     body.focus-mode .main-container { padding: 0; }
@@ -144,20 +145,20 @@
     .panel-pin-btn:hover { opacity: 1; }
     .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
-    #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; }
+    #search-bar { flex-wrap: wrap; gap: 8px; align-items: center; background: #f0fdf4; border-color: #bbf7d0; padding-right: 30px; order: 2; }
     body.theme-dark #search-bar { background: #14532d; border-color: #166534; }
     #search-bar input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem; }
     #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
     .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
 
-    #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 30px; }
+    #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 30px; order: 1; }
     #help-bar.open { display: flex; }
     body.theme-dark #help-bar { background: #451a03; border-color: #854d0e; color: #fcd34d; }
     .help-section { margin-bottom: 12px; }
     .help-section:last-child { margin-bottom: 0; }
     .help-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; border-bottom: 1px dashed #fcd34d; padding-bottom: 2px; }
 
-    #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 30px; }
+    #settings-bar { margin-bottom: 0; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; padding: 8px 10px; padding-right: 30px; order: 3; }
     .setting-group { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 12px; }
     .setting-group:last-child { border-right: none; }
     .setting-title { font-weight: bold; color: var(--text-muted); margin-bottom: 2px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
@@ -309,7 +310,7 @@
     }
     .vertical-mode textarea, .vertical-mode #input-mirror-container { writing-mode: vertical-rl; text-orientation: upright; }
 
-    #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: hidden; overflow-y: auto; box-sizing: border-box; min-width: 0; }
+    #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: auto; overflow-y: auto; box-sizing: border-box; min-width: 0; }
     #preview-scroll.vertical-mode { overflow-x: auto !important; overflow-y: hidden !important; height: 100%; width: 100%; max-width: 100%; }
     #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; min-height: 100%; width: max-content; max-width: 100%; }
     #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; min-width: 0; }
@@ -442,12 +443,13 @@
     }
     .outline-tab:hover { background: var(--panel-bg); }
     .outline-tab.active { background: var(--panel-bg); color: var(--text-color); font-weight: bold; border-bottom: 2px solid #2563eb; }
-    .outline-content { flex: 1; overflow-y: auto; padding: 10px; }
+    .outline-content { flex: 1; overflow: auto; padding: 10px; }
     .outline-tab-content { display: none; }
     .outline-tab-content.active { display: block; }
     .outline-item {
         padding: 6px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer;
         color: var(--text-color); font-size: 0.85rem; display: flex; align-items: center;
+        white-space: nowrap; min-width: max-content;
     }
     .outline-item:hover { background: #e0f2fe; color: #0284c7; }
     body.theme-dark .outline-item:hover { background: #1e3a5f; }
@@ -456,20 +458,22 @@
     .outline-level-3 { padding-left: 35px; border-left: 2px solid #d1d5db; font-size: 0.8rem; }
     .outline-toggle { cursor: pointer; margin-right: 6px; font-size: 0.7rem; width: 14px; text-align: center; color: var(--text-muted); flex-shrink: 0; }
     .outline-toggle:hover { color: #2563eb; }
-    .outline-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .outline-text { flex: 1; white-space: nowrap; }
+    .outline-tab-label { font-size: 0.7rem; color: var(--text-muted); margin-right: 6px; }
     .outline-char-count { margin-left: auto; font-size: 0.7rem; color: var(--text-muted); background: var(--pane-header-bg); padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
     .outline-empty { color: var(--text-muted); font-style: italic; }
     .outline-hidden { display: none !important; }
     .outline-summary { padding: 8px 10px; background: #f0f9ff; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: #0369a1; }
     body.theme-dark .outline-summary { background: #1e3a5f; color: #93c5fd; }
 
-    .bookmark-item { padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+    .bookmark-item { padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: max-content; }
     .bookmark-item:hover { background: #fef3c7; }
-    .bookmark-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bookmark-text { flex: 1; white-space: nowrap; }
     .bookmark-delete { color: #dc2626; cursor: pointer; font-size: 0.8rem; }
     .bookmark-delete:hover { color: #b91c1c; }
     .bookmark-add-btn { width: 100%; padding: 8px; background: #fef3c7; border: 1px dashed #fcd34d; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-bottom: 10px; }
     .bookmark-add-btn:hover { background: #fde68a; }
+    #bookmark-list { overflow-x: auto; }
 
     .modal-overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -615,15 +619,14 @@
             <button class="btn btn-sync dropdown-btn">📲 同期 ▼</button>
             <div class="dropdown-content sync-dropdown-content">
                 <a onclick="syncPreviewPosition()">入力 → プレビュー</a>
-                <a onclick="doSyncPreviewToInput()">プレビュー → 入力</a>
             </div>
         </div>
         <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
-        <button class="btn" onclick="toggleMemoPane()">📝 メモ</button>
-        <button class="btn" onclick="toggleOutline()">📑 目次</button>
+        <button class="btn" onclick="toggleMemoPanel()">📝 メモ</button>
+        <button class="btn" onclick="toggleOutlinePanel()">📑 目次</button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
         <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
@@ -796,20 +799,11 @@
         </div>
 
         <div class="setting-group">
-            <div class="setting-title">原稿用紙 <button class="btn btn-apply" onclick="applyManuscriptSettings()">適用</button></div>
-            <div class="setting-row">
-                <label>行: <input type="number" id="st-manuscript-rows" value="34" min="1" max="100" style="width:50px;"></label>
-                <label>×文字: <input type="number" id="st-manuscript-cols" value="42" min="1" max="100" style="width:50px;"></label>
-            </div>
-            <div class="setting-row">
+            <div class="setting-title">用紙設定 <button class="btn btn-apply" onclick="applyPaperSettings()">適用</button></div>
+            <div class="setting-row vertical">
+                <div>行: <input type="number" id="st-manuscript-rows" value="34" min="1" max="100" style="width:50px;"> ×文字: <input type="number" id="st-manuscript-cols" value="42" min="1" max="100" style="width:50px;"></div>
                 <label><input type="checkbox" id="st-show-manuscript" checked> 換算表示</label>
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <div class="setting-title">テーマ <button class="btn btn-apply" onclick="applyThemeSettings()">適用</button></div>
-            <div class="setting-row">
-                <label>プリセット:
+                <label>テーマ:
                     <select id="st-theme-preset">
                         <option value="">ライト</option>
                         <option value="theme-dark">ダーク</option>
@@ -831,6 +825,17 @@
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-title">縦並び高さ <button class="btn btn-apply" onclick="applyPaneHeightSettings()">適用</button></div>
+            <div class="setting-row vertical">
+                <label>入力: <input type="number" id="st-pane-input-height" value="420" min="160" max="2000" style="width:70px;">px</label>
+                <label>プレビュー: <input type="number" id="st-pane-preview-height" value="320" min="160" max="2000" style="width:70px;">px</label>
+            </div>
+            <div class="setting-row">
+                <button class="btn btn-apply" onclick="resetPaneHeights()" style="font-size:0.65rem;">高さをリセット</button>
             </div>
         </div>
 
@@ -902,7 +907,7 @@
             <div class="memo-controls">
                 <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-memo-dock" onchange="toggleMemoDock()"> 📌固定</label>
                 <button id="btn-memo-swap" class="btn" style="display:none; padding:2px 6px; font-size:0.7rem;" onclick="swapMemoSide()">左右入替</button>
-                <button class="btn" onclick="toggleMemoPane()" style="border:none; background:transparent;">✕</button>
+                <button class="btn" onclick="closeMemoPanel()" style="border:none; background:transparent;">✕</button>
             </div>
         </div>
         <div class="memo-toolbar">
@@ -927,7 +932,7 @@
             <div class="outline-controls">
                 <label style="font-size:0.75rem; font-weight:normal;"><input type="checkbox" id="check-outline-dock" onchange="toggleOutlineDock()"> 📌固定</label>
                 <button id="btn-outline-swap" class="btn" style="display:none; padding:2px 6px; font-size:0.7rem;" onclick="swapOutlineSide()">左右入替</button>
-                <button class="btn" onclick="toggleOutline()" style="border:none; background:transparent;">✕</button>
+                <button class="btn" onclick="closeOutlinePanel()" style="border:none; background:transparent;">✕</button>
             </div>
         </div>
         <div class="outline-toolbar" style="display:flex; padding:4px 8px; background:var(--pane-header-bg); border-bottom:1px solid var(--border-color); gap:4px; align-items:center;">
@@ -1073,6 +1078,10 @@
         outline: 'cc_outline_width_px',
         legacyInput: 'cc_pane_input_width',
         legacyPreview: 'cc_pane_preview_width'
+    };
+    const PANE_HEIGHT_KEYS = {
+        input: 'cc_pane_input_height_px',
+        preview: 'cc_pane_preview_height_px'
     };
 
     const TODAY_START_KEY = 'cc_editor_today_start';
@@ -1283,10 +1292,21 @@
         const lineText = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd).trim();
         const preview = lineText.substring(0, 30) + (lineText.length > 30 ? '...' : '');
         const lineNum = (text.substring(0, pos).match(/\n/g) || []).length + 1;
-        bookmarks.push({ pos, lineNum, preview, created: Date.now() }); saveBookmarks(); renderBookmarks();
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        bookmarks.push({ pos, lineNum, preview, created: Date.now(), tabId: activeTabId, tabName: currentTab?.name || '' });
+        saveBookmarks();
+        renderBookmarks();
     }
     function deleteBookmark(i) { bookmarks.splice(i, 1); saveBookmarks(); renderBookmarks(); }
-    function jumpToBookmark(pos) { inputArea.focus(); inputArea.setSelectionRange(pos, pos); setTimeout(() => scrollToCursorPosition(pos), 100); updateCursorLineDisplay(); }
+    function jumpToBookmark(pos, tabId) {
+        if (tabId && tabId !== activeTabId) {
+            switchTab(tabId);
+        }
+        inputArea.focus();
+        inputArea.setSelectionRange(pos, pos);
+        setTimeout(() => scrollToCursorPosition(pos), 100);
+        updateCursorLineDisplay();
+    }
     function toggleAllBookmarks() {
         const checked = document.getElementById('bookmark-select-all').checked;
         document.querySelectorAll('.bookmark-checkbox').forEach(cb => cb.checked = checked);
@@ -1305,7 +1325,14 @@
         const actions = document.getElementById('bookmark-actions');
         if (bookmarks.length === 0) { l.innerHTML = '<div class="outline-empty">ブックマークがありません</div>'; actions.style.display = 'none'; return; }
         actions.style.display = 'block';
-        bookmarks.forEach((b, i) => { const d = document.createElement('div'); d.className = 'bookmark-item'; d.innerHTML = `<input type="checkbox" class="bookmark-checkbox" data-index="${i}" style="margin-right:6px;"><span class="bookmark-text" onclick="jumpToBookmark(${b.pos})">📍 ${b.lineNum}行目: ${escapeHtml(b.preview)}</span><span class="bookmark-delete" onclick="deleteBookmark(${i})">✕</span>`; l.appendChild(d); });
+        bookmarks.forEach((b, i) => {
+            const tabName = b.tabName || inputTabs.find(t => t.id === b.tabId)?.name || '';
+            const tabLabel = tabName ? `【${escapeHtml(tabName)}】` : '';
+            const d = document.createElement('div');
+            d.className = 'bookmark-item';
+            d.innerHTML = `<input type="checkbox" class="bookmark-checkbox" data-index="${i}" style="margin-right:6px;"><span class="bookmark-text" onclick="jumpToBookmark(${b.pos}, ${b.tabId || activeTabId})">📍 ${tabLabel}${b.lineNum}行目: ${escapeHtml(b.preview)}</span><span class="bookmark-delete" onclick="deleteBookmark(${i})">✕</span>`;
+            l.appendChild(d);
+        });
     }
 
     // 設定エクスポート/インポート
@@ -1324,6 +1351,10 @@
                 preview: document.getElementById('st-pane-preview-width').value,
                 memo: document.getElementById('st-pane-memo-width').value,
                 outline: document.getElementById('st-pane-outline-width').value
+            },
+            paneHeights: {
+                input: document.getElementById('st-pane-input-height').value,
+                preview: document.getElementById('st-pane-preview-height').value
             }
         };
     }
@@ -1340,6 +1371,10 @@
             document.getElementById('st-pane-preview-width').value = s.paneWidths.preview || 520;
             document.getElementById('st-pane-memo-width').value = s.paneWidths.memo || 280;
             document.getElementById('st-pane-outline-width').value = s.paneWidths.outline || 300;
+        }
+        if (s.paneHeights) {
+            document.getElementById('st-pane-input-height').value = s.paneHeights.input || 420;
+            document.getElementById('st-pane-preview-height').value = s.paneHeights.preview || 320;
         }
         applyAllSettings();
     }
@@ -1511,20 +1546,7 @@
         const s = inputArea.selectionStart, e = inputArea.selectionEnd;
         if (s === e) { quickInsertPopup.classList.remove('show'); return; }
         lastSelectionRange = { start: s, end: e };
-        // Position popup near selection using mirror technique
-        const cs = window.getComputedStyle(inputArea);
-        inputMirror.style.fontSize = cs.fontSize;
-        inputMirror.style.lineHeight = cs.lineHeight;
-        inputMirror.style.fontFamily = cs.fontFamily;
-        inputMirror.style.width = inputArea.clientWidth + 'px';
-        inputMirror.style.height = inputArea.clientHeight + 'px';
-        const textBefore = inputArea.value.substring(0, e);
-        const marker = document.createElement('span');
-        marker.textContent = '|';
-        inputMirror.innerHTML = '';
-        inputMirror.appendChild(document.createTextNode(textBefore));
-        inputMirror.appendChild(marker);
-        const markerRect = marker.getBoundingClientRect();
+        const overlayRect = inputSelOverlay.getBoundingClientRect();
         const inputRect = inputArea.getBoundingClientRect();
         const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
         const margin = 8;
@@ -1533,18 +1555,23 @@
         quickInsertPopup.style.visibility = 'hidden';
         const popupRect = quickInsertPopup.getBoundingClientRect();
 
-        let popupTop;
-        let popupLeft;
-        if (isVertical) {
-            popupLeft = markerRect.left - popupRect.width - 12;
-            popupTop = markerRect.top;
-        } else {
-            popupLeft = markerRect.right + 12;
-            popupTop = markerRect.top - popupRect.height / 2;
-        }
+let popupLeft;
+let popupTop;
 
-        popupLeft = Math.min(Math.max(popupLeft, margin), window.innerWidth - popupRect.width - margin);
-        popupTop = Math.min(Math.max(popupTop, inputRect.top), window.innerHeight - popupRect.height - margin);
+if (isVertical) {
+    // 縦書き：選択範囲の左に出したいので、overlayRect.left を基準に左側へ
+    popupLeft = overlayRect.left - popupRect.width - 12;
+    // 位置は選択範囲の上端あたりに合わせる
+    popupTop = overlayRect.top;
+} else {
+    // 横書き：選択範囲の上に中央寄せ（元のPR挙動）
+    popupLeft = overlayRect.left + (overlayRect.width / 2) - (popupRect.width / 2);
+    popupTop = overlayRect.top - popupRect.height - 8;
+}
+
+popupLeft = Math.min(Math.max(popupLeft, margin), window.innerWidth - popupRect.width - margin);
+popupTop = Math.min(Math.max(popupTop, inputRect.top + margin), window.innerHeight - popupRect.height - margin);
+
 
         quickInsertPopup.style.top = `${popupTop}px`;
         quickInsertPopup.style.left = `${popupLeft}px`;
@@ -1586,7 +1613,8 @@
         const lineText = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd).trim();
         const preview = lineText.substring(0, 30) + (lineText.length > 30 ? '...' : '');
         const lineNum = (text.substring(0, pos).match(/\n/g) || []).length + 1;
-        bookmarks.push({ pos, lineNum, preview, created: Date.now() });
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        bookmarks.push({ pos, lineNum, preview, created: Date.now(), tabId: activeTabId, tabName: currentTab?.name || '' });
         saveBookmarks();
         renderBookmarks();
         hideQuickInsertPopup();
@@ -1709,11 +1737,6 @@
         }
     }
 
-    // Alias for compatibility
-    function doSyncPreviewToInput() {
-        syncPreviewPosition();
-    }
-
     function updatePreviewAndShow() {
         updatePreview();
         const previewPane = document.getElementById('pane-preview');
@@ -1731,7 +1754,8 @@
     function applyGoalSettings() { settingsCache.goalChars = parseInt(document.getElementById('st-goal-chars').value) || 0; settingsCache.todayGoal = parseInt(document.getElementById('st-today-goal').value) || 0; settingsCache.showReadingTime = document.getElementById('st-show-reading-time').checked; settingsCache.celebrateGoal = document.getElementById('st-celebrate-goal').checked; goalAchieved = { today: false, total: false }; updateInputStats(); updatePreview(); }
     function applyManuscriptSettings() { settingsCache.manuscriptRows = parseInt(document.getElementById('st-manuscript-rows').value) || 34; settingsCache.manuscriptCols = parseInt(document.getElementById('st-manuscript-cols').value) || 42; settingsCache.showManuscript = document.getElementById('st-show-manuscript').checked; updateInputStats(); updatePreview(); }
     function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
-    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyPaneWidthSettings(); }
+    function applyPaperSettings() { applyManuscriptSettings(); applyThemeSettings(); }
+    function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings(); applyManuscriptSettings(); applyThemeSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); }
 
     function resetAllSettings() {
         if (!confirm('全ての設定を初期状態に戻しますか？')) return;
@@ -1763,8 +1787,14 @@
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 280;
         document.getElementById('st-pane-outline-width').value = 300;
+const inputH = document.getElementById('st-pane-input-height');
+const previewH = document.getElementById('st-pane-preview-height');
+if (inputH) inputH.value = 420;
+if (previewH) previewH.value = 320;
+
         applyAllSettings();
         resetPaneWidths();
+        resetPaneHeights();
         localStorage.removeItem(SETTINGS_KEY);
     }
 
@@ -1823,6 +1853,38 @@
         adjustPaneWidthsOnVisibility();
     }
 
+function applyPaneHeightSettings() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
+    const inputPane = document.getElementById('pane-input');
+    const previewPane = document.getElementById('pane-preview');
+
+    // 必要な要素が無いなら何もしない（落ちないように）
+    if (!inputHeightEl || !previewHeightEl || !inputPane || !previewPane) return;
+
+    const inputHeightRaw = parseInt(inputHeightEl.value, 10);
+    const previewHeightRaw = parseInt(previewHeightEl.value, 10);
+
+    const inputHeight = clampValue(inputHeightRaw || 420, 160, 2000);
+    const previewHeight = clampValue(previewHeightRaw || 320, 160, 2000);
+
+    inputHeightEl.value = inputHeight;
+    previewHeightEl.value = previewHeight;
+
+    if (document.body.classList.contains('scroll-mode')) {
+        inputPane.style.height = `${inputHeight}px`;
+        previewPane.style.height = `${previewHeight}px`;
+    } else {
+        inputPane.style.height = '';
+        previewPane.style.height = '';
+    }
+
+    localStorage.setItem(PANE_HEIGHT_KEYS.input, String(inputHeight));
+    localStorage.setItem(PANE_HEIGHT_KEYS.preview, String(previewHeight));
+
+    adjustPaneHeightsOnVisibility();
+}
+
     function resetPaneWidths() {
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
@@ -1835,6 +1897,21 @@
         localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
         localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
         applyPaneWidthSettings();
+function resetPaneHeights() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
+
+    if (inputHeightEl) inputHeightEl.value = 420;
+    if (previewHeightEl) previewHeightEl.value = 320;
+
+    localStorage.removeItem(PANE_HEIGHT_KEYS.input);
+    localStorage.removeItem(PANE_HEIGHT_KEYS.preview);
+
+    if (typeof applyPaneHeightSettings === 'function') {
+        applyPaneHeightSettings();
+    }
+}
+
     }
 
     function loadPaneWidthSettings() {
@@ -1850,21 +1927,31 @@
         if (inputWidth || legacyInput) {
             const converted = inputWidth || Math.round(containerWidth * (legacyInput / 100));
             document.getElementById('st-pane-input-width').value = converted;
-        }
-        if (previewWidth || legacyPreview) {
-            const converted = previewWidth || Math.round(containerWidth * (legacyPreview / 100));
-            document.getElementById('st-pane-preview-width').value = converted;
-        }
-        if (memoWidth) document.getElementById('st-pane-memo-width').value = memoWidth;
-        if (outlineWidth) document.getElementById('st-pane-outline-width').value = outlineWidth;
-        if (legacyInput || legacyPreview) {
-            localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
-            localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
-        }
-        applyPaneWidthSettings();
+function loadPaneHeightSettings() {
+    const inputHeightEl = document.getElementById('st-pane-input-height');
+    const previewHeightEl = document.getElementById('st-pane-preview-height');
+
+    // UIが無いなら何もしない（落ちないように）
+    if (!inputHeightEl || !previewHeightEl) return;
+
+    const inputHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input), 10);
+    const previewHeight = parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview), 10);
+
+    if (Number.isFinite(inputHeight)) inputHeightEl.value = inputHeight;
+    if (Number.isFinite(previewHeight)) previewHeightEl.value = previewHeight;
+
+    if (typeof applyPaneHeightSettings === 'function') {
+        applyPaneHeightSettings();
+    }
+}
+
     }
 
     const pinnedPanels = new Set();
+    function updateControlPanelScrollState() {
+        const hasOpen = document.querySelectorAll('.control-panel.open').length > 0;
+        document.body.classList.toggle('allow-scroll', hasOpen);
+    }
     function togglePanel(id) {
         const p = document.getElementById(id);
         const btn = document.querySelector(`#${id} .panel-pin-btn`);
@@ -1887,6 +1974,7 @@
             p.classList.add('open');
             if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100);
         }
+        updateControlPanelScrollState();
     }
     function togglePanelPin(id) {
         const btn = document.querySelector(`#${id} .panel-pin-btn`);
@@ -1897,6 +1985,7 @@
             pinnedPanels.add(id);
             btn.classList.add('pinned');
         }
+        updateControlPanelScrollState();
     }
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {
@@ -1904,6 +1993,7 @@
         document.querySelectorAll('.control-panel.open').forEach(p => {
             if (!pinnedPanels.has(p.id)) p.classList.remove('open');
         });
+        updateControlPanelScrollState();
     });
     // Close non-docked memo/outline when clicking on panes
     document.getElementById('pane-input').addEventListener('click', e => {
@@ -1945,6 +2035,10 @@
             previewPane.style.flex = '1 1 auto';
             inputPane.style.width = '100%';
             previewPane.style.width = '100%';
+if (typeof adjustPaneHeightsOnVisibility === 'function') {
+    adjustPaneHeightsOnVisibility();
+}
+
             return;
         }
         const inputHidden = inputPane.classList.contains('hidden');
@@ -1962,6 +2056,46 @@
             previewPane.style.flex = `1 1 ${savedPreview}px`;
             inputPane.style.width = `${savedInput}px`;
             previewPane.style.width = `${savedPreview}px`;
+        }
+    }
+
+    function adjustPaneHeightsOnVisibility() {
+        const inputPane = document.getElementById('pane-input');
+        const previewPane = document.getElementById('pane-preview');
+        const inputHeightEl = document.getElementById('st-pane-input-height');
+        const previewHeightEl = document.getElementById('st-pane-preview-height');
+
+        // 必要な要素が無いなら何もしない（落ちないように）
+        if (!inputPane || !previewPane || !inputHeightEl || !previewHeightEl) return;
+
+        if (!document.body.classList.contains('scroll-mode')) {
+            inputPane.style.height = '';
+            previewPane.style.height = '';
+            return;
+        }
+
+        const inputHidden = inputPane.classList.contains('hidden');
+        const previewHidden = previewPane.classList.contains('hidden');
+
+        const inputHeight =
+            parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input), 10) ||
+            parseInt(inputHeightEl.value, 10) ||
+            420;
+
+        const previewHeight =
+            parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview), 10) ||
+            parseInt(previewHeightEl.value, 10) ||
+            320;
+
+        const combinedHeight = inputHeight + previewHeight;
+
+        if (inputHidden && !previewHidden) {
+            previewPane.style.height = `${combinedHeight}px`;
+        } else if (!inputHidden && previewHidden) {
+            inputPane.style.height = `${combinedHeight}px`;
+        } else {
+            inputPane.style.height = `${inputHeight}px`;
+            previewPane.style.height = `${previewHeight}px`;
         }
     }
     function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
@@ -2007,9 +2141,33 @@
     let nextMemoTabId = 2;
     let draggingMemoTabId = null;
 
-    function toggleMemoPane() {
-        const p = document.getElementById('memo-panel');
-        p.classList.toggle('open');
+    function toggleMemoPanel() {
+        const panel = document.getElementById('memo-panel');
+        const checkbox = document.getElementById('check-memo-dock');
+        const isOpen = panel.classList.contains('open');
+        const isDocked = checkbox.checked;
+
+        if (!isOpen) {
+            panel.classList.add('open');
+            if (isDocked) {
+                checkbox.checked = false;
+                toggleMemoDock();
+            }
+        } else if (!isDocked) {
+            checkbox.checked = true;
+            toggleMemoDock();
+            panel.classList.add('open');
+        } else {
+            checkbox.checked = false;
+            toggleMemoDock();
+            panel.classList.remove('open');
+        }
+        applyPaneWidthSettings();
+    }
+
+    function closeMemoPanel() {
+        const panel = document.getElementById('memo-panel');
+        panel.classList.remove('open');
         applyPaneWidthSettings();
     }
 
@@ -2231,18 +2389,44 @@
     });
 
     let outlineData = [];
-    function toggleOutline() {
-        const p = document.getElementById('outline-panel');
-        if (p.classList.contains('open')) {
-            p.classList.remove('open');
-            document.getElementById('btn-toggle-outline')?.classList.remove('active');
-        } else {
-            generateOutline();
-            p.classList.add('open');
-            document.getElementById('btn-toggle-outline')?.classList.add('active');
+function toggleOutlinePanel() {
+    const panel = document.getElementById('outline-panel');
+    const checkbox = document.getElementById('check-outline-dock');
+    const btn = document.getElementById('btn-toggle-outline');
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
+
+    if (!isOpen) {
+        generateOutline();
+        panel.classList.add('open');
+        btn?.classList.add('active');
+
+        if (isDocked) {
+            checkbox.checked = false;
+            toggleOutlineDock();
         }
-        applyPaneWidthSettings();
+    } else if (!isDocked) {
+        checkbox.checked = true;
+        toggleOutlineDock();
+        panel.classList.add('open');
+        btn?.classList.add('active');
+    } else {
+        checkbox.checked = false;
+        toggleOutlineDock();
+        panel.classList.remove('open');
+        btn?.classList.remove('active');
     }
+
+    applyPaneWidthSettings();
+}
+
+function closeOutlinePanel() {
+    const panel = document.getElementById('outline-panel');
+    panel.classList.remove('open');
+    document.getElementById('btn-toggle-outline')?.classList.remove('active');
+    applyPaneWidthSettings();
+}
+
     function toggleOutlineDock() {
         const d = document.getElementById('check-outline-dock').checked;
         const c = document.getElementById('main-container');
@@ -2269,9 +2453,11 @@
 
     function generateOutline() {
         const l = document.getElementById('outline-list'), sm = document.getElementById('outline-summary'); l.innerHTML = ''; outlineData = [];
+        const currentTab = inputTabs.find(t => t.id === activeTabId);
+        const tabName = currentTab?.name || '';
         const t = inputArea.value, ls = t.split('\n'), rx = /^([#＃■□▲△▼▽◆◇○◎●§・※☆★]+|第[一二三四五六七八九十百千\d]+[章話節部編]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+)/;
         let cl = 0, lm = new Map(), ca = 0, found = false;
-        ls.forEach(line => { const c = line.trim(), cp = ca; ca += line.length + 1; const m = c.match(rx); if (m) { found = true; let sk = m[1]; if (sk.match(/^第.+[章話節部編]$/)) sk = '___CHAPTER___'; else if (sk.match(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+$/)) sk = '___CIRCLED___'; else if (sk.match(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/)) sk = '___ROMAN___'; if (!lm.has(sk)) { cl++; lm.set(sk, cl); } outlineData.push({ text: c, level: lm.get(sk), pos: cp, length: c.length, collapsed: false, index: outlineData.length, directCharCount: 0, charCount: 0 }); } });
+        ls.forEach(line => { const c = line.trim(), cp = ca; ca += line.length + 1; const m = c.match(rx); if (m) { found = true; let sk = m[1]; if (sk.match(/^第.+[章話節部編]$/)) sk = '___CHAPTER___'; else if (sk.match(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+$/)) sk = '___CIRCLED___'; else if (sk.match(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/)) sk = '___ROMAN___'; if (!lm.has(sk)) { cl++; lm.set(sk, cl); } outlineData.push({ text: c, level: lm.get(sk), pos: cp, length: c.length, collapsed: false, index: outlineData.length, directCharCount: 0, charCount: 0, tabId: activeTabId, tabName }); } });
         const tl = t.length; for (let i = 0; i < outlineData.length; i++) { const sp = outlineData[i].pos, ep = (i + 1 < outlineData.length) ? outlineData[i + 1].pos : tl; outlineData[i].directCharCount = t.substring(sp, ep).replace(/[\n\s　]/g, '').length; }
         for (let i = outlineData.length - 1; i >= 0; i--) { const clv = outlineData[i].level; let tc = outlineData[i].directCharCount; for (let j = i + 1; j < outlineData.length; j++) { if (outlineData[j].level <= clv) break; if (outlineData[j].level === clv + 1) tc += outlineData[j].charCount; else { let hp = false; for (let k = j - 1; k > i; k--) { if (outlineData[k].level === outlineData[j].level - 1) { hp = true; break; } if (outlineData[k].level <= clv) break; } if (!hp) tc += outlineData[j].charCount; } } outlineData[i].charCount = tc; }
         let lc = new Map(); outlineData.forEach(it => { if (!lc.has(it.level)) lc.set(it.level, 0); lc.set(it.level, lc.get(it.level) + it.directCharCount); });
@@ -2284,10 +2470,16 @@
             const d = document.createElement('div'); d.className = `outline-item outline-level-${Math.min(it.level, 3)}`;
             const hc = outlineData.some((x, i) => i > idx && x.level > it.level && !outlineData.slice(idx + 1, i).some(m => m.level <= it.level));
             const tg = document.createElement('span'); tg.className = 'outline-toggle'; if (hc) { tg.textContent = it.collapsed ? '▶' : '▼'; tg.onclick = e => { e.stopPropagation(); toggleOutlineItem(idx); }; } d.appendChild(tg);
+            if (it.tabName) {
+                const tl = document.createElement('span');
+                tl.className = 'outline-tab-label';
+                tl.textContent = `【${it.tabName}】`;
+                d.appendChild(tl);
+            }
             const ts = document.createElement('span'); ts.className = 'outline-text'; ts.textContent = it.text; d.appendChild(ts);
             const cc = document.createElement('span'); cc.className = 'outline-char-count'; cc.textContent = it.charCount.toLocaleString(); d.appendChild(cc);
             let hd = false; for (let i = 0; i < idx; i++) { if (outlineData[i].collapsed && outlineData[i].level < it.level) { let ir = true; for (let j = i + 1; j < idx; j++) { if (outlineData[j].level <= outlineData[i].level) { ir = false; break; } } if (ir) { hd = true; break; } } } if (hd) d.classList.add('outline-hidden');
-            d.onclick = e => { if (e.target.classList.contains('outline-toggle')) return; inputArea.focus(); inputArea.setSelectionRange(it.pos, it.pos + it.length); setTimeout(() => scrollToCursorPosition(it.pos), 100); updateCursorLineDisplay(); if (window.innerWidth < 768 && !document.getElementById('check-outline-dock').checked) toggleOutline(); };
+            d.onclick = e => { if (e.target.classList.contains('outline-toggle')) return; if (it.tabId && it.tabId !== activeTabId) switchTab(it.tabId); inputArea.focus(); inputArea.setSelectionRange(it.pos, it.pos + it.length); setTimeout(() => scrollToCursorPosition(it.pos), 100); updateCursorLineDisplay(); if (window.innerWidth < 768 && !document.getElementById('check-outline-dock').checked) closeOutlinePanel(); };
             l.appendChild(d);
         });
     }
@@ -2309,6 +2501,10 @@
         c.classList.remove('reverse-row', 'reverse-col');
         layoutReversed = false;
         applyPaneWidthSettings();
+if (typeof applyPaneHeightSettings === 'function') {
+    applyPaneHeightSettings();
+}
+
     }
     function toggleLayoutOrder() { const c = document.getElementById('main-container'); layoutReversed = !layoutReversed; c.classList.remove('reverse-row', 'reverse-col'); if (layoutReversed) c.classList.add(layoutAxis === 'row' ? 'reverse-row' : 'reverse-col'); }
 
@@ -2625,6 +2821,7 @@
     loadMemoTabs();
     loadSettingsFromStorage();
     loadPaneWidthSettings();
+    loadPaneHeightSettings();
     startWritingTimer();
     applyAllSettings();
     // Apply default preview hidden setting on first load

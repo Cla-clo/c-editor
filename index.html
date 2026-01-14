@@ -167,9 +167,11 @@
     input[type="number"] { width: 50px; }
 
     .main-container { display: flex; flex: 1; gap: 6px; overflow: hidden; padding: 10px; position: relative; max-width: 100vw; width: 100%; box-sizing: border-box; }
-    /* .main-container.reverse-row uses order property for swapping */
-    body.scroll-mode .main-container { flex-direction: column; overflow-y: auto; overflow-x: hidden; height: auto; max-height: calc(100vh - 150px); width: 100%; max-width: 100vw; }
-    body.scroll-mode .main-container.reverse-col { flex-direction: column-reverse; }
+    .pane-stack { display: flex; flex: 1; min-width: 0; min-height: 0; gap: 0; }
+    /* .pane-stack.reverse-row uses order property for swapping */
+    body.scroll-mode .main-container { overflow: visible; height: auto; max-height: none; width: 100%; max-width: 100vw; }
+    body.scroll-mode .pane-stack { flex-direction: column; width: 100%; }
+    body.scroll-mode .pane-stack.reverse-col { flex-direction: column-reverse; }
 
     .pane {
         flex: 1 1 auto; display: flex; flex-direction: column;
@@ -179,12 +181,11 @@
     #pane-input { order: 1; }
     #pane-preview { order: 3; }
     .pane-resizer { order: 2; }
-    .main-container.reverse-row #pane-input { order: 3; }
-    .main-container.reverse-row #pane-preview { order: 1; }
+    .pane-stack.reverse-row #pane-input { order: 3; }
+    .pane-stack.reverse-row #pane-preview { order: 1; }
     .pane.hidden { display: none !important; }
-    body.scroll-mode .pane { flex: none; margin-bottom: 15px; height: 45vh; min-height: 200px; width: 100%; max-width: 100%; }
-    body.scroll-mode #pane-input { height: 50vh; }
-    body.scroll-mode #pane-preview { height: 40vh; overflow: hidden; }
+    body.scroll-mode .pane-stack .pane { flex: none; margin-bottom: 15px; min-height: 240px; width: 100%; max-width: 100%; }
+    body.scroll-mode .pane-stack .pane:last-child { margin-bottom: 0; }
 
     /* Pane Resizer */
     .pane-resizer {
@@ -194,7 +195,7 @@
         background-clip: content-box;
     }
     .pane-resizer:hover, .pane-resizer.resizing { background: #3b82f6; background-clip: content-box; }
-    body.scroll-mode .pane-resizer { display: none; }
+    body.scroll-mode .pane-stack .pane-resizer { display: none; }
 
     .dock-resizer {
         width: 2px; background: var(--border-color); cursor: col-resize;
@@ -203,7 +204,6 @@
         background-clip: content-box; display: none;
     }
     .dock-resizer:hover, .dock-resizer.resizing { background: #3b82f6; background-clip: content-box; }
-    body.scroll-mode .dock-resizer { display: none; }
 
     .pane-header {
         background: var(--pane-header-bg); padding: 0 10px; color: var(--text-muted); height: 28px;
@@ -258,7 +258,7 @@
         padding: 0 8px; font-size: 0.7rem; color: var(--text-muted);
         text-align: right; border-top: 1px solid var(--border-color); background: var(--panel-bg);
         display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 24px;
-        flex-wrap: wrap; flex-shrink: 0;
+        flex-wrap: wrap; flex-shrink: 0; row-gap: 4px;
     }
     .net-count { font-weight: bold; color: var(--text-color); background: var(--pane-header-bg); padding: 0 4px; border-radius: 3px; }
     .timestamp { font-family: monospace; color: #059669; }
@@ -312,7 +312,7 @@
 
     #preview-scroll { width: 100%; height: 100%; padding: 20px; scroll-behavior: smooth; overflow-x: auto; overflow-y: auto; box-sizing: border-box; min-width: 0; }
     #preview-scroll.vertical-mode { overflow-x: auto !important; overflow-y: hidden !important; height: 100%; width: 100%; max-width: 100%; }
-    #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; min-height: 100%; width: max-content; max-width: 100%; }
+    #preview-scroll.vertical-mode #preview-content { writing-mode: vertical-rl; text-orientation: upright; min-height: 100%; width: max-content; max-width: none; }
     #preview-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; color: var(--text-color); max-width: 100%; min-width: 0; }
     body.scroll-mode #preview-scroll { height: 100%; overflow-y: auto; }
     body.scroll-mode #preview-scroll.vertical-mode { overflow-x: auto !important; }
@@ -352,7 +352,7 @@
 
     /* Memo Panel */
     #memo-panel {
-        position: fixed; top: 46px; left: 0; bottom: 0; width: 280px;
+        position: fixed; top: 46px; left: 0; bottom: 0; width: 260px;
         background: #fefce8; border-right: 1px solid #fcd34d;
         box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
@@ -408,7 +408,7 @@
     body.focus-mode #memo-panel { display: none !important; }
 
     #outline-panel {
-        position: fixed; top: 46px; right: 0; bottom: 0; width: 300px;
+        position: fixed; top: 46px; right: 0; bottom: 0; width: 260px;
         background: var(--panel-bg); border-left: 1px solid var(--border-color);
         box-shadow: -2px 0 5px rgba(0,0,0,0.1);
         z-index: 200; transform: translateX(100%); transition: transform 0.3s ease;
@@ -419,7 +419,7 @@
         position: relative; top: auto; right: auto; bottom: auto;
         transform: none; box-shadow: none; z-index: 1; display: none;
         flex: 0 0 auto; overflow: auto;
-        min-width: 0; max-width: 45vw; width: 300px;
+        min-width: 0; max-width: 45vw; width: 260px;
         border-left: 1px solid var(--border-color); border-right: none;
         order: 10; /* デフォルトで右側 */
     }
@@ -449,7 +449,7 @@
     .outline-item {
         padding: 6px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer;
         color: var(--text-color); font-size: 0.85rem; display: flex; align-items: center;
-        white-space: nowrap; min-width: max-content;
+        white-space: nowrap; min-width: 0; width: 100%;
     }
     .outline-item:hover { background: #e0f2fe; color: #0284c7; }
     body.theme-dark .outline-item:hover { background: #1e3a5f; }
@@ -458,7 +458,7 @@
     .outline-level-3 { padding-left: 35px; border-left: 2px solid #d1d5db; font-size: 0.8rem; }
     .outline-toggle { cursor: pointer; margin-right: 6px; font-size: 0.7rem; width: 14px; text-align: center; color: var(--text-muted); flex-shrink: 0; }
     .outline-toggle:hover { color: #2563eb; }
-    .outline-text { flex: 1; white-space: nowrap; }
+    .outline-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .outline-tab-label { font-size: 0.7rem; color: var(--text-muted); margin-right: 6px; }
     .outline-char-count { margin-left: auto; font-size: 0.7rem; color: var(--text-muted); background: var(--pane-header-bg); padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
     .outline-empty { color: var(--text-muted); font-style: italic; }
@@ -466,9 +466,10 @@
     .outline-summary { padding: 8px 10px; background: #f0f9ff; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: #0369a1; }
     body.theme-dark .outline-summary { background: #1e3a5f; color: #93c5fd; }
 
-    .bookmark-item { padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: max-content; }
+    .bookmark-item { padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: 0; width: 100%; }
     .bookmark-item:hover { background: #fef3c7; }
-    .bookmark-text { flex: 1; white-space: nowrap; }
+    .bookmark-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .panel-state-icon { font-size: 0.75rem; opacity: 0.7; margin-left: 4px; }
     .bookmark-delete { color: #dc2626; cursor: pointer; font-size: 0.8rem; }
     .bookmark-delete:hover { color: #b91c1c; }
     .bookmark-add-btn { width: 100%; padding: 8px; background: #fef3c7; border: 1px dashed #fcd34d; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-bottom: 10px; }
@@ -579,6 +580,7 @@
         header, .controls-wrapper, .pane-subheader, .pane-footer, #outline-panel, #pane-input, .selection-overlay { display: none !important; }
         body, body.scroll-mode { height: auto; overflow: visible; background: white; }
         .main-container { padding: 0; display: block; }
+        .pane-stack { display: block; }
         .pane { border: none; box-shadow: none; height: auto !important; }
         #pane-preview { display: block !important; }
         #pane-preview .pane-header { display: none; }
@@ -596,9 +598,15 @@
         <h1>C-エディタ</h1>
         <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
         <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
-        <button class="btn" onclick="togglePanel('help-bar')">使い方</button>
-        <button class="btn" onclick="togglePanel('search-bar')">🔍 検索</button>
-        <button class="btn" onclick="togglePanel('settings-bar')">設定</button>
+        <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="使い方">
+            <span class="panel-label">使い方</span><span class="panel-state-icon">▸</span>
+        </button>
+        <button class="btn panel-toggle" id="btn-toggle-search" onclick="togglePanel('search-bar')" data-label="🔍 検索">
+            <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▸</span>
+        </button>
+        <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="設定">
+            <span class="panel-label">設定</span><span class="panel-state-icon">▸</span>
+        </button>
         <div class="dropdown">
             <button class="btn dropdown-btn" onclick="toggleDropdown('insert-dropdown')">📝 挿入</button>
             <div id="insert-dropdown" class="dropdown-content">
@@ -615,18 +623,17 @@
         <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
         <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
         <button class="btn btn-update" onclick="updatePreviewAndShow()">🔄 プレビュー更新</button>
-        <div class="dropdown sync-dropdown">
-            <button class="btn btn-sync dropdown-btn">📲 同期 ▼</button>
-            <div class="dropdown-content sync-dropdown-content">
-                <a onclick="syncPreviewPosition()">入力 → プレビュー</a>
-            </div>
-        </div>
+        <button class="btn btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
         <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
-        <button class="btn" onclick="toggleMemoPanel()">📝 メモ</button>
-        <button class="btn" onclick="toggleOutlinePanel()">📑 目次</button>
+        <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
+            <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▸</span>
+        </button>
+        <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
+            <span class="panel-label">📑 目次</span><span class="panel-state-icon">▸</span>
+        </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
         <button class="btn" onclick="document.getElementById('file-input').click()">📂 開く</button>
         <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
@@ -788,6 +795,8 @@
             </div>
             <div class="setting-row">
                 <label>今日の目標: <input type="number" id="st-today-goal" value="2000" min="0" max="99999" style="width:60px;"> 字</label>
+            </div>
+            <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetTodayStart()" style="font-size:0.65rem;">開始点リセット</button>
             </div>
             <div class="setting-row">
@@ -820,8 +829,8 @@
             <div class="setting-row vertical">
                 <label>入力: <input type="number" id="st-pane-input-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>プレビュー: <input type="number" id="st-pane-preview-width" value="520" min="120" max="3000" style="width:70px;">px</label>
-                <label>メモ: <input type="number" id="st-pane-memo-width" value="280" min="160" max="1200" style="width:70px;">px</label>
-                <label>目次: <input type="number" id="st-pane-outline-width" value="300" min="160" max="1200" style="width:70px;">px</label>
+                <label>メモ: <input type="number" id="st-pane-memo-width" value="260" min="160" max="1200" style="width:70px;">px</label>
+                <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
@@ -831,8 +840,8 @@
         <div class="setting-group">
             <div class="setting-title">縦並び高さ <button class="btn btn-apply" onclick="applyPaneHeightSettings()">適用</button></div>
             <div class="setting-row vertical">
-                <label>入力: <input type="number" id="st-pane-input-height" value="420" min="160" max="2000" style="width:70px;">px</label>
-                <label>プレビュー: <input type="number" id="st-pane-preview-height" value="320" min="160" max="2000" style="width:70px;">px</label>
+                <label>入力: <input type="number" id="st-pane-input-height" value="520" min="160" max="2000" style="width:70px;">px</label>
+                <label>プレビュー: <input type="number" id="st-pane-preview-height" value="420" min="160" max="2000" style="width:70px;">px</label>
             </div>
             <div class="setting-row">
                 <button class="btn btn-apply" onclick="resetPaneHeights()" style="font-size:0.65rem;">高さをリセット</button>
@@ -850,54 +859,56 @@
 </div>
 
 <div class="main-container" id="main-container">
-    <div class="pane" id="pane-input">
-        <div class="pane-header"><h2>入力</h2><button class="pane-close-btn" onclick="hidePane('input')">✕</button></div>
-        <div class="input-tabs-container" id="input-tabs-container">
-            <!-- Tabs will be dynamically generated -->
+    <div class="pane-stack" id="pane-stack">
+        <div class="pane" id="pane-input">
+            <div class="pane-header"><h2>入力</h2><button class="pane-close-btn" onclick="hidePane('input')">✕</button></div>
+            <div class="input-tabs-container" id="input-tabs-container">
+                <!-- Tabs will be dynamically generated -->
+            </div>
+            <div class="pane-subheader" id="input-pos-bar">現在: 1 行目</div>
+            <div class="pane-body">
+                <div id="input-mirror-container"></div>
+                <textarea id="input-area" spellcheck="false"></textarea>
+                <div id="input-sel-overlay" class="selection-overlay"></div>
+            </div>
+            <div class="pane-footer">
+                <span id="char-count">全体: 0</span>
+                <span id="input-net-count" class="net-count">実質: 0</span>
+                <span id="line-count">0 行</span>
+                <span id="input-goal-display" class="goal-display"></span>
+                <span id="input-today-goal" class="today-goal"></span>
+                <span id="input-writing-time" class="writing-time"></span>
+                <span id="input-reading-time" class="reading-time"></span>
+                <span id="input-manuscript" class="manuscript-pages"></span>
+            </div>
         </div>
-        <div class="pane-subheader" id="input-pos-bar">現在: 1 行目</div>
-        <div class="pane-body">
-            <div id="input-mirror-container"></div>
-            <textarea id="input-area" spellcheck="false"></textarea>
-            <div id="input-sel-overlay" class="selection-overlay"></div>
-        </div>
-        <div class="pane-footer">
-            <span id="char-count">全体: 0</span>
-            <span id="input-net-count" class="net-count">実質: 0</span>
-            <span id="line-count">0 行</span>
-            <span id="input-goal-display" class="goal-display"></span>
-            <span id="input-today-goal" class="today-goal"></span>
-            <span id="input-writing-time" class="writing-time"></span>
-            <span id="input-reading-time" class="reading-time"></span>
-            <span id="input-manuscript" class="manuscript-pages"></span>
-        </div>
-    </div>
 
-    <div class="pane-resizer" id="resizer-input-preview"></div>
+        <div class="pane-resizer" id="resizer-input-preview"></div>
 
-    <div class="pane" id="pane-preview">
-        <div class="pane-header">
-            <h2>プレビュー</h2>
-            <button class="pane-close-btn" onclick="hidePane('preview')">✕</button>
-        </div>
-        <div class="preview-tabs-container" id="preview-tabs-container">
-            <!-- Preview tabs will be dynamically generated -->
-        </div>
-        <div class="pane-subheader" id="preview-pos-bar">位置: 0%</div>
-        <div class="pane-body">
-            <div id="preview-scroll"><div id="preview-content"></div></div>
-            <div id="preview-sel-overlay" class="selection-overlay"></div>
-        </div>
-        <div class="pane-footer">
-            <span id="pv-time" class="timestamp">未更新</span>
-            <span style="border-left:1px solid var(--border-color); height:12px; margin:0 5px;"></span>
-            <span id="pv-total-count">全体: 0</span>
-            <span id="pv-net-count" class="net-count">実質: 0</span>
-            <span id="pv-line-count">0 行</span>
-            <span id="pv-goal-display" class="goal-display"></span>
-            <span id="pv-today-goal" class="today-goal"></span>
-            <span id="pv-reading-time" class="reading-time"></span>
-            <span id="pv-manuscript" class="manuscript-pages"></span>
+        <div class="pane" id="pane-preview">
+            <div class="pane-header">
+                <h2>プレビュー</h2>
+                <button class="pane-close-btn" onclick="hidePane('preview')">✕</button>
+            </div>
+            <div class="preview-tabs-container" id="preview-tabs-container">
+                <!-- Preview tabs will be dynamically generated -->
+            </div>
+            <div class="pane-subheader" id="preview-pos-bar">位置: 0%</div>
+            <div class="pane-body">
+                <div id="preview-scroll"><div id="preview-content"></div></div>
+                <div id="preview-sel-overlay" class="selection-overlay"></div>
+            </div>
+            <div class="pane-footer">
+                <span id="pv-time" class="timestamp">未更新</span>
+                <span style="border-left:1px solid var(--border-color); height:12px; margin:0 5px;"></span>
+                <span id="pv-total-count">全体: 0</span>
+                <span id="pv-net-count" class="net-count">実質: 0</span>
+                <span id="pv-line-count">0 行</span>
+                <span id="pv-goal-display" class="goal-display"></span>
+                <span id="pv-today-goal" class="today-goal"></span>
+                <span id="pv-reading-time" class="reading-time"></span>
+                <span id="pv-manuscript" class="manuscript-pages"></span>
+            </div>
         </div>
     </div>
 
@@ -1059,6 +1070,7 @@
     const pvManuscriptEl = document.getElementById('pv-manuscript');
     const previewSelOverlay = document.getElementById('preview-sel-overlay');
     const btnSwap = document.getElementById('btn-layout-swap');
+    const paneStack = document.getElementById('pane-stack');
 
     let layoutAxis = 'row', layoutReversed = false;
 
@@ -1369,12 +1381,12 @@
         if (s.paneWidths) {
             document.getElementById('st-pane-input-width').value = s.paneWidths.input || 520;
             document.getElementById('st-pane-preview-width').value = s.paneWidths.preview || 520;
-            document.getElementById('st-pane-memo-width').value = s.paneWidths.memo || 280;
-            document.getElementById('st-pane-outline-width').value = s.paneWidths.outline || 300;
+            document.getElementById('st-pane-memo-width').value = s.paneWidths.memo || 260;
+            document.getElementById('st-pane-outline-width').value = s.paneWidths.outline || 260;
         }
         if (s.paneHeights) {
-            document.getElementById('st-pane-input-height').value = s.paneHeights.input || 420;
-            document.getElementById('st-pane-preview-height').value = s.paneHeights.preview || 320;
+            document.getElementById('st-pane-input-height').value = s.paneHeights.input || 520;
+            document.getElementById('st-pane-preview-height').value = s.paneHeights.preview || 420;
         }
         applyAllSettings();
     }
@@ -1548,8 +1560,9 @@
         lastSelectionRange = { start: s, end: e };
         const overlayRect = inputSelOverlay.getBoundingClientRect();
         const inputRect = inputArea.getBoundingClientRect();
-        const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
-        const margin = 8;
+const isVertical = inputArea.parentElement.classList.contains('vertical-mode');
+const margin = 8;
+const footerRect = document.querySelector('#pane-input .pane-footer')?.getBoundingClientRect();
 
         quickInsertPopup.classList.add('show');
         quickInsertPopup.style.visibility = 'hidden';
@@ -1570,7 +1583,13 @@ if (isVertical) {
 }
 
 popupLeft = Math.min(Math.max(popupLeft, margin), window.innerWidth - popupRect.width - margin);
-popupTop = Math.min(Math.max(popupTop, inputRect.top + margin), window.innerHeight - popupRect.height - margin);
+let maxTop = window.innerHeight - popupRect.height - margin;
+if (footerRect) {
+    maxTop = Math.min(maxTop, footerRect.top - popupRect.height - margin);
+}
+const minTop = inputRect.top + margin;
+if (maxTop < minTop) maxTop = minTop;
+popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
 
 
         quickInsertPopup.style.top = `${popupTop}px`;
@@ -1785,12 +1804,12 @@ popupTop = Math.min(Math.max(popupTop, inputRect.top + margin), window.innerHeig
         document.getElementById('st-theme-preset').value = '';
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
-        document.getElementById('st-pane-memo-width').value = 280;
-        document.getElementById('st-pane-outline-width').value = 300;
+        document.getElementById('st-pane-memo-width').value = 260;
+        document.getElementById('st-pane-outline-width').value = 260;
 const inputH = document.getElementById('st-pane-input-height');
 const previewH = document.getElementById('st-pane-preview-height');
-if (inputH) inputH.value = 420;
-if (previewH) previewH.value = 320;
+if (inputH) inputH.value = 520;
+if (previewH) previewH.value = 420;
 
         applyAllSettings();
         resetPaneWidths();
@@ -1806,8 +1825,8 @@ if (previewH) previewH.value = 320;
     function applyDockedPanelWidths() {
         const memoWidthRaw = parseInt(document.getElementById('st-pane-memo-width').value);
         const outlineWidthRaw = parseInt(document.getElementById('st-pane-outline-width').value);
-        const memoWidth = clampValue(memoWidthRaw || 280, 160, 2000);
-        const outlineWidth = clampValue(outlineWidthRaw || 300, 160, 2000);
+        const memoWidth = clampValue(memoWidthRaw || 260, 160, 2000);
+        const outlineWidth = clampValue(outlineWidthRaw || 260, 160, 2000);
         const memoPanel = document.getElementById('memo-panel');
         const outlinePanel = document.getElementById('outline-panel');
 
@@ -1854,8 +1873,8 @@ if (previewH) previewH.value = 320;
     const inputHeightRaw = parseInt(inputHeightEl.value, 10);
     const previewHeightRaw = parseInt(previewHeightEl.value, 10);
 
-    const inputHeight = clampValue(inputHeightRaw || 420, 160, 2000);
-    const previewHeight = clampValue(previewHeightRaw || 320, 160, 2000);
+    const inputHeight = clampValue(inputHeightRaw || 520, 160, 2000);
+    const previewHeight = clampValue(previewHeightRaw || 420, 160, 2000);
 
     inputHeightEl.value = inputHeight;
     previewHeightEl.value = previewHeight;
@@ -1879,8 +1898,8 @@ if (previewH) previewH.value = 320;
 function resetPaneWidths() {
     document.getElementById('st-pane-input-width').value = 520;
     document.getElementById('st-pane-preview-width').value = 520;
-    document.getElementById('st-pane-memo-width').value = 280;
-    document.getElementById('st-pane-outline-width').value = 300;
+    document.getElementById('st-pane-memo-width').value = 260;
+    document.getElementById('st-pane-outline-width').value = 260;
 
     localStorage.removeItem(PANE_WIDTH_KEYS.input);
     localStorage.removeItem(PANE_WIDTH_KEYS.preview);
@@ -1896,8 +1915,8 @@ function resetPaneHeights() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
 
-    if (inputHeightEl) inputHeightEl.value = 420;
-    if (previewHeightEl) previewHeightEl.value = 320;
+    if (inputHeightEl) inputHeightEl.value = 520;
+    if (previewHeightEl) previewHeightEl.value = 420;
 
     localStorage.removeItem(PANE_HEIGHT_KEYS.input);
     localStorage.removeItem(PANE_HEIGHT_KEYS.preview);
@@ -1956,6 +1975,33 @@ function resetPaneHeights() {
         const hasOpen = document.querySelectorAll('.control-panel.open').length > 0;
         document.body.classList.toggle('allow-scroll', hasOpen);
     }
+    function getPanelStateIcon(isOpen, isPinned) {
+        if (isPinned) return '📌';
+        if (isOpen) return '▾';
+        return '▸';
+    }
+    function updateControlPanelButton(panelId, btnId) {
+        const panel = document.getElementById(panelId);
+        const btn = document.getElementById(btnId);
+        if (!panel || !btn) return;
+        const iconEl = btn.querySelector('.panel-state-icon');
+        if (iconEl) iconEl.textContent = getPanelStateIcon(panel.classList.contains('open'), pinnedPanels.has(panelId));
+    }
+    function updateDockPanelButton(panelId, btnId, dockCheckboxId) {
+        const panel = document.getElementById(panelId);
+        const btn = document.getElementById(btnId);
+        const dockCheckbox = document.getElementById(dockCheckboxId);
+        if (!panel || !btn || !dockCheckbox) return;
+        const iconEl = btn.querySelector('.panel-state-icon');
+        if (iconEl) iconEl.textContent = getPanelStateIcon(panel.classList.contains('open'), dockCheckbox.checked);
+    }
+    function updatePanelButtonStates() {
+        updateControlPanelButton('help-bar', 'btn-toggle-help');
+        updateControlPanelButton('search-bar', 'btn-toggle-search');
+        updateControlPanelButton('settings-bar', 'btn-toggle-settings');
+        updateDockPanelButton('memo-panel', 'btn-toggle-memo', 'check-memo-dock');
+        updateDockPanelButton('outline-panel', 'btn-toggle-outline', 'check-outline-dock');
+    }
     function togglePanel(id) {
         const p = document.getElementById(id);
         const btn = document.querySelector(`#${id} .panel-pin-btn`);
@@ -1979,6 +2025,7 @@ function resetPaneHeights() {
             if (id === 'search-bar') setTimeout(() => document.getElementById('search-input').focus(), 100);
         }
         updateControlPanelScrollState();
+        updatePanelButtonStates();
     }
     function togglePanelPin(id) {
         const btn = document.querySelector(`#${id} .panel-pin-btn`);
@@ -1990,6 +2037,7 @@ function resetPaneHeights() {
             btn.classList.add('pinned');
         }
         updateControlPanelScrollState();
+        updatePanelButtonStates();
     }
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {
@@ -1998,6 +2046,7 @@ function resetPaneHeights() {
             if (!pinnedPanels.has(p.id)) p.classList.remove('open');
         });
         updateControlPanelScrollState();
+        updatePanelButtonStates();
     });
     // Close non-docked memo/outline when clicking on panes
     document.getElementById('pane-input').addEventListener('click', e => {
@@ -2009,6 +2058,7 @@ function resetPaneHeights() {
         if (!mainContainer.classList.contains('outline-docked')) {
             document.getElementById('outline-panel').classList.remove('open');
         }
+        updatePanelButtonStates();
     });
     document.getElementById('pane-preview').addEventListener('click', e => {
         if (e.target.closest('.preview-tab')) return;
@@ -2019,6 +2069,7 @@ function resetPaneHeights() {
         if (!mainContainer.classList.contains('outline-docked')) {
             document.getElementById('outline-panel').classList.remove('open');
         }
+        updatePanelButtonStates();
     });
     function hidePane(t) {
         if (t === 'input') {
@@ -2084,12 +2135,12 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         const inputHeight =
             parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.input), 10) ||
             parseInt(inputHeightEl.value, 10) ||
-            420;
+            520;
 
         const previewHeight =
             parseInt(localStorage.getItem(PANE_HEIGHT_KEYS.preview), 10) ||
             parseInt(previewHeightEl.value, 10) ||
-            320;
+            420;
 
         const combinedHeight = inputHeight + previewHeight;
 
@@ -2167,12 +2218,14 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
             panel.classList.remove('open');
         }
         applyPaneWidthSettings();
+        updatePanelButtonStates();
     }
 
     function closeMemoPanel() {
         const panel = document.getElementById('memo-panel');
         panel.classList.remove('open');
         applyPaneWidthSettings();
+        updatePanelButtonStates();
     }
 
     function toggleMemoDock() {
@@ -2185,9 +2238,10 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         } else {
             c.classList.remove('memo-docked', 'memo-right');
             b.style.display = 'none';
-            document.getElementById('memo-panel').style.width = '280px';
+            document.getElementById('memo-panel').style.width = '260px';
         }
         applyPaneWidthSettings();
+        updatePanelButtonStates();
     }
 
     function swapMemoSide() {
@@ -2396,14 +2450,12 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
 function toggleOutlinePanel() {
     const panel = document.getElementById('outline-panel');
     const checkbox = document.getElementById('check-outline-dock');
-    const btn = document.getElementById('btn-toggle-outline');
     const isOpen = panel.classList.contains('open');
     const isDocked = checkbox.checked;
 
     if (!isOpen) {
         generateOutline();
         panel.classList.add('open');
-        btn?.classList.add('active');
 
         if (isDocked) {
             checkbox.checked = false;
@@ -2413,22 +2465,21 @@ function toggleOutlinePanel() {
         checkbox.checked = true;
         toggleOutlineDock();
         panel.classList.add('open');
-        btn?.classList.add('active');
     } else {
         checkbox.checked = false;
         toggleOutlineDock();
         panel.classList.remove('open');
-        btn?.classList.remove('active');
     }
 
     applyPaneWidthSettings();
+    updatePanelButtonStates();
 }
 
 function closeOutlinePanel() {
     const panel = document.getElementById('outline-panel');
     panel.classList.remove('open');
-    document.getElementById('btn-toggle-outline')?.classList.remove('active');
     applyPaneWidthSettings();
+    updatePanelButtonStates();
 }
 
     function toggleOutlineDock() {
@@ -2441,9 +2492,10 @@ function closeOutlinePanel() {
         } else {
             c.classList.remove('outline-docked', 'outline-left');
             b.style.display = 'none';
-            document.getElementById('outline-panel').style.width = '300px';
+            document.getElementById('outline-panel').style.width = '260px';
         }
         applyPaneWidthSettings();
+        updatePanelButtonStates();
     }
     function swapOutlineSide() { document.getElementById('main-container').classList.toggle('outline-left'); }
     function switchOutlineTab(tab) {
@@ -2492,7 +2544,6 @@ function closeOutlinePanel() {
     function collapseAllOutline() { outlineData.forEach(it => it.collapsed = true); renderOutline(); }
 
     function toggleLayoutAxis() {
-        const c = document.getElementById('main-container');
         if (layoutAxis === 'row') {
             layoutAxis = 'column';
             document.body.classList.add('scroll-mode');
@@ -2502,7 +2553,7 @@ function closeOutlinePanel() {
             document.body.classList.remove('scroll-mode');
             btnSwap.innerText = '左右入替';
         }
-        c.classList.remove('reverse-row', 'reverse-col');
+        paneStack.classList.remove('reverse-row', 'reverse-col');
         layoutReversed = false;
         applyPaneWidthSettings();
 if (typeof applyPaneHeightSettings === 'function') {
@@ -2510,7 +2561,7 @@ if (typeof applyPaneHeightSettings === 'function') {
 }
 
     }
-    function toggleLayoutOrder() { const c = document.getElementById('main-container'); layoutReversed = !layoutReversed; c.classList.remove('reverse-row', 'reverse-col'); if (layoutReversed) c.classList.add(layoutAxis === 'row' ? 'reverse-row' : 'reverse-col'); }
+    function toggleLayoutOrder() { layoutReversed = !layoutReversed; paneStack.classList.remove('reverse-row', 'reverse-col'); if (layoutReversed) paneStack.classList.add(layoutAxis === 'row' ? 'reverse-row' : 'reverse-col'); }
 
     function showJumpDialog() { document.getElementById('jump-dialog').classList.add('show'); document.getElementById('jump-line-input').value = ''; document.getElementById('jump-line-input').focus(); }
     function closeJumpDialog() { document.getElementById('jump-dialog').classList.remove('show'); }
@@ -2680,7 +2731,6 @@ if (typeof applyPaneHeightSettings === 'function') {
         const resizer = document.getElementById('resizer-input-preview');
         const inputPane = document.getElementById('pane-input');
         const previewPane = document.getElementById('pane-preview');
-        const mainContainer = document.getElementById('main-container');
         let isResizing = false;
 
         resizer.addEventListener('mousedown', e => {
@@ -2699,7 +2749,7 @@ if (typeof applyPaneHeightSettings === 'function') {
             const totalWidth = inputRect.width + previewRect.width;
             if (totalWidth <= minPaneWidth * 2) return;
 
-            if (mainContainer.classList.contains('reverse-row')) {
+            if (paneStack.classList.contains('reverse-row')) {
                 const newPreviewWidth = clampValue(e.clientX - previewRect.left, minPaneWidth, totalWidth - minPaneWidth);
                 const newInputWidth = totalWidth - newPreviewWidth;
                 previewPane.style.flex = `1 1 ${newPreviewWidth}px`;
@@ -2837,6 +2887,7 @@ if (typeof applyPaneHeightSettings === 'function') {
     updateInputStats();
     renderPreviewTabs();
     updatePreview();
+    updatePanelButtonStates();
     updateWritingTimeDisplay();
 </script>
 </body>

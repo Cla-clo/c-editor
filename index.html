@@ -1823,7 +1823,26 @@ if (previewH) previewH.value = 320;
         localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
     }
 
-function applyPaneHeightSettings() {
+    function applyPaneWidthSettings() {
+        const inputWidthEl = document.getElementById('st-pane-input-width');
+        const previewWidthEl = document.getElementById('st-pane-preview-width');
+
+        if (!inputWidthEl || !previewWidthEl) return;
+
+        const inputWidth = clampValue(parseInt(inputWidthEl.value, 10) || 520, 120, 3000);
+        const previewWidth = clampValue(parseInt(previewWidthEl.value, 10) || 520, 120, 3000);
+
+        inputWidthEl.value = inputWidth;
+        previewWidthEl.value = previewWidth;
+
+        localStorage.setItem(PANE_WIDTH_KEYS.input, inputWidth);
+        localStorage.setItem(PANE_WIDTH_KEYS.preview, previewWidth);
+
+        applyDockedPanelWidths();
+        adjustPaneWidthsOnVisibility();
+    }
+
+	function applyPaneHeightSettings() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
     const inputPane = document.getElementById('pane-input');
@@ -1887,20 +1906,34 @@ function resetPaneHeights() {
         applyPaneHeightSettings();
     }
 }
+
     function loadPaneWidthSettings() {
         const mainContainer = document.getElementById('main-container');
         const containerWidth = mainContainer.getBoundingClientRect().width || 1000;
-        const legacyInput = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.legacyInput));
-        const legacyPreview = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.legacyPreview));
-        const inputWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.input));
-        const previewWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.preview));
-        const memoWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.memo));
-        const outlineWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.outline));
+        const legacyInput = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.legacyInput), 10);
+        const legacyPreview = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.legacyPreview), 10);
+        const inputWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.input), 10);
+        const previewWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.preview), 10);
+        const memoWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.memo), 10);
+        const outlineWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.outline), 10);
 
         if (inputWidth || legacyInput) {
             const converted = inputWidth || Math.round(containerWidth * (legacyInput / 100));
             document.getElementById('st-pane-input-width').value = converted;
-function loadPaneHeightSettings() {
+        }
+        if (previewWidth || legacyPreview) {
+            const converted = previewWidth || Math.round(containerWidth * (legacyPreview / 100));
+            document.getElementById('st-pane-preview-width').value = converted;
+        }
+        if (memoWidth) {
+            document.getElementById('st-pane-memo-width').value = memoWidth;
+        }
+        if (outlineWidth) {
+            document.getElementById('st-pane-outline-width').value = outlineWidth;
+        }
+    }
+
+	function loadPaneHeightSettings() {
     const inputHeightEl = document.getElementById('st-pane-input-height');
     const previewHeightEl = document.getElementById('st-pane-preview-height');
 
@@ -1917,8 +1950,6 @@ function loadPaneHeightSettings() {
         applyPaneHeightSettings();
     }
 }
-
-    }
 
     const pinnedPanels = new Set();
     function updateControlPanelScrollState() {

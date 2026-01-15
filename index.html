@@ -1094,7 +1094,7 @@
       <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え">📌</button>
       <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
       <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
-      <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✖</button>
+      <button class="panel-close-btn" onclick="closeMemoPanel(true)" style="background:none; border:none; cursor:pointer;">✖</button>
     </div>
   </div>
 
@@ -1461,23 +1461,23 @@
         input.replaceWith(span);
     }
 
-    function switchTab(tabId) {
-        // Save current tab content
-        const currentTab = inputTabs.find(t => t.id === activeTabId);
-        if (currentTab) currentTab.content = inputArea.value;
-        // Switch to new tab
-        activeTabId = tabId;
-        const newTab = inputTabs.find(t => t.id === tabId);
-        if (newTab) inputArea.value = newTab.content;
-        renderInputTabs();
-        updateInputStats();
-        // Preview tab stays independent - only update content if showing current input tab
-        if (!previewShowAll && previewTabId === null) {
-            updatePreview();
-            renderPreviewTabs();
-        }
-        saveTabsToStorage();
-    }
+function switchTab(tabId) {
+  // Save current tab content
+  const currentTab = inputTabs.find(t => t.id === activeTabId);
+  if (currentTab) currentTab.content = inputArea.value;
+
+  // Switch to new tab
+  activeTabId = tabId;
+  const newTab = inputTabs.find(t => t.id === tabId);
+  if (newTab) inputArea.value = newTab.content;
+
+  renderInputTabs();
+  updateInputStats();
+
+  // ★ここではプレビューを更新しない（完全独立）
+
+  saveTabsToStorage();
+}
 
     function addNewTab() {
         const currentTab = inputTabs.find(t => t.id === activeTabId);
@@ -2239,41 +2239,43 @@ popupTop = Math.min(Math.max(popupTop, minTop), maxTop);
         pvTimeEl.innerText = `更新: ${new Date().toLocaleTimeString('ja-JP', { hour12: false })}`;
     }
 
-    function syncPreviewPosition() {
-        // Match preview tab to input tab first
-        if (previewTabId !== activeTabId) {
-            previewTabId = activeTabId;
-            renderPreviewTabs();
-        }
-        updatePreview();
+function syncPreviewPosition() {
+  // ★同期ボタンを押した時だけ「内容」を同期する
+  // （入力タブ → プレビュータブを合わせる）
+  if (typeof previewTabId !== 'undefined') previewTabId = activeTabId;
+  if (typeof renderPreviewTabs === 'function') renderPreviewTabs();
+  if (typeof updatePreview === 'function') updatePreview();
 
-        const start = inputArea.selectionStart;
-        const end = inputArea.selectionEnd;
-        const targetPos = start === end ? start : Math.floor((start + end) / 2);
-        const lineNum = (inputArea.value.substring(0, targetPos).match(/\n/g) || []).length;
+  // ★ここから下は「位置（スクロール）同期」：あなたが作ったやつそのまま
+  const start = inputArea.selectionStart;
+  const end = inputArea.selectionEnd;
+  const targetPos = start === end ? start : Math.floor((start + end) / 2);
+  const lineNum = (inputArea.value.substring(0, targetPos).match(/\n/g) || []).length;
 
-        const brs = previewContent.querySelectorAll('br');
-        if (brs.length > 0) {
-            const targetBr = brs[Math.min(lineNum, brs.length - 1)];
-            if (targetBr) {
-                targetBr.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-                setTimeout(() => showPreviewSyncIndicator(targetBr), 60);
-            }
-        } else {
-            previewScroll.scrollTop = 0;
-            previewScroll.scrollLeft = 0;
-            const indicator = document.getElementById('preview-sync-indicator');
-            if (indicator) indicator.style.display = 'none';
-        }
-        const indicatorRect = getPreviewLineStartRect(lineNum);
-        if (indicatorRect) {
-            setTimeout(() => showPreviewSyncIndicator(indicatorRect), 60);
-        } else {
-            const indicator = document.getElementById('preview-sync-indicator');
-            if (indicator) indicator.style.display = 'none';
-        }
-        // Sync arrow display removed
+  const brs = previewContent.querySelectorAll('br');
+  if (brs.length > 0) {
+    const targetBr = brs[Math.min(lineNum, brs.length - 1)];
+    if (targetBr) {
+      targetBr.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      setTimeout(() => showPreviewSyncIndicator(targetBr), 60);
     }
+  } else {
+    previewScroll.scrollTop = 0;
+    previewScroll.scrollLeft = 0;
+    const indicator = document.getElementById('preview-sync-indicator');
+    if (indicator) indicator.style.display = 'none';
+  }
+
+  const indicatorRect = getPreviewLineStartRect(lineNum);
+  if (indicatorRect) {
+    setTimeout(() => showPreviewSyncIndicator(indicatorRect), 60);
+  } else {
+    const indicator = document.getElementById('preview-sync-indicator');
+    if (indicator) indicator.style.display = 'none';
+  }
+}
+
+
 
     function updatePreviewAndShow() {
         updatePreview();
@@ -2914,13 +2916,22 @@ function toggleMemoPanel() {
 }
 
 
-    function closeMemoPanel() {
-        const panel = document.getElementById('memo-panel');
-        panel.classList.remove('open');
-        applyPaneWidthSettings();
-        updatePanelButtonStates();
-        updateDockSplitState();
-    }
+function closeMemoPanel(force = false) {
+  const c = document.getElementById('main-container');
+  if (!force && c && c.classList.contains('memo-docked')) return; // ドック中は閉じない
+
+  if (!force && window.memoInteracting) return;
+
+  const panel = document.getElementById('memo-panel');
+  if (!panel) return;
+  panel.classList.remove('open');
+
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+}
+
+
 
 function toggleMemoDock() {
   const checkbox = document.getElementById('check-memo-dock');
@@ -3877,7 +3888,6 @@ function applyDefaultDockLayoutOnce() {
 // エラー回避：未実装でも落ちないようにする
 function updateActiveTabTitle() {}
 
-	
 // 初期化
     loadAutoSave();
     loadTodayStart();
@@ -3896,6 +3906,8 @@ function updateActiveTabTitle() {}
 	applyDefaultDockLayoutOnce();
     updateDockTopOffset();
     updateDockSplitState();
+	setupMemoInteractionGuard();
+
     // Apply default preview hidden setting on first load
 // 初回（スーパーリロード・初起動）はプレビューを必ず表示
 if (!localStorage.getItem('cc_editor_session_started')) {
@@ -3968,6 +3980,19 @@ window.addEventListener('resize', () => {
 
 	<!--
 <script>
+// メモ操作中フラグ（浮動メモが勝手に閉じないようにする）
+window.memoInteracting = false;
+
+function setupMemoInteractionGuard() {
+  const memo = document.getElementById('memo-panel');
+  if (!memo) return;
+
+  memo.addEventListener('pointerenter', () => window.memoInteracting = true);
+  memo.addEventListener('pointerleave', () => window.memoInteracting = false);
+  memo.addEventListener('focusin', () => window.memoInteracting = true);
+  memo.addEventListener('focusout', () => window.memoInteracting = false);
+}
+	
     // メモのタブ管理データ
     let memoTabs = [];
     try {

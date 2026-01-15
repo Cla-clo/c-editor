@@ -3830,7 +3830,9 @@ function applyDefaultDockLayoutOnce() {
   if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
   localStorage.setItem('cc_default_layout_applied', '1');
 }
-
+	
+// エラー回避：未実装でも落ちないようにする
+function updateActiveTabTitle() {}
 
 	
 // 初期化

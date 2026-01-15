@@ -1087,14 +1087,16 @@
         </div>
     </div>
 
- <div id="memo-panel">
-    <div class="memo-header" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color);">
-        <span style="font-weight: bold; font-family: var(--font-ui);">📝 メモ</span>
-        <div class="memo-controls" style="display: flex; gap: 4px;">
-            <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え" style="background:none; border:none; cursor:pointer;">📌</button>
-            <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✕</button>
-        </div>
-    </div>
+<div class="memo-controls" style="display: flex; gap: 4px;">
+  <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え">📌</button>
+
+  <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
+
+  <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
+
+  <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✖</button>
+</div>
+
 
     <div class="memo-toolbar" style="background: var(--bg-color); padding: 4px 4px 0 4px; border-bottom: 1px solid var(--border-color);">
         <div id="memo-tabs-container" class="memo-tabs" style="display: flex; gap: 2px; overflow-x: auto;">

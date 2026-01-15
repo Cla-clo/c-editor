@@ -3865,6 +3865,13 @@ function updateActiveTabTitle() {}
     updateInputStats();
     renderPreviewTabs();
     updatePreview();
+
+	// 起動直後にもう一度だけプレビューを同期（初回/スーパーリロード時の取りこぼし対策）
+setTimeout(() => {
+  if (typeof updatePreview === 'function') updatePreview();
+}, 0);
+
+	
     updatePanelButtonStates();
     updateWritingTimeDisplay();
 window.addEventListener('resize', () => {

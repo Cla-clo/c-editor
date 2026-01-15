@@ -2706,28 +2706,11 @@ function updateDockSplitState() {
         updatePanelButtonStates();
     });
     // Close non-docked memo/outline on outside click
-    // NOTE: use capture + composedPath so re-rendering tabs (innerHTML) won't make contains(e.target) fail.
-    document.addEventListener('click', (e) => {
-        const c = document.getElementById('main-container');
-        const memoPanel = document.getElementById('memo-panel');
-        const outlinePanel = document.getElementById('outline-panel');
-        const memoBtn = document.getElementById('btn-toggle-memo');
-        const outlineBtn = document.getElementById('btn-toggle-outline');
-
-        const path = (typeof e.composedPath === 'function') ? e.composedPath() : null;
-        const inMemo = !!(memoPanel && (path ? path.includes(memoPanel) : memoPanel.contains(e.target)));
-        const inOutline = !!(outlinePanel && (path ? path.includes(outlinePanel) : outlinePanel.contains(e.target)));
-        const onMemoBtn = !!(memoBtn && (path ? path.includes(memoBtn) : memoBtn.contains(e.target)));
-        const onOutlineBtn = !!(outlineBtn && (path ? path.includes(outlineBtn) : outlineBtn.contains(e.target)));
-
-        if (c && memoPanel && memoPanel.classList.contains('open') && !c.classList.contains('memo-docked')) {
-            if (!inMemo && !onMemoBtn && !window.memoInteracting) closeMemoPanel();
-        }
-        if (c && outlinePanel && outlinePanel.classList.contains('open') && !c.classList.contains('outline-docked')) {
-            if (!inOutline && !onOutlineBtn) closeOutlinePanel();
-        }
-    }, true);
-
+    document.addEventListener('click', e => {
+        if (e.target.closest('#memo-panel') || e.target.closest('#outline-panel')) return;
+        if (e.target.closest('#btn-toggle-memo') || e.target.closest('#btn-toggle-outline')) return;
+        if (e.target.closest('#resizer-memo') || e.target.closest('#resizer-outline')) return;
+        const mainContainer = document.getElementById('main-container');
         if (!mainContainer.classList.contains('memo-docked')) {
             document.getElementById('memo-panel').classList.remove('open');
         }
@@ -2933,7 +2916,10 @@ function toggleMemoPanel() {
   const isDocked = checkbox.checked;
 
   // ★ここで「何が起きるか」を出す
-// ↓ここから下は元の処理のまま
+  console.log('toggleMemoPanel', { isOpen, isDocked });
+  console.trace();
+
+  // ↓ここから下は元の処理のまま
   if (!isOpen) {
     panel.classList.add('open');
     if (isDocked) {
@@ -2959,7 +2945,8 @@ function toggleMemoPanel() {
 
 
 function closeMemoPanel(force = false) {
-// ←呼び出し元の履歴が出る
+  console.log('closeMemoPanel called', { force });
+  console.trace(); // ←呼び出し元の履歴が出る
   const c = document.getElementById('main-container');
   if (!force && c && c.classList.contains('memo-docked')) return; // ドック中は閉じない
 
@@ -3755,16 +3742,9 @@ if (typeof applyPaneHeightSettings === 'function') {
                 const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
                 panel.style.width = `${newWidth}px`;
                 panel.style.flexBasis = `${newWidth}px`;
-                if (otherPanel) {
-                    // Keep the other dock panel at its stored width while resizing,
-                    // so it doesn't "flex" and appear to grow/shrink unexpectedly.
-                    const otherWidthEl = document.getElementById(otherWidthInputId);
-                    const stored = (otherWidthEl && otherWidthEl.value) ? otherWidthEl.value : (localStorage.getItem(panelId === 'memo-panel' ? PANE_WIDTH_KEYS.outline : PANE_WIDTH_KEYS.memo) || '260');
-                    const lockedWidth = clampValue(parseInt(stored, 10) || 260, minDockWidth, 2000);
+                if (otherDockWidth > 0 && otherPanel) {
+                    const lockedWidth = clampValue(parseInt(document.getElementById(otherWidthInputId).value, 10) || 260, minDockWidth, 2000);
                     otherPanel.style.width = `${lockedWidth}px`;
-                    otherPanel.style.flexBasis = `${lockedWidth}px`;
-                }
-px`;
                     otherPanel.style.flexBasis = `${lockedWidth}px`;
                 }
             });

@@ -2855,6 +2855,7 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     function replaceOne() { if (currentMatchIndex < 0) findNext(); if (currentMatchIndex < 0) return; const r = document.getElementById('replace-input').value, m = searchMatches[currentMatchIndex]; inputArea.setRangeText(r, m.start, m.end, 'select'); doSearch(); jumpToMatch(); }
     function replaceAll() { const q = document.getElementById('search-input').value, r = document.getElementById('replace-input').value; if (!q) return; inputArea.value = inputArea.value.split(q).join(r); updateInputStats(); }
 
+
     // Memo Pane with Tabs
     const MEMO_KEY = 'cc_editor_memo_tabs';
     const memoArea = document.getElementById('memo-area');
@@ -2864,31 +2865,43 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     let nextMemoTabId = 2;
     let draggingMemoTabId = null;
 
-    function toggleMemoPanel() {
-        const panel = document.getElementById('memo-panel');
-        const checkbox = document.getElementById('check-memo-dock');
-        const isOpen = panel.classList.contains('open');
-        const isDocked = checkbox.checked;
 
-        if (!isOpen) {
-            panel.classList.add('open');
-            if (isDocked) {
-                checkbox.checked = false;
-                toggleMemoDock();
-            }
-        } else if (!isDocked) {
-            checkbox.checked = true;
-            toggleMemoDock();
-            panel.classList.add('open');
-        } else {
-            checkbox.checked = false;
-            toggleMemoDock();
-            panel.classList.remove('open');
-        }
-        applyPaneWidthSettings();
-        updatePanelButtonStates();
-        updateDockSplitState();
+function toggleMemoPanel() {
+  const panel = document.getElementById('memo-panel');
+  const checkbox = document.getElementById('check-memo-dock');
+
+  // どっちかが無いなら、ここでやめる（落ちない）
+  if (!panel) return;
+  if (!checkbox) {
+    console.error('check-memo-dock が見つかりません（HTMLに追加したか確認してください）');
+    return;
+  }
+
+  const isOpen = panel.classList.contains('open');
+  const isDocked = checkbox.checked;
+
+  if (!isOpen) {
+    panel.classList.add('open');
+    if (isDocked) {
+      checkbox.checked = false;
+      toggleMemoDock();
     }
+  } else if (!isDocked) {
+    checkbox.checked = true;
+    toggleMemoDock();
+    panel.classList.add('open');
+  } else {
+    checkbox.checked = false;
+    toggleMemoDock();
+    panel.classList.remove('open');
+  }
+
+  // これらの関数が無い場合もあるので安全に呼ぶ
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+}
+
 
     function closeMemoPanel() {
         const panel = document.getElementById('memo-panel');
@@ -2898,24 +2911,40 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         updateDockSplitState();
     }
 
-    function toggleMemoDock() {
-        const d = document.getElementById('check-memo-dock').checked;
-        const c = document.getElementById('main-container');
-        const b = document.getElementById('btn-memo-swap');
-        const pinBtn = document.getElementById('btn-memo-pin');
-        if (d) {
-            c.classList.add('memo-docked');
-            b.classList.add('is-active');
-        } else {
-            c.classList.remove('memo-docked', 'memo-right');
-            b.classList.remove('is-active');
-            document.getElementById('memo-panel').style.width = '260px';
-        }
-        if (pinBtn) pinBtn.classList.toggle('pinned', d);
-        applyPaneWidthSettings();
-        updatePanelButtonStates();
-        updateDockSplitState();
-    }
+function toggleMemoDock() {
+  const checkbox = document.getElementById('check-memo-dock');
+  const c = document.getElementById('main-container');
+  const b = document.getElementById('btn-memo-swap');
+  const pinBtn = document.getElementById('btn-memo-pin');
+  const panel = document.getElementById('memo-panel');
+
+  if (!checkbox) {
+    console.error('check-memo-dock が見つかりません');
+    return;
+  }
+  if (!c) {
+    console.error('main-container が見つかりません');
+    return;
+  }
+
+  const d = checkbox.checked;
+
+  if (d) {
+    c.classList.add('memo-docked');
+    if (b) b.classList.add('is-active');
+  } else {
+    c.classList.remove('memo-docked', 'memo-right');
+    if (b) b.classList.remove('is-active');
+    if (panel) panel.style.width = '260px';
+  }
+
+  if (pinBtn) pinBtn.classList.toggle('pinned', d);
+
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+}
+
 
     function toggleMemoDockPin() {
         const checkbox = document.getElementById('check-memo-dock');
@@ -3774,10 +3803,7 @@ if (typeof applyPaneHeightSettings === 'function') {
 window.addEventListener('resize', () => {
         updateDockTopOffset();
     });
-    
-    // エラー防止：古い読み込み命令が生きていても無視するようにする
-    window.loadMemoTabs = function() { console.log("旧ロード関数をスキップ"); };
-</script>
+    </script>
 
 <style>
     /* メモタブのデザイン */
@@ -3814,6 +3840,7 @@ window.addEventListener('resize', () => {
     .memo-tab-add:hover { color: #2563eb; background: #dbeafe; border-radius: 4px; }
 </style>
 
+	<!--
 <script>
     // メモのタブ管理データ
     let memoTabs = [];
@@ -3915,6 +3942,10 @@ window.addEventListener('resize', () => {
 
     // 起動時に実行
     setTimeout(renderMemoTabs, 500);
+	function updateActiveTabTitle() {
+  // TODO: 後で実装。とりあえずエラー回避用
+}
 </script>
+	-->
 </body>
 </html>

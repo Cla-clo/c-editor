@@ -1818,16 +1818,7 @@ function addNewTab() {
         applyPreviewSettings();
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
-        if (document.getElementById('check-memo-dock').checked) {
-            document.getElementById('check-memo-dock').checked = false;
-            toggleMemoDock();
-        }
-        if (document.getElementById('check-outline-dock').checked) {
-            document.getElementById('check-outline-dock').checked = false;
-            toggleOutlineDock();
-        }
-        closeMemoPanel();
-        closeOutlinePanel();
+
         resetPaneWidths();
         resetPaneHeights();
         setPaneSplitEqual();
@@ -1842,6 +1833,12 @@ function addNewTab() {
         saveMemoTabs();
         saveWritingTime();
 		applyDefaultStartupLayoutAfterReset();
+		requestAnimationFrame(() => {
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+  if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+});
 
     }
 
@@ -3920,7 +3917,7 @@ function updateActiveTabTitle() {}
 	applyDefaultDockLayoutOnce();
     updateDockTopOffset();
     updateDockSplitState();
-	setupMemoInteractionGuard();
+	if (typeof setupMemoInteractionGuard === 'function') setupMemoInteractionGuard();
 
     // Apply default preview hidden setting on first load
 // 初回（スーパーリロード・初起動）はプレビューを必ず表示

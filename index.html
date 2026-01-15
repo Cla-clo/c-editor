@@ -1087,15 +1087,17 @@
         </div>
     </div>
 
-<div class="memo-controls" style="display: flex; gap: 4px;">
-  <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え">📌</button>
+<div id="memo-panel">
+  <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+    <span style="font-family: var(--font-ui);">📝 メモ</span>
+    <div class="memo-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+      <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え">📌</button>
+      <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
+      <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
+      <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✖</button>
+    </div>
+  </div>
 
-  <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
-
-  <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
-
-  <button class="panel-close-btn" onclick="closeMemoPanel()" style="background:none; border:none; cursor:pointer;">✖</button>
-</div>
 
 
     <div class="memo-toolbar" style="background: var(--bg-color); padding: 4px 4px 0 4px; border-bottom: 1px solid var(--border-color);">
@@ -1115,8 +1117,6 @@
 <div id="resizer-memo" class="dock-resizer"></div>
 
     <div class="dock-resizer" id="resizer-memo-outline"></div>
-    <div class="dock-resizer" id="resizer-memo"></div>
-
     <div id="outline-panel">
         <div class="outline-header">
             <span>📑 目次</span>
@@ -3762,10 +3762,11 @@ if (typeof applyPaneHeightSettings === 'function') {
         };
 
         resizer.addEventListener('mousedown', e => {
-            if (!document.getElementById('main-container').classList.contains('dock-split-right') &&
-                !document.getElementById('main-container').classList.contains('dock-split-left')) {
-                return;
-            }
+            const mc = document.getElementById('main-container');
+        if (!mc) return;
+        if (!mc.classList.contains('dock-split-right') && !mc.classList.contains('dock-split-left')) {
+            return;
+        }
             isResizing = true;
             resizer.classList.add('resizing');
             document.addEventListener('mousemove', onMouseMove);
@@ -3773,77 +3774,42 @@ if (typeof applyPaneHeightSettings === 'function') {
         });
     })();
 
+    
 
-function applyDefaultDockLayoutOnce() {
-  if (localStorage.getItem('cc_default_layout_applied') === '1') return;
-
-  const c = document.getElementById('main-container');
-  const memo = document.getElementById('memo-panel');
-  const outline = document.getElementById('outline-panel');
-  const memoDock = document.getElementById('check-memo-dock');
-  const outlineDock = document.getElementById('check-outline-dock');
-
-  if (!c || !memo || !outline || !memoDock || !outlineDock) return;
-
-  // 左メモ（ドック＆開く）
-  memoDock.checked = true;
-  c.classList.add('memo-docked');
-  c.classList.remove('memo-right');
-  memo.classList.add('open');
-
-  // 右目次（ドック＆開く）
-  outlineDock.checked = true;
-  c.classList.add('outline-docked');
-  c.classList.remove('outline-left');
-  outline.classList.add('open');
-
-  // 余計な分割状態が残ってたらリセット
-  c.classList.remove('dock-split-left', 'dock-split-right');
-
-  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
-  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
-  if (typeof updateDockSplitState === 'function') updateDockSplitState();
-
-  localStorage.setItem('cc_default_layout_applied', '1');
+function applyDockedPaneWidths() {
+  if (typeof applyDockedPanelWidths === 'function') return applyDockedPanelWidths();
 }
 
 // 初期化
-loadAutoSave();
-loadTodayStart();
-loadWritingTime();
-loadBookmarks();
-loadMemoTabs();
-loadLayoutSettings();
-loadSettingsFromStorage();
-loadPaneWidthSettings();
-loadPaneHeightSettings();
-loadDividerSettings();
-loadNovelTitle();
-startWritingTimer();
-
-applyAllSettings();
-applyDefaultDockLayoutOnce();   // ← これを追加
-
-updateDockTopOffset();
-updateDockSplitState();
-
-// Apply default preview hidden setting on first load
-if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
-  document.getElementById('check-show-preview').checked = false;
-  document.getElementById('pane-preview').classList.add('hidden');
-}
-
-sessionStorage.setItem('cc_editor_session_started', 'true');
-updateInputStats();
-renderPreviewTabs();
-updatePreview();
-updatePanelButtonStates();
-updateWritingTimeDisplay();
-
+    loadAutoSave();
+    loadTodayStart();
+    loadWritingTime();
+    loadBookmarks();
+    loadMemoTabs();
+    loadLayoutSettings();
+    loadSettingsFromStorage();
+    loadPaneWidthSettings();
+    loadPaneHeightSettings();
+    loadDividerSettings();
+    loadNovelTitle();
+    startWritingTimer();
+    applyAllSettings();
+    updateDockTopOffset();
+    updateDockSplitState();
+    // Apply default preview hidden setting on first load
+    if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
+        document.getElementById('check-show-preview').checked = false;
+        document.getElementById('pane-preview').classList.add('hidden');
+    }
+    sessionStorage.setItem('cc_editor_session_started', 'true');
+    updateInputStats();
+    renderPreviewTabs();
+    updatePreview();
+    updatePanelButtonStates();
+    updateWritingTimeDisplay();
 window.addEventListener('resize', () => {
-  updateDockTopOffset();
-});
-
+        updateDockTopOffset();
+    });
     </script>
 
 <style>

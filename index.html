@@ -1240,6 +1240,18 @@
 
   // 先にダミーを作って未定義落ちを防ぐ（あとで本物があれば上書きされる）
   window.setupMemoInteractionGuard = window.setupMemoInteractionGuard || function(){};
+  window.memoInteracting = window.memoInteracting || false;
+  window.memoLastInteractionAt = window.memoLastInteractionAt || 0;
+  const MEMO_INTERACTION_GRACE_MS = 800;
+
+  function recordMemoInteraction() {
+    window.memoLastInteractionAt = Date.now();
+  }
+
+  function isRecentMemoInteraction() {
+    return window.memoLastInteractionAt
+      && (Date.now() - window.memoLastInteractionAt) < MEMO_INTERACTION_GRACE_MS;
+  }
 
   // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
   window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
@@ -1258,9 +1270,20 @@ function setupMemoInteractionGuard() {
   const memo = document.getElementById('memo-panel');
   if (!memo) return;
 
-  memo.addEventListener('pointerenter', () => window.memoInteracting = true);
-  memo.addEventListener('pointerleave', () => window.memoInteracting = false);
-  memo.addEventListener('focusin', () => window.memoInteracting = true);
+  memo.addEventListener('pointerenter', () => {
+    window.memoInteracting = true;
+    recordMemoInteraction();
+  });
+  memo.addEventListener('pointerleave', () => {
+    window.memoInteracting = false;
+    recordMemoInteraction();
+  });
+  memo.addEventListener('pointerdown', recordMemoInteraction);
+  memo.addEventListener('keydown', recordMemoInteraction);
+  memo.addEventListener('focusin', () => {
+    window.memoInteracting = true;
+    recordMemoInteraction();
+  });
   memo.addEventListener('focusout', () => window.memoInteracting = false);
 }
 
@@ -2712,7 +2735,10 @@ function updateDockSplitState() {
         if (e.target.closest('#resizer-memo') || e.target.closest('#resizer-outline')) return;
         const mainContainer = document.getElementById('main-container');
         if (!mainContainer.classList.contains('memo-docked')) {
-            document.getElementById('memo-panel').classList.remove('open');
+            // 動作確認: メモに入力 → 即タブ切替 → メモが閉じないこと
+            if (!isRecentMemoInteraction()) {
+                document.getElementById('memo-panel').classList.remove('open');
+            }
         }
         if (!mainContainer.classList.contains('outline-docked')) {
             document.getElementById('outline-panel').classList.remove('open');
@@ -2950,7 +2976,7 @@ function closeMemoPanel(force = false) {
   const c = document.getElementById('main-container');
   if (!force && c && c.classList.contains('memo-docked')) return; // ドック中は閉じない
 
-  if (!force && window.memoInteracting) return;
+  if (!force && (window.memoInteracting || isRecentMemoInteraction())) return;
 
   const panel = document.getElementById('memo-panel');
   if (!panel) return;

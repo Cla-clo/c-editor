@@ -1834,6 +1834,8 @@
         saveTabsToStorage();
         saveMemoTabs();
         saveWritingTime();
+		applyDefaultStartupLayoutAfterReset();
+
     }
 
     const AUTOSAVE_KEY = 'cc_editor_autosave';
@@ -3807,6 +3809,38 @@ function applyDefaultStartupPrefsOnce() {
 
   localStorage.setItem('cc_default_startup_prefs_applied', '1');
 }
+
+function applyDefaultStartupLayoutAfterReset() {
+  // 💀初期化後は「初回扱い」に戻す
+  localStorage.removeItem('cc_default_layout_applied');
+  localStorage.removeItem('cc_default_startup_prefs_applied');
+  sessionStorage.removeItem('cc_editor_session_started');
+
+  // もう一度「初回起動時の既定」を適用
+  if (typeof applyDefaultStartupPrefsOnce === 'function') applyDefaultStartupPrefsOnce();
+  if (typeof applyDefaultDockLayoutOnce === 'function') applyDefaultDockLayoutOnce();
+
+  // 初回はプレビュー必ず表示
+  const cb = document.getElementById('check-show-preview');
+  const pane = document.getElementById('pane-preview');
+  if (cb) cb.checked = true;
+  if (pane) pane.classList.remove('hidden');
+
+  // レイアウト再計算
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+  if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+
+  // プレビュー同期（即時＋次tickでもう一回）
+  if (typeof updatePreview === 'function') updatePreview();
+  setTimeout(() => {
+    if (typeof updatePreview === 'function') updatePreview();
+  }, 0);
+}
+
+
+	
 function applyDefaultDockLayoutOnce() {
   if (localStorage.getItem('cc_default_layout_applied') === '1') return;
 

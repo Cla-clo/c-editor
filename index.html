@@ -1239,7 +1239,12 @@
 <script>
     // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
     window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
-	window.updateMemoCharCount  = window.updateMemoCharCount  || function () {};
+    window.updateMemoCharCount = function () {
+    const memoArea = document.getElementById('memo-area');
+    const countEl  = document.getElementById('memo-char-count');
+    if (memoArea && countEl) countEl.innerText = memoArea.value.length + '字';
+  };
+
 
     const inputArea = document.getElementById('input-area');
     const inputMirror = document.getElementById('input-mirror-container');
@@ -4018,6 +4023,7 @@ window.addEventListener('resize', () => {
         localStorage.setItem('cc_memo_current_id', currentMemoId);
     }
 
+/*
     // 文字数カウント
     function updateMemoCharCount() {
         const memoArea = document.getElementById('memo-area');
@@ -4026,7 +4032,8 @@ window.addEventListener('resize', () => {
             countEl.innerText = memoArea.value.length + '字';
         }
     }
-
+*/
+	
     // 起動時に実行
     setTimeout(renderMemoTabs, 500);
 	function updateActiveTabTitle() {

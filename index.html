@@ -1237,6 +1237,22 @@
 </div>
 
 <script>
+<script>
+  // 先にダミーを作って未定義落ちを防ぐ（あとで本物があれば上書きされる）
+  window.setupMemoInteractionGuard = window.setupMemoInteractionGuard || function(){};
+
+  // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
+  window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
+  window.updateMemoCharCount = function () {
+    const memoArea = document.getElementById('memo-area');
+    const countEl  = document.getElementById('memo-char-count');
+    if (memoArea && countEl) countEl.innerText = memoArea.value.length + '字';
+  };
+
+  const inputArea = document.getElementById('input-area');
+  const inputMirror = document.getElementById('input-mirror-container');
+
+	
     // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
     window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
     window.updateMemoCharCount = function () {
@@ -1245,7 +1261,17 @@
     if (memoArea && countEl) countEl.innerText = memoArea.value.length + '字';
   };
 
+function setupMemoInteractionGuard() {
+  const memo = document.getElementById('memo-panel');
+  if (!memo) return;
 
+  memo.addEventListener('pointerenter', () => window.memoInteracting = true);
+  memo.addEventListener('pointerleave', () => window.memoInteracting = false);
+  memo.addEventListener('focusin', () => window.memoInteracting = true);
+  memo.addEventListener('focusout', () => window.memoInteracting = false);
+}
+
+	
     const inputArea = document.getElementById('input-area');
     const inputMirror = document.getElementById('input-mirror-container');
     const previewContent = document.getElementById('preview-content');

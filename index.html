@@ -1479,18 +1479,25 @@ function switchTab(tabId) {
   saveTabsToStorage();
 }
 
-    function addNewTab() {
-        const currentTab = inputTabs.find(t => t.id === activeTabId);
-        if (currentTab) currentTab.content = inputArea.value;
-        const newTab = { id: nextTabId++, name: `タブ${inputTabs.length + 1}`, content: '' };
-        inputTabs.push(newTab);
-        activeTabId = newTab.id;
-        inputArea.value = '';
-        renderInputTabs();
-        updateInputStats();
-        updatePreview();
-        saveTabsToStorage();
-    }
+function addNewTab() {
+  const currentTab = inputTabs.find(t => t.id === activeTabId);
+  if (currentTab) currentTab.content = inputArea.value;
+
+  const newTab = { id: nextTabId++, name: `タブ${inputTabs.length + 1}`, content: '' };
+  inputTabs.push(newTab);
+
+  activeTabId = newTab.id;
+  inputArea.value = '';
+
+  renderInputTabs();
+  updateInputStats();
+
+  // ★ここではプレビューを更新しない（完全独立）
+  // updatePreview();
+
+  saveTabsToStorage();
+}
+
 
     function deleteTab(tabId) {
         if (inputTabs.length <= 1) return;
@@ -2883,7 +2890,6 @@ function toggleMemoPanel() {
   const panel = document.getElementById('memo-panel');
   const checkbox = document.getElementById('check-memo-dock');
 
-  // どっちかが無いなら、ここでやめる（落ちない）
   if (!panel) return;
   if (!checkbox) {
     console.error('check-memo-dock が見つかりません（HTMLに追加したか確認してください）');
@@ -2893,6 +2899,11 @@ function toggleMemoPanel() {
   const isOpen = panel.classList.contains('open');
   const isDocked = checkbox.checked;
 
+  // ★ここで「何が起きるか」を出す
+  console.log('toggleMemoPanel', { isOpen, isDocked });
+  console.trace();
+
+  // ↓ここから下は元の処理のまま
   if (!isOpen) {
     panel.classList.add('open');
     if (isDocked) {
@@ -2909,14 +2920,17 @@ function toggleMemoPanel() {
     panel.classList.remove('open');
   }
 
-  // これらの関数が無い場合もあるので安全に呼ぶ
   if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
   if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
   if (typeof updateDockSplitState === 'function') updateDockSplitState();
+  if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
 }
 
 
+
 function closeMemoPanel(force = false) {
+  console.log('closeMemoPanel called', { force });
+  console.trace(); // ←呼び出し元の履歴が出る
   const c = document.getElementById('main-container');
   if (!force && c && c.classList.contains('memo-docked')) return; // ドック中は閉じない
 

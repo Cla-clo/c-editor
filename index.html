@@ -1239,6 +1239,9 @@
 <script>
     // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
     window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
+	window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
+	window.updateMemoCharCount  = window.updateMemoCharCount  || function () {};
+
 	
     const inputArea = document.getElementById('input-area');
     const inputMirror = document.getElementById('input-mirror-container');
@@ -3857,10 +3860,22 @@ function updateActiveTabTitle() {}
     updateDockTopOffset();
     updateDockSplitState();
     // Apply default preview hidden setting on first load
-    if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
-        document.getElementById('check-show-preview').checked = false;
-        document.getElementById('pane-preview').classList.add('hidden');
-    }
+// 初回（スーパーリロード・初起動）はプレビューを必ず表示
+if (!localStorage.getItem('cc_editor_session_started')) {
+  const cb = document.getElementById('check-show-preview');
+  const pane = document.getElementById('pane-preview');
+  if (cb) cb.checked = true;
+  if (pane) pane.classList.remove('hidden');
+} else {
+  // 2回目以降は既存設定に従う（必要なら残す）
+  if (settingsCache.defaultPreviewHidden) {
+    const cb = document.getElementById('check-show-preview');
+    const pane = document.getElementById('pane-preview');
+    if (cb) cb.checked = false;
+    if (pane) pane.classList.add('hidden');
+  }
+}
+
     sessionStorage.setItem('cc_editor_session_started', 'true');
     updateInputStats();
     renderPreviewTabs();

@@ -3775,12 +3775,16 @@ if (typeof applyPaneHeightSettings === 'function') {
     updatePreview();
     updatePanelButtonStates();
     updateWritingTimeDisplay();
-    window.addEventListener('resize', () => {
+window.addEventListener('resize', () => {
         updateDockTopOffset();
     });
+    
+    // エラー防止：古い読み込み命令が生きていても無視するようにする
+    window.loadMemoTabs = function() { console.log("旧ロード関数をスキップ"); };
 </script>
-	<style>
-    /* メモタブの見た目を「入力タブ」に似せるCSS */
+
+<style>
+    /* メモタブのデザイン */
     .memo-tab {
         padding: 4px 12px;
         font-size: 0.85rem;
@@ -3791,12 +3795,15 @@ if (typeof applyPaneHeightSettings === 'function') {
         color: #6b7280;
         user-select: none;
         display: flex; align-items: center; gap: 6px;
+        white-space: nowrap;
     }
     .memo-tab.active {
         background: #ffffff;
         color: #1f2937;
         font-weight: bold;
-        border-top: 2px solid #2563eb; /* 青いライン */
+        border-top: 2px solid #2563eb;
+        border-bottom: 1px solid #ffffff; /* 下線を消して一体化 */
+        margin-bottom: -1px; /* 微調整 */
     }
     .memo-tab-close {
         font-size: 0.7rem; border-radius: 50%; width: 16px; height: 16px;
@@ -3806,21 +3813,29 @@ if (typeof applyPaneHeightSettings === 'function') {
     .memo-tab-close:hover { background: #fee2e2; color: #ef4444; }
     .memo-tab-add {
         padding: 4px 8px; cursor: pointer; color: #6b7280; font-weight: bold;
+        display: flex; align-items: center;
     }
     .memo-tab-add:hover { color: #2563eb; background: #dbeafe; border-radius: 4px; }
 </style>
 
 <script>
     // メモのタブ管理データ
-    let memoTabs = JSON.parse(localStorage.getItem('cc_memo_tabs')) || [
-        { id: 'm1', title: 'メモ1', content: '' }
-    ];
+    let memoTabs = [];
+    try {
+        memoTabs = JSON.parse(localStorage.getItem('cc_memo_tabs')) || [];
+    } catch(e) {}
+
+    // データがない場合の初期化
+    if (!Array.isArray(memoTabs) || memoTabs.length === 0) {
+        memoTabs = [{ id: 'm1', title: 'メモ1', content: '' }];
+    }
+    
     let currentMemoId = localStorage.getItem('cc_memo_current_id') || memoTabs[0].id;
 
-    // タブを描画する機能（これを実行するとタブが表示されます）
+    // タブを描画する機能
     function renderMemoTabs() {
         const container = document.getElementById('memo-tabs-container');
-        if (!container) return;
+        if (!container) return; // コンテナがない場合は何もしない
         
         let html = '';
         memoTabs.forEach(tab => {
@@ -3838,8 +3853,12 @@ if (typeof applyPaneHeightSettings === 'function') {
 
         // 現在のメモの内容をエリアに表示
         const currentTab = memoTabs.find(t => t.id === currentMemoId);
-        if (currentTab) {
-            document.getElementById('memo-area').value = currentTab.content;
+        const memoArea = document.getElementById('memo-area');
+        if (currentTab && memoArea) {
+            // 値が違う場合のみ更新（カーソル位置飛び防止）
+            if (memoArea.value !== currentTab.content) {
+                memoArea.value = currentTab.content;
+            }
             updateMemoCharCount();
         }
     }
@@ -3863,7 +3882,7 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     // タブを削除する
     function deleteMemoTab(e, id) {
-        e.stopPropagation(); // タブ切り替えの発動を防ぐ
+        e.stopPropagation(); 
         if (memoTabs.length <= 1) {
             alert("最後の1つは削除できません");
             return;
@@ -3881,9 +3900,9 @@ if (typeof applyPaneHeightSettings === 'function') {
     // 内容を保存する
     function saveMemoTabs() {
         const currentTab = memoTabs.find(t => t.id === currentMemoId);
-        if (currentTab) {
-            const val = document.getElementById('memo-area').value;
-            currentTab.content = val;
+        const memoArea = document.getElementById('memo-area');
+        if (currentTab && memoArea) {
+            currentTab.content = memoArea.value;
         }
         localStorage.setItem('cc_memo_tabs', JSON.stringify(memoTabs));
         localStorage.setItem('cc_memo_current_id', currentMemoId);
@@ -3891,12 +3910,15 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     // 文字数カウント
     function updateMemoCharCount() {
-        const val = document.getElementById('memo-area').value;
-        document.getElementById('memo-char-count').innerText = val.length + '字';
+        const memoArea = document.getElementById('memo-area');
+        const countEl = document.getElementById('memo-char-count');
+        if (memoArea && countEl) {
+            countEl.innerText = memoArea.value.length + '字';
+        }
     }
 
     // 起動時に実行
-    setTimeout(renderMemoTabs, 500); // 画面読み込み後に少し待ってから実行
+    setTimeout(renderMemoTabs, 500);
 </script>
 </body>
 </html>

@@ -1237,7 +1237,7 @@
 </div>
 
 <script>
-
+<script>
   // 先にダミーを作って未定義落ちを防ぐ（あとで本物があれば上書きされる）
   window.setupMemoInteractionGuard = window.setupMemoInteractionGuard || function(){};
 
@@ -1248,6 +1248,13 @@
     const countEl  = document.getElementById('memo-char-count');
     if (memoArea && countEl) countEl.innerText = memoArea.value.length + '字';
   };
+
+  const inputArea = document.getElementById('input-area');
+  const inputMirror = document.getElementById('input-mirror-container');
+
+	
+    // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
+    window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
     window.updateMemoCharCount = function () {
     const memoArea = document.getElementById('memo-area');
     const countEl  = document.getElementById('memo-char-count');
@@ -2437,79 +2444,58 @@ if (previewH) previewH.value = 520;
         return Math.max(min, Math.min(max, value));
     }
 
+    function setDockPanelWidth(panel, width) {
+        if (!panel) return;
+        panel.style.width = `${width}px`;
+        panel.style.flexBasis = `${width}px`;
+        panel.style.flexGrow = '0';
+        panel.style.flexShrink = '0';
+        panel.style.flex = `0 0 ${width}px`;
+    }
+
     function applyDockedPanelWidths() {
-        const memoWidthRaw = parseInt(document.getElementById('st-pane-memo-width').value);
-        const outlineWidthRaw = parseInt(document.getElementById('st-pane-outline-width').value);
-        const memoWidth = clampValue(memoWidthRaw || 260, 160, 2000);
-        const outlineWidth = clampValue(outlineWidthRaw || 260, 160, 2000);
+        const mainContainer = document.getElementById('main-container');
         const memoPanel = document.getElementById('memo-panel');
         const outlinePanel = document.getElementById('outline-panel');
+        const memoDock = document.getElementById('check-memo-dock');
+        const outlineDock = document.getElementById('check-outline-dock');
+        const resizerMemoOutline = document.getElementById('resizer-memo-outline');
 
-        document.getElementById('st-pane-memo-width').value = memoWidth;
-        document.getElementById('st-pane-outline-width').value = outlineWidth;
+        if (!mainContainer || !memoPanel || !outlinePanel) return;
 
-        memoPanel.style.width = `${memoWidth}px`;
-        memoPanel.style.flexBasis = `${memoWidth}px`;
-        outlinePanel.style.width = `${outlineWidth}px`;
-        outlinePanel.style.flexBasis = `${outlineWidth}px`;
+        const memoDocked = memoDock && memoDock.checked;
+        const outlineDocked = outlineDock && outlineDock.checked;
 
-        localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
-        localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
+        // そもそも両方ドックじゃないなら分割リサイザは不要
+        if (!memoDocked || !outlineDocked) {
+            if (resizerMemoOutline) resizerMemoOutline.style.display = 'none';
+            return;
+        }
+
+        // 両方ドック中のみ分割リサイザを表示（ドックの左右位置により分割判定）
+        const splitRight = mainContainer.classList.contains('dock-split-right');
+        const splitLeft = mainContainer.classList.contains('dock-split-left');
+        if (resizerMemoOutline) resizerMemoOutline.style.display = (splitRight || splitLeft) ? 'block' : 'none';
+
+        // 幅の適用（flexが伸びて勝手に広がるのを防ぐため、flex:0 0 を強制）
+        const memoWidth = Math.max(160, parseInt(document.getElementById('st-pane-memo-width')?.value, 10) || 260);
+        const outlineWidth = Math.max(160, parseInt(document.getElementById('st-pane-outline-width')?.value, 10) || 260);
+
+        setDockPanelWidth(memoPanel, memoWidth);
+        setDockPanelWidth(outlinePanel, outlineWidth);
     }
 
-    function applyPaneWidthSettings() {
-        const inputWidthEl = document.getElementById('st-pane-input-width');
-        const previewWidthEl = document.getElementById('st-pane-preview-width');
+    function ensureDockedPanelsOpen() {
+        const c = document.getElementById('main-container');
+        const memoPanel = document.getElementById('memo-panel');
+        const outlinePanel = document.getElementById('outline-panel');
+        const memoDock = document.getElementById('check-memo-dock');
+        const outlineDock = document.getElementById('check-outline-dock');
+        if (!c) return;
 
-        if (!inputWidthEl || !previewWidthEl) return;
-
-        const inputWidth = clampValue(parseInt(inputWidthEl.value, 10) || 520, 120, 3000);
-        const previewWidth = clampValue(parseInt(previewWidthEl.value, 10) || 520, 120, 3000);
-
-        inputWidthEl.value = inputWidth;
-        previewWidthEl.value = previewWidth;
-
-        localStorage.setItem(PANE_WIDTH_KEYS.input, inputWidth);
-        localStorage.setItem(PANE_WIDTH_KEYS.preview, previewWidth);
-
-        applyDockedPanelWidths();
-        adjustPaneWidthsOnVisibility();
-        updateDockSplitState();
+        if (memoDock && memoDock.checked && memoPanel) memoPanel.classList.add('open');
+        if (outlineDock && outlineDock.checked && outlinePanel) outlinePanel.classList.add('open');
     }
-
-	function applyPaneHeightSettings() {
-    const inputHeightEl = document.getElementById('st-pane-input-height');
-    const previewHeightEl = document.getElementById('st-pane-preview-height');
-    const inputPane = document.getElementById('pane-input');
-    const previewPane = document.getElementById('pane-preview');
-
-    // 必要な要素が無いなら何もしない（落ちないように）
-    if (!inputHeightEl || !previewHeightEl || !inputPane || !previewPane) return;
-
-    const inputHeightRaw = parseInt(inputHeightEl.value, 10);
-    const previewHeightRaw = parseInt(previewHeightEl.value, 10);
-
-    const inputHeight = clampValue(inputHeightRaw || 520, 160, 2000);
-    const previewHeight = clampValue(previewHeightRaw || 520, 160, 2000);
-
-    inputHeightEl.value = inputHeight;
-    previewHeightEl.value = previewHeight;
-
-    if (document.body.classList.contains('scroll-mode')) {
-        inputPane.style.height = `${inputHeight}px`;
-        previewPane.style.height = `${previewHeight}px`;
-    } else {
-        inputPane.style.height = '';
-        previewPane.style.height = '';
-    }
-
-    localStorage.setItem(PANE_HEIGHT_KEYS.input, String(inputHeight));
-    localStorage.setItem(PANE_HEIGHT_KEYS.preview, String(previewHeight));
-
-    if (typeof adjustPaneHeightsOnVisibility === 'function') {
-        adjustPaneHeightsOnVisibility();
-    }
-}
 
 function resetPaneWidths() {
     document.getElementById('st-pane-input-width').value = 520;
@@ -3740,12 +3726,10 @@ if (typeof applyPaneHeightSettings === 'function') {
                 const side = getSide();
                 const rawWidth = side === 'left' ? e.clientX - panelRect.left : panelRect.right - e.clientX;
                 const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
-                panel.style.width = `${newWidth}px`;
-                panel.style.flexBasis = `${newWidth}px`;
+                setDockPanelWidth(panel, newWidth);
                 if (otherDockWidth > 0 && otherPanel) {
                     const lockedWidth = clampValue(parseInt(document.getElementById(otherWidthInputId).value, 10) || 260, minDockWidth, 2000);
-                    otherPanel.style.width = `${lockedWidth}px`;
-                    otherPanel.style.flexBasis = `${lockedWidth}px`;
+                    setDockPanelWidth(otherPanel, lockedWidth);
                 }
             });
 
@@ -3795,10 +3779,8 @@ if (typeof applyPaneHeightSettings === 'function') {
             const rawWidth = e.clientX - memoRect.left;
             const memoWidth = clampValue(Math.round(rawWidth), minWidth, totalWidth - minWidth);
             const outlineWidth = Math.max(minWidth, totalWidth - memoWidth);
-            memoPanel.style.width = `${memoWidth}px`;
-            memoPanel.style.flexBasis = `${memoWidth}px`;
-            outlinePanel.style.width = `${outlineWidth}px`;
-            outlinePanel.style.flexBasis = `${outlineWidth}px`;
+            setDockPanelWidth(memoPanel, memoWidth);
+            setDockPanelWidth(outlinePanel, outlineWidth);
             document.getElementById('st-pane-memo-width').value = memoWidth;
             document.getElementById('st-pane-outline-width').value = outlineWidth;
             localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
@@ -3936,6 +3918,8 @@ function updateActiveTabTitle() {}
 	applyDefaultDockLayoutOnce();
     updateDockTopOffset();
     updateDockSplitState();
+    if (typeof ensureDockedPanelsOpen === 'function') ensureDockedPanelsOpen();
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
 	if (typeof setupMemoInteractionGuard === 'function') setupMemoInteractionGuard();
 
     // Apply default preview hidden setting on first load
@@ -4045,14 +4029,14 @@ function setupMemoInteractionGuard() {
         memoTabs.forEach(tab => {
             const isActive = tab.id === currentMemoId ? 'active' : '';
             html += `
-                <div class="memo-tab ${isActive}" onclick="switchMemoTab('${tab.id}')">
+                <div class="memo-tab ${isActive}" onclick="event.stopPropagation(); switchMemoTab('${tab.id}')">
                     <span>${tab.title}</span>
                     <span class="memo-tab-close" onclick="deleteMemoTab(event, '${tab.id}')">✕</span>
                 </div>
             `;
         });
         // プラスボタン
-        html += `<div class="memo-tab-add" onclick="addMemoTab()">＋</div>`;
+        html += `<div class="memo-tab-add" onclick="event.stopPropagation(); addMemoTab()">＋</div>`;
         container.innerHTML = html;
 
         // 現在のメモの内容をエリアに表示

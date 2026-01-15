@@ -3773,36 +3773,77 @@ if (typeof applyPaneHeightSettings === 'function') {
         });
     })();
 
-    // 初期化
-    loadAutoSave();
-    loadTodayStart();
-    loadWritingTime();
-    loadBookmarks();
-    loadMemoTabs();
-    loadLayoutSettings();
-    loadSettingsFromStorage();
-    loadPaneWidthSettings();
-    loadPaneHeightSettings();
-    loadDividerSettings();
-    loadNovelTitle();
-    startWritingTimer();
-    applyAllSettings();
-    updateDockTopOffset();
-    updateDockSplitState();
-    // Apply default preview hidden setting on first load
-    if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
-        document.getElementById('check-show-preview').checked = false;
-        document.getElementById('pane-preview').classList.add('hidden');
-    }
-    sessionStorage.setItem('cc_editor_session_started', 'true');
-    updateInputStats();
-    renderPreviewTabs();
-    updatePreview();
-    updatePanelButtonStates();
-    updateWritingTimeDisplay();
+
+function applyDefaultDockLayoutOnce() {
+  if (localStorage.getItem('cc_default_layout_applied') === '1') return;
+
+  const c = document.getElementById('main-container');
+  const memo = document.getElementById('memo-panel');
+  const outline = document.getElementById('outline-panel');
+  const memoDock = document.getElementById('check-memo-dock');
+  const outlineDock = document.getElementById('check-outline-dock');
+
+  if (!c || !memo || !outline || !memoDock || !outlineDock) return;
+
+  // 左メモ（ドック＆開く）
+  memoDock.checked = true;
+  c.classList.add('memo-docked');
+  c.classList.remove('memo-right');
+  memo.classList.add('open');
+
+  // 右目次（ドック＆開く）
+  outlineDock.checked = true;
+  c.classList.add('outline-docked');
+  c.classList.remove('outline-left');
+  outline.classList.add('open');
+
+  // 余計な分割状態が残ってたらリセット
+  c.classList.remove('dock-split-left', 'dock-split-right');
+
+  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+  if (typeof updateDockSplitState === 'function') updateDockSplitState();
+
+  localStorage.setItem('cc_default_layout_applied', '1');
+}
+
+// 初期化
+loadAutoSave();
+loadTodayStart();
+loadWritingTime();
+loadBookmarks();
+loadMemoTabs();
+loadLayoutSettings();
+loadSettingsFromStorage();
+loadPaneWidthSettings();
+loadPaneHeightSettings();
+loadDividerSettings();
+loadNovelTitle();
+startWritingTimer();
+
+applyAllSettings();
+applyDefaultDockLayoutOnce();   // ← これを追加
+
+updateDockTopOffset();
+updateDockSplitState();
+
+// Apply default preview hidden setting on first load
+if (settingsCache.defaultPreviewHidden && !localStorage.getItem('cc_editor_session_started')) {
+  document.getElementById('check-show-preview').checked = false;
+  document.getElementById('pane-preview').classList.add('hidden');
+}
+
+sessionStorage.setItem('cc_editor_session_started', 'true');
+updateInputStats();
+renderPreviewTabs();
+updatePreview();
+updatePanelButtonStates();
+updateWritingTimeDisplay();
+
 window.addEventListener('resize', () => {
-        updateDockTopOffset();
-    });
+  updateDockTopOffset();
+});
+
     </script>
 
 <style>

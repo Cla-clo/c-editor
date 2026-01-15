@@ -3050,12 +3050,6 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
         }));
     }
 
-    function updateMemoCharCount() {
-        if (!memoArea || !memoCharCount) return;
-        const count = memoArea.value.replace(/[\n\r\s]/g, '').length;
-        memoCharCount.textContent = `${count}字`;
-    }
-
     function showMemoSaveDialog() {
         document.getElementById('memo-save-dialog').style.display = 'flex';
     }

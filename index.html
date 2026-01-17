@@ -1954,7 +1954,7 @@
         <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
             <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
         </button>
-        <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成" style="background:#e0e7ff; border-color:#a5b4fc;">
+        <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成">
             <span class="panel-label">📋 構成</span><span class="panel-state-icon">▾</span>
         </button>
         <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
@@ -2381,10 +2381,13 @@
         <button class="btn" onclick="expandAllStructure()">全展開</button>
         <button class="btn" onclick="collapseAllStructure()">全折畳</button>
         <button class="btn structure-fullscreen-btn" onclick="toggleStructureFullscreen()">⛶</button>
-        <button class="btn" onclick="exportStructureText()" title="構成をテキスト出力">📄</button>
     </div>
     <div class="structure-content">
         <div class="structure-list" id="structure-list"></div>
+    </div>
+    <div class="structure-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-structure-head, #e0e7ff);">
+        <span id="structure-count">0件</span>
+        <button onclick="exportStructureText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
     </div>
 </div>
 <div id="resizer-structure" class="dock-resizer" title="構成パネルの幅を調整します"></div>
@@ -4309,6 +4312,20 @@ function applyDisplaySettings() {
         localStorage.removeItem(SETTINGS_KEY);
         localStorage.removeItem('cc_outline_rules_v1');
         localStorage.removeItem('cc_active_tab_color');
+
+        // 構成パネルを閉じてデータをクリア
+        localStorage.removeItem('cc_structure_data');
+        const structurePanel = document.getElementById('structure-panel');
+        const structureCheckbox = document.getElementById('check-structure-dock');
+        const mainContainer = document.getElementById('main-container');
+        if (structurePanel) structurePanel.classList.remove('open');
+        if (structureCheckbox) structureCheckbox.checked = false;
+        if (mainContainer) {
+            mainContainer.classList.remove('structure-docked');
+            mainContainer.classList.remove('structure-right');
+        }
+        if (typeof window.initStructureFromReset === 'function') window.initStructureFromReset();
+        if (typeof updateStructureButtonState === 'function') updateStructureButtonState();
     }
 
     function clampValue(value, min, max) {
@@ -4600,13 +4617,13 @@ function updateDockSplitState() {
         updateControlPanelScrollState();
         updatePanelButtonStates();
     });
-    // Close non-docked memo/outline on outside click
+    // Close non-docked memo/outline/structure on outside click
     document.addEventListener('click', e => {
         // パネル操作中（タブクリック等）に誤って閉じないようにする
         if (window.memoInteracting || window.outlineInteracting) return;
-        if (e.target.closest('#memo-panel') || e.target.closest('#outline-panel')) return;
-        if (e.target.closest('#btn-toggle-memo') || e.target.closest('#btn-toggle-outline')) return;
-        if (e.target.closest('#resizer-memo') || e.target.closest('#resizer-outline')) return;
+        if (e.target.closest('#memo-panel') || e.target.closest('#outline-panel') || e.target.closest('#structure-panel')) return;
+        if (e.target.closest('#btn-toggle-memo') || e.target.closest('#btn-toggle-outline') || e.target.closest('#btn-toggle-structure')) return;
+        if (e.target.closest('#resizer-memo') || e.target.closest('#resizer-outline') || e.target.closest('#resizer-structure')) return;
         const mainContainer = document.getElementById('main-container');
         if (!mainContainer.classList.contains('memo-docked')) {
             document.getElementById('memo-panel').classList.remove('open');
@@ -4614,7 +4631,12 @@ function updateDockSplitState() {
         if (!mainContainer.classList.contains('outline-docked')) {
             document.getElementById('outline-panel').classList.remove('open');
         }
+        if (!mainContainer.classList.contains('structure-docked')) {
+            const structurePanel = document.getElementById('structure-panel');
+            if (structurePanel) structurePanel.classList.remove('open');
+        }
         updatePanelButtonStates();
+        if (typeof updateStructureButtonState === 'function') updateStructureButtonState();
     });
     function hidePane(t) {
         if (t === 'input') {
@@ -9537,6 +9559,15 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('structure-list');
     if (!container) return;
 
+    // 件数を更新
+    const countEl = document.getElementById('structure-count');
+    if (countEl) {
+      const chapters = structureData.filter(c => c.level === 'chapter').length;
+      const episodes = structureData.filter(c => c.level === 'episode').length;
+      const scenes = structureData.filter(c => c.level === 'scene').length;
+      countEl.textContent = `${chapters}章 ${episodes}話 ${scenes}シーン`;
+    }
+
     if (structureData.length === 0) {
       container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; padding:20px; text-align:center;">構成カードがありません。<br>上のボタンから章・話・シーンを追加してください。</div>';
       return;
@@ -10033,9 +10064,9 @@ function setupMemoInteractionGuard() {
     const isDocked = checkbox && checkbox.checked;
     const icon = btn.querySelector('.panel-state-icon');
 
-    if (isOpen && isDocked) {
+    if (isDocked) {
       btn.classList.add('active');
-      if (icon) icon.textContent = '◂';
+      if (icon) icon.textContent = '📌';
     } else if (isOpen) {
       btn.classList.add('active');
       if (icon) icon.textContent = '▾';
@@ -10059,10 +10090,18 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  // リセット時の初期化
+  function initStructureFromReset() {
+    structureData = [];
+    structureNextId = 1;
+    renderStructureList();
+  }
+
   // パネル制御関数をグローバルに公開
   window.toggleStructurePanel = toggleStructurePanel;
   window.toggleStructureDock = toggleStructureDock;
   window.toggleStructureDockPin = toggleStructureDockPin;
+  window.initStructureFromReset = initStructureFromReset;
   window.swapStructureSide = swapStructureSide;
   window.closeStructurePanel = closeStructurePanel;
   window.updateStructureButtonState = updateStructureButtonState;

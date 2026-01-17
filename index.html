@@ -201,6 +201,9 @@
     .panel-pin-btn:hover { opacity: 1; }
     .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
+    .panel-drag-handle { cursor: move; }
+    .panel-drag-handle.dragging { opacity: 0.6; }
+
     #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
     .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
     .btn-search-reset {
@@ -2042,7 +2045,7 @@
 
 <!-- Independent Search Panel -->
 <div id="search-panel" style="display:none;">
-  <div class="search-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-search-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="search-header panel-drag-handle" data-panel-id="search-panel" draggable="true" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-search-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span>🔍 検索</span>
     <div class="search-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
       <button id="btn-search-swap" class="btn panel-swap-btn" onclick="swapSearchSide()">左右入替</button>
@@ -2077,7 +2080,7 @@
 <div id="resizer-search" class="dock-resizer" style="display:none;" title="検索パネルの幅を調整します"></div>
 
 <div id="memo-panel">
-  <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-memo-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="memo-header panel-drag-handle" data-panel-id="memo-panel" draggable="true" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-memo-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span style="font-family: var(--font-ui);">📝 メモ</span>
     <div class="memo-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
 <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
@@ -2110,7 +2113,7 @@
 
     <div class="dock-resizer" id="resizer-memo-outline" title="(右境界) Alt+ドラッグでメモと目次の配分を調整します"></div>
     <div id="outline-panel">
-        <div class="outline-header">
+        <div class="outline-header panel-drag-handle" data-panel-id="outline-panel" draggable="true">
             <span>📑 目次</span>
             <div class="outline-controls">
                 <button id="btn-outline-settings" class="btn" onclick="toggleOutlineSettings()" title="抽出ルール設定" style="padding:2px 6px; font-size:0.75rem;">⚙</button>
@@ -8198,12 +8201,78 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  function setupPanelDragSwap(){
+    const headers = document.querySelectorAll('.panel-drag-handle[data-panel-id]');
+    if (!headers.length) return;
+    const container = document.getElementById('main-container');
+    if (!container) return;
+
+    const isPanelDocked = (panelId) => {
+      if (panelId === 'memo-panel') return container.classList.contains('memo-docked');
+      if (panelId === 'outline-panel') return container.classList.contains('outline-docked');
+      if (panelId === 'search-panel') return container.classList.contains('search-docked');
+      return false;
+    };
+
+    const getPanelSide = (panelId) => {
+      if (panelId === 'memo-panel') return container.classList.contains('memo-right') ? 'right' : 'left';
+      if (panelId === 'outline-panel') return container.classList.contains('outline-left') ? 'left' : 'right';
+      if (panelId === 'search-panel') return container.classList.contains('search-left') ? 'left' : 'right';
+      return 'right';
+    };
+
+    const setPanelSide = (panelId, side) => {
+      if (panelId === 'memo-panel') container.classList.toggle('memo-right', side === 'right');
+      if (panelId === 'outline-panel') container.classList.toggle('outline-left', side === 'left');
+      if (panelId === 'search-panel') container.classList.toggle('search-left', side === 'left');
+    };
+
+    headers.forEach(header => {
+      header.addEventListener('dragstart', (e) => {
+        const panelId = header.dataset.panelId;
+        if (!panelId || !isPanelDocked(panelId)) {
+          e.preventDefault();
+          return;
+        }
+        header.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', panelId);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      header.addEventListener('dragend', () => {
+        header.classList.remove('dragging');
+      });
+
+      header.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+
+      header.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const sourceId = e.dataTransfer.getData('text/plain');
+        const targetId = header.dataset.panelId;
+        if (!sourceId || !targetId || sourceId === targetId) return;
+        if (!isPanelDocked(sourceId) || !isPanelDocked(targetId)) return;
+        const sourceSide = getPanelSide(sourceId);
+        const targetSide = getPanelSide(targetId);
+        if (sourceSide === targetSide) return;
+        setPanelSide(sourceId, targetSide);
+        setPanelSide(targetId, sourceSide);
+        try{ if (typeof window.updateDockSplitState === 'function') window.updateDockSplitState(); }catch(e){}
+        try{ if (typeof window.applyPaneWidthSettings === 'function') window.applyPaneWidthSettings(); }catch(e){}
+        try{ if (typeof window.updatePanelButtonStates === 'function') window.updatePanelButtonStates(); }catch(e){}
+      });
+    });
+  }
+
   function init(){
     // relocatePanelsIntoNav(); // Disabled: keep panels independent per user request
     setupIndependentPanels();
     hookAltShortcuts();
     patchSearchTargetAndEngine();
     hookSearchRefreshOnTabChange();
+    setupPanelDragSwap();
   }
 
   // Setup independent panels (memo, outline, search) instead of nav tabs

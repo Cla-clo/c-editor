@@ -1644,9 +1644,9 @@
             <button class="panel-close-btn" onclick="closeControlPanel('search-bar')">✕</button>
         </div>
         <input type="text" id="search-input" placeholder="検索ワード..." onkeydown="if(event.key==='Enter') findNext()">
-        <select id=\"search-scope\" title=\"検索範囲\" style=\"height:30px; border-radius:8px; border:1px solid var(--border-color); padding:0 6px; background:var(--panel-bg); color:var(--text-color);\">
-            <option value=\"current\">このタブ</option>
-            <option value=\"all\">全タブ</option>
+        <select id="search-scope" title="検索範囲" style="height:30px; border-radius:8px; border:1px solid var(--border-color); padding:0 6px; background:var(--panel-bg); color:var(--text-color);">
+            <option value="current">このタブ</option>
+            <option value="all">全タブ</option>
         </select>
         <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
         <button class="btn" onclick="findPrev()">▲ 前へ</button>
@@ -2086,9 +2086,9 @@
                         </label>
                         <label><input type="checkbox" id="pf-unclosed" checked>「」等の未閉じ</label>
                         <label><input type="checkbox" id="pf-sentend" checked>文末（。！？）の不足</label>
-                        <label><input type=\"checkbox\" id=\"pf-punct\" checked>約物・空白のゆらぎ</label>
+                        <label><input type="checkbox" id="pf-punct" checked>約物・空白のゆらぎ</label>
                         <button class="btn btn-apply" id="btn-proofread-run-inline" onclick="runProofread()">チェック開始</button>
-                        <button class=\"btn\" id=\"btn-proofread-ignore\" type=\"button\" onclick=\"openProofIgnoreManager()\">無視リスト</button>
+                        <button class="btn" id="btn-proofread-ignore" type="button" onclick="openProofIgnoreManager()">無視リスト</button>
                     </div>
                     <div id="proofread-results"><div class="outline-empty">まだ結果はありません</div></div>
                     <div style="font-size:0.85rem; color:var(--text-muted); margin-top:10px; line-height:1.5;">※結果をクリックすると該当箇所へジャンプします。</div>

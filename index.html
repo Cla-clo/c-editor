@@ -1692,8 +1692,8 @@
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
-        <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()">
-            <span class="panel-label">🔍 検索</span>
+        <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()" data-label="🔍 検索">
+            <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▾</span>
         </button>
         <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
             <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
@@ -1887,6 +1887,12 @@
                         <option value="theme-green">グリーン</option>
                     </select>
                 </label>
+                <label>文字色:
+                    <span style="display:inline-flex; align-items:center; gap:6px;">
+                        <input type="color" id="st-text-color" value="#1f2937" style="width:44px; height:28px;">
+                        <input type="text" id="st-text-color-text" placeholder="#RRGGBB" style="width:96px;">
+                    </span>
+                </label>
             </div>
         </div>
 
@@ -1907,6 +1913,7 @@
                 <label>プレビュー: <input type="number" id="st-pane-preview-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>メモ: <input type="number" id="st-pane-memo-width" value="260" min="160" max="1200" style="width:70px;">px</label>
                 <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
+                <label>検索: <input type="number" id="st-pane-search-width" value="320" min="160" max="1200" style="width:70px;">px</label>
                 <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;" onchange="applyDividerSettings()">px</label>
             </div>
             <div class="setting-row">
@@ -2495,6 +2502,7 @@ initTabScrollers();
         preview: 'cc_pane_preview_width_px',
         memo: 'cc_memo_width_px',
         outline: 'cc_outline_width_px',
+        search: 'cc_search_width_px',
         legacyInput: 'cc_pane_input_width',
         legacyPreview: 'cc_pane_preview_width'
     };
@@ -2876,12 +2884,14 @@ function addNewTab() {
             open: { mode: document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current' },
             autosave: { interval: document.getElementById('st-autosave-interval').value, enabled: document.getElementById('st-autosave-enabled').checked },
             theme: document.getElementById('st-theme-preset').value,
+            textColor: document.getElementById('st-text-color-text').value,
             divider: { width: document.getElementById('st-divider-width').value },
             paneWidths: {
                 input: document.getElementById('st-pane-input-width').value,
                 preview: document.getElementById('st-pane-preview-width').value,
                 memo: document.getElementById('st-pane-memo-width').value,
-                outline: document.getElementById('st-pane-outline-width').value
+                outline: document.getElementById('st-pane-outline-width').value,
+                search: document.getElementById('st-pane-search-width').value
             },
             paneHeights: {
                 input: document.getElementById('st-pane-input-height').value,
@@ -2920,12 +2930,19 @@ function addNewTab() {
             settingsCache.autosaveEnabled = autosaveEnabled;
         }
         if (s.theme !== undefined) document.getElementById('st-theme-preset').value = s.theme;
+        if (s.textColor !== undefined) {
+            const normalized = normalizeHexColor(s.textColor);
+            const fallback = normalized || getDefaultTextColor();
+            document.getElementById('st-text-color-text').value = normalized || '';
+            document.getElementById('st-text-color').value = fallback;
+        }
         if (s.divider) document.getElementById('st-divider-width').value = s.divider.width || 2;
         if (s.paneWidths) {
             document.getElementById('st-pane-input-width').value = s.paneWidths.input || 520;
             document.getElementById('st-pane-preview-width').value = s.paneWidths.preview || 520;
             document.getElementById('st-pane-memo-width').value = s.paneWidths.memo || 260;
             document.getElementById('st-pane-outline-width').value = s.paneWidths.outline || 260;
+            document.getElementById('st-pane-search-width').value = s.paneWidths.search || 320;
         }
         if (s.paneHeights) {
             document.getElementById('st-pane-input-height').value = s.paneHeights.input || 520;
@@ -3081,10 +3098,13 @@ function addNewTab() {
         document.getElementById('st-autosave-interval').value = 60;
         document.getElementById('st-autosave-enabled').checked = false;
         document.getElementById('st-theme-preset').value = '';
+        document.getElementById('st-text-color-text').value = '';
+        document.getElementById('st-text-color').value = '#1f2937';
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-pane-search-width').value = 320;
         document.getElementById('st-divider-width').value = 2;
         const inputH = document.getElementById('st-pane-input-height');
         const previewH = document.getElementById('st-pane-preview-height');
@@ -3791,7 +3811,67 @@ function applyDisplaySettings() {
         updateInputStats();
         updatePreview();
     }
-    function applyThemeSettings() { const t = document.getElementById('st-theme-preset').value; document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if (t) document.body.classList.add(t); }
+    const TEXT_COLOR_KEY = 'cc_text_color_v1';
+
+    function getDefaultTextColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#1f2937';
+    }
+
+    function normalizeHexColor(v) {
+        if (!v) return null;
+        const trimmed = v.trim();
+        if (!/^#?[0-9a-fA-F]{6}$/.test(trimmed)) return null;
+        return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    }
+
+    function syncTextColorInputs(color) {
+        const colorEl = document.getElementById('st-text-color');
+        const textEl = document.getElementById('st-text-color-text');
+        if (!colorEl || !textEl) return;
+        const value = color || getDefaultTextColor();
+        colorEl.value = value;
+        textEl.value = value;
+    }
+
+    function applyTextColorSettings() {
+        const colorEl = document.getElementById('st-text-color');
+        const textEl = document.getElementById('st-text-color-text');
+        if (!colorEl || !textEl) return;
+        const chosen = normalizeHexColor(textEl.value || colorEl.value);
+        document.documentElement.style.removeProperty('--text-color');
+        const defaultColor = getDefaultTextColor();
+        if (chosen && chosen !== defaultColor) {
+            document.documentElement.style.setProperty('--text-color', chosen);
+            localStorage.setItem(TEXT_COLOR_KEY, chosen);
+            syncTextColorInputs(chosen);
+            return;
+        }
+        localStorage.removeItem(TEXT_COLOR_KEY);
+        syncTextColorInputs(defaultColor);
+    }
+
+    function initTextColorSettings() {
+        const colorEl = document.getElementById('st-text-color');
+        const textEl = document.getElementById('st-text-color-text');
+        if (!colorEl || !textEl) return;
+        const stored = normalizeHexColor(localStorage.getItem(TEXT_COLOR_KEY));
+        syncTextColorInputs(stored);
+        colorEl.addEventListener('input', () => { textEl.value = colorEl.value; });
+        textEl.addEventListener('change', () => {
+            const normalized = normalizeHexColor(textEl.value);
+            if (normalized) {
+                textEl.value = normalized;
+                colorEl.value = normalized;
+            }
+        });
+    }
+
+    function applyThemeSettings() {
+        const t = document.getElementById('st-theme-preset').value;
+        document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+        if (t) document.body.classList.add(t);
+        applyTextColorSettings();
+    }
     function applyOpenSettings() { settingsCache.openMode = document.querySelector('input[name="st-open-mode"]:checked')?.value || 'current'; }
     function applyOpenSettingsAndSave() {
         applyOpenSettings();
@@ -3830,7 +3910,7 @@ function applyDisplaySettings() {
     }
     function applyPaperSettings() { applyManuscriptSettings(); applyThemeSettings(); }
     function applyAllSettings() { applyInputSettings(); applyPreviewSettings(); applyDisplaySettings(); applyWritingSettings(); applyGoalSettings();
-        updateWritingModeButtonLabels(); applyManuscriptSettings(); applyThemeSettings(); applyOpenSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); applyDividerSettings(); applyAutoSaveSettings(true); }
+        updateWritingModeButtonLabels(); applyManuscriptSettings(); applyThemeSettings(); applyOpenSettings(); applyPaneWidthSettings(); applyPaneHeightSettings(); applyDividerSettings(); applyAutoSaveSettings(true); applyTextColorSettings(); }
 
     function resetAllSettings() {
         if (!confirm('全ての設定を初期状態に戻しますか？')) return;
@@ -3861,10 +3941,13 @@ function applyDisplaySettings() {
         document.getElementById('st-autosave-interval').value = 60;
         document.getElementById('st-autosave-enabled').checked = false;
         document.getElementById('st-theme-preset').value = '';
+        document.getElementById('st-text-color-text').value = '';
+        document.getElementById('st-text-color').value = '#1f2937';
         document.getElementById('st-pane-input-width').value = 520;
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-pane-search-width').value = 320;
         document.getElementById('st-divider-width').value = 2;
         const inputH = document.getElementById('st-pane-input-height');
         const previewH = document.getElementById('st-pane-preview-height');
@@ -3874,6 +3957,7 @@ function applyDisplaySettings() {
         // テーマとカラーをリセット
         document.body.classList.remove('theme-dark', 'theme-sepia', 'theme-blue', 'theme-green');
         document.documentElement.style.setProperty('--active-tab-bg', '#fff59d');
+        localStorage.removeItem(TEXT_COLOR_KEY);
 
         applyAllSettings();
         autoSaveTarget = { handle: null, type: null, scope: 'current' };
@@ -3896,21 +3980,30 @@ function applyDisplaySettings() {
     function applyDockedPanelWidths() {
         const memoWidthRaw = parseInt(document.getElementById('st-pane-memo-width').value);
         const outlineWidthRaw = parseInt(document.getElementById('st-pane-outline-width').value);
+        const searchWidthRaw = parseInt(document.getElementById('st-pane-search-width').value);
         const memoWidth = clampValue(memoWidthRaw || 260, 160, 2000);
         const outlineWidth = clampValue(outlineWidthRaw || 260, 160, 2000);
+        const searchWidth = clampValue(searchWidthRaw || 320, 160, 2000);
         const memoPanel = document.getElementById('memo-panel');
         const outlinePanel = document.getElementById('outline-panel');
+        const searchPanel = document.getElementById('search-panel');
 
         document.getElementById('st-pane-memo-width').value = memoWidth;
         document.getElementById('st-pane-outline-width').value = outlineWidth;
+        document.getElementById('st-pane-search-width').value = searchWidth;
 
         memoPanel.style.width = `${memoWidth}px`;
         memoPanel.style.flexBasis = `${memoWidth}px`;
         outlinePanel.style.width = `${outlineWidth}px`;
         outlinePanel.style.flexBasis = `${outlineWidth}px`;
+        if (searchPanel) {
+            searchPanel.style.width = `${searchWidth}px`;
+            searchPanel.style.flexBasis = `${searchWidth}px`;
+        }
 
         localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
+        localStorage.setItem(PANE_WIDTH_KEYS.search, searchWidth);
     }
 
     function applyPaneWidthSettings() {
@@ -3972,11 +4065,13 @@ function resetPaneWidths() {
     document.getElementById('st-pane-preview-width').value = 520;
     document.getElementById('st-pane-memo-width').value = 260;
     document.getElementById('st-pane-outline-width').value = 260;
+    document.getElementById('st-pane-search-width').value = 320;
 
     localStorage.removeItem(PANE_WIDTH_KEYS.input);
     localStorage.removeItem(PANE_WIDTH_KEYS.preview);
     localStorage.removeItem(PANE_WIDTH_KEYS.memo);
     localStorage.removeItem(PANE_WIDTH_KEYS.outline);
+    localStorage.removeItem(PANE_WIDTH_KEYS.search);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
 
@@ -4021,6 +4116,7 @@ function updateDockSplitState() {
         const previewWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.preview), 10);
         const memoWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.memo), 10);
         const outlineWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.outline), 10);
+        const searchWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.search), 10);
 
         if (inputWidth || legacyInput) {
             const converted = inputWidth || Math.round(containerWidth * (legacyInput / 100));
@@ -4035,6 +4131,9 @@ function updateDockSplitState() {
         }
         if (outlineWidth) {
             document.getElementById('st-pane-outline-width').value = outlineWidth;
+        }
+        if (searchWidth) {
+            document.getElementById('st-pane-search-width').value = searchWidth;
         }
     }
 
@@ -4095,6 +4194,7 @@ function updateDockSplitState() {
         updateControlPanelButton('settings-bar', 'btn-toggle-settings');
         updateDockPanelButton('memo-panel', 'btn-toggle-memo', 'check-memo-dock');
         updateDockPanelButton('outline-panel', 'btn-toggle-outline', 'check-outline-dock');
+        updateDockPanelButton('search-panel', 'btn-toggle-search', 'check-search-dock');
     }
     function togglePanel(id) {
         const p = document.getElementById(id);
@@ -5483,6 +5583,64 @@ if (typeof applyPaneHeightSettings === 'function') {
             PANE_WIDTH_KEYS.outline,
             () => (mainContainer.classList.contains('outline-left') ? 'left' : 'right')
         );
+
+        (function setupSearchDockResizer() {
+            const resizer = document.getElementById('resizer-search');
+            const panel = document.getElementById('search-panel');
+            if (!resizer || !panel || !mainContainer) return;
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', e => {
+                if (!panel.classList.contains('open')) return;
+                isResizing = true;
+                resizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (!isResizing) return;
+                const containerRect = mainContainer.getBoundingClientRect();
+                const panelRect = panel.getBoundingClientRect();
+                const minDockWidth = 160;
+                const minPaneWidth = 120;
+                const inputHidden = inputPane.classList.contains('hidden');
+                const previewHidden = previewPane.classList.contains('hidden');
+                let minCenter = 0;
+                if (!inputHidden) minCenter += minPaneWidth;
+                if (!previewHidden) minCenter += minPaneWidth;
+                if (!inputHidden && !previewHidden) minCenter += 2;
+                let otherDockWidth = 0;
+                const memoPanel = document.getElementById('memo-panel');
+                const outlinePanel = document.getElementById('outline-panel');
+                if (mainContainer.classList.contains('memo-docked') && memoPanel?.classList.contains('open')) {
+                    otherDockWidth += memoPanel.getBoundingClientRect().width;
+                }
+                if (mainContainer.classList.contains('outline-docked') && outlinePanel?.classList.contains('open')) {
+                    otherDockWidth += outlinePanel.getBoundingClientRect().width;
+                }
+                const maxDockWidth = Math.max(minDockWidth, containerRect.width - otherDockWidth - minCenter);
+                const side = mainContainer.classList.contains('search-left') ? 'left' : 'right';
+                const rawWidth = side === 'left' ? e.clientX - panelRect.left : panelRect.right - e.clientX;
+                const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
+                panel.style.width = `${newWidth}px`;
+                panel.style.flexBasis = `${newWidth}px`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                const widthValue = Math.round(panel.getBoundingClientRect().width);
+                document.getElementById('st-pane-search-width').value = widthValue;
+                localStorage.setItem(PANE_WIDTH_KEYS.search, widthValue);
+                applyPaneWidthSettings();
+                try { updateDockSplitState(); } catch (e) {}
+            });
+        })();
     })();
 
     (function setupMemoOutlineSplitResizer() {
@@ -5649,6 +5807,7 @@ function updateActiveTabTitle() {}
     loadLayoutSettings();
         if (typeof updateWritingModeButtonLabels === 'function') updateWritingModeButtonLabels();
     loadSettingsFromStorage();
+    initTextColorSettings();
 	applyDefaultStartupPrefsOnce();
     loadPaneWidthSettings();
     loadPaneHeightSettings();
@@ -8051,14 +8210,19 @@ function setupMemoInteractionGuard() {
   function toggleOutlinePanel(){
     const panel = document.getElementById('outline-panel');
     if (!panel) return;
-    const mainContainer = document.getElementById('main-container');
+    const checkbox = document.getElementById('check-outline-dock');
     const isOpen = panel.classList.contains('open');
-    const isDocked = mainContainer && mainContainer.classList.contains('outline-docked');
+    const isDocked = checkbox && checkbox.checked;
 
     if (!isOpen) {
       // Closed -> Open (floating)
+      if (typeof window.generateOutline === 'function') window.generateOutline();
       panel.classList.add('open');
       switchOutlineTabDirect('outline');
+      if (isDocked) {
+        checkbox.checked = false;
+        if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
+      }
     } else if (isOpen && !isDocked) {
       // Open floating -> Docked
       if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
@@ -8160,6 +8324,7 @@ function setupMemoInteractionGuard() {
       if (checkbox) checkbox.checked = true;
     }
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
+    try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
   }
   window.toggleSearchDock = toggleSearchDock;
 

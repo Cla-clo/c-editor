@@ -972,6 +972,222 @@
 
     /* Proof ignore modal */
 
+    /* ===== 構成ボード (Chapter Structure Board) ===== */
+    #outline-tab-structure { display: none; height: 100%; }
+    #outline-tab-structure.active { display: flex; flex-direction: column; }
+
+    .structure-toolbar {
+        display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .structure-toolbar .btn { padding: 2px 6px; font-size: 0.7rem; }
+
+    .structure-list {
+        flex: 1; overflow: auto; padding-right: 4px;
+    }
+
+    /* 構成カード */
+    .structure-card {
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 8px; margin-bottom: 6px; cursor: grab;
+        transition: box-shadow 0.2s, transform 0.15s;
+        position: relative;
+    }
+    .structure-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .structure-card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .structure-card.drag-over { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+
+    /* 階層レベル別スタイル */
+    .structure-card.level-chapter {
+        border-left: 4px solid #6366f1;
+        background: linear-gradient(to right, rgba(99,102,241,0.05), transparent);
+    }
+    .structure-card.level-episode {
+        margin-left: 16px;
+        border-left: 3px solid #8b5cf6;
+        background: linear-gradient(to right, rgba(139,92,246,0.03), transparent);
+    }
+    .structure-card.level-scene {
+        margin-left: 32px;
+        border-left: 2px solid #a78bfa;
+        font-size: 0.9em;
+    }
+
+    .structure-card-header {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 10px; cursor: pointer;
+        border-bottom: 1px solid transparent;
+    }
+    .structure-card.expanded .structure-card-header {
+        border-bottom-color: var(--border-color);
+    }
+
+    .structure-toggle {
+        font-size: 0.7rem; color: var(--text-muted); width: 14px;
+        cursor: pointer; flex-shrink: 0;
+    }
+    .structure-toggle:hover { color: #3b82f6; }
+
+    .structure-title {
+        flex: 1; font-weight: 600; color: var(--text-color);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        font-size: 0.85rem;
+    }
+    .structure-card.level-chapter .structure-title { font-size: 0.9rem; }
+
+    .structure-status {
+        font-size: 0.65rem; padding: 2px 6px; border-radius: 10px;
+        white-space: nowrap; flex-shrink: 0;
+    }
+    .structure-status.status-none { background: #f3f4f6; color: #6b7280; }
+    .structure-status.status-draft { background: #fef3c7; color: #92400e; }
+    .structure-status.status-revise { background: #dbeafe; color: #1d4ed8; }
+    .structure-status.status-done { background: #dcfce7; color: #166534; }
+    body.theme-dark .structure-status.status-none { background: #374151; color: #9ca3af; }
+    body.theme-dark .structure-status.status-draft { background: #78350f; color: #fcd34d; }
+    body.theme-dark .structure-status.status-revise { background: #1e3a8a; color: #93c5fd; }
+    body.theme-dark .structure-status.status-done { background: #14532d; color: #86efac; }
+
+    .structure-card-body {
+        display: none; padding: 8px 10px; font-size: 0.8rem;
+    }
+    .structure-card.expanded .structure-card-body { display: block; }
+
+    .structure-field { margin-bottom: 6px; }
+    .structure-field:last-child { margin-bottom: 0; }
+    .structure-field-label {
+        font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;
+    }
+    .structure-field-value {
+        color: var(--text-color); line-height: 1.4;
+    }
+
+    .structure-summary {
+        color: var(--text-muted); font-size: 0.8rem;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .structure-tags {
+        display: flex; flex-wrap: wrap; gap: 4px;
+    }
+    .structure-tag {
+        background: #e0f2fe; color: #0369a1; padding: 1px 6px;
+        border-radius: 10px; font-size: 0.7rem;
+    }
+    body.theme-dark .structure-tag { background: #0c4a6e; color: #7dd3fc; }
+
+    .structure-viewpoint {
+        display: inline-block; background: #fce7f3; color: #be185d;
+        padding: 1px 6px; border-radius: 10px; font-size: 0.7rem;
+    }
+    body.theme-dark .structure-viewpoint { background: #831843; color: #f9a8d4; }
+
+    .structure-card-actions {
+        display: flex; gap: 4px; margin-top: 8px; padding-top: 8px;
+        border-top: 1px dashed var(--border-color);
+    }
+    .structure-card-actions button {
+        padding: 3px 8px; font-size: 0.7rem; border-radius: 4px;
+        border: 1px solid var(--border-color); background: var(--panel-bg);
+        color: var(--text-color); cursor: pointer;
+    }
+    .structure-card-actions button:hover { background: var(--pane-header-bg); }
+    .structure-card-actions .btn-delete { color: #dc2626; }
+    .structure-card-actions .btn-delete:hover { background: #fee2e2; }
+
+    /* 追加ボタン */
+    .structure-add-btn {
+        width: 100%; padding: 8px; margin-top: 8px;
+        background: var(--pane-header-bg); border: 1px dashed var(--border-color);
+        border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+        color: var(--text-muted); text-align: center;
+    }
+    .structure-add-btn:hover { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+
+    /* 折りたたまれた子要素 */
+    .structure-card.collapsed .structure-children { display: none; }
+    .structure-children { margin-top: 6px; }
+
+    /* 編集モーダル */
+    #structure-edit-modal {
+        position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+        z-index: 10002; background: rgba(0,0,0,0.45);
+    }
+    #structure-edit-modal.show { display: flex; }
+    .structure-edit-box {
+        width: min(480px, 92vw); max-height: 85vh; overflow-y: auto;
+        background: var(--panel-bg); color: var(--text-color);
+        border: 1px solid var(--border-color); border-radius: 12px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.25); padding: 16px;
+    }
+    .structure-edit-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);
+    }
+    .structure-edit-header h3 { margin: 0; font-size: 1rem; }
+    .structure-edit-close {
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid var(--border-color); background: transparent;
+        cursor: pointer; font-size: 1rem; color: var(--text-muted);
+    }
+    .structure-edit-close:hover { background: #fee2e2; color: #dc2626; }
+
+    .structure-edit-field { margin-bottom: 12px; }
+    .structure-edit-field label {
+        display: block; font-size: 0.8rem; font-weight: 600;
+        margin-bottom: 4px; color: var(--text-color);
+    }
+    .structure-edit-field input,
+    .structure-edit-field textarea,
+    .structure-edit-field select {
+        width: 100%; padding: 8px 10px; border: 1px solid var(--border-color);
+        border-radius: 6px; background: var(--pane-header-bg);
+        color: var(--text-color); font-size: 0.85rem;
+    }
+    .structure-edit-field textarea { min-height: 80px; resize: vertical; }
+    .structure-edit-field input:focus,
+    .structure-edit-field textarea:focus,
+    .structure-edit-field select:focus {
+        outline: none; border-color: #3b82f6;
+    }
+    .structure-edit-hint {
+        font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;
+    }
+
+    .structure-edit-actions {
+        display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;
+    }
+    .structure-edit-actions .btn { min-width: 80px; justify-content: center; }
+
+    /* 全画面構成ビュー */
+    .structure-fullscreen-btn {
+        background: #f3e8ff; color: #7c3aed; border-color: #d8b4fe;
+    }
+    .structure-fullscreen-btn:hover { background: #ede9fe; }
+
+    body.structure-fullscreen-mode header,
+    body.structure-fullscreen-mode .controls-wrapper,
+    body.structure-fullscreen-mode .pane-stack { display: none !important; }
+    body.structure-fullscreen-mode #outline-panel {
+        position: fixed !important; inset: 0 !important;
+        width: 100% !important; max-width: none !important;
+        transform: none !important; z-index: 9999 !important;
+        border: none !important; border-radius: 0 !important;
+    }
+    body.structure-fullscreen-mode .structure-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px; padding: 12px;
+    }
+    body.structure-fullscreen-mode .structure-card {
+        margin: 0; margin-left: 0 !important;
+    }
+    body.structure-fullscreen-mode .structure-card.level-episode,
+    body.structure-fullscreen-mode .structure-card.level-scene {
+        margin-left: 0;
+    }
+
 </style>
 
 <!-- ===== v0.96 hotfix (reader/search/bookmark, active tab color, tab context menu, per-tab stats, focus shortcuts) ===== -->
@@ -2127,6 +2343,7 @@
             <div class="nav-jump-controls" title="ジャンプ履歴"><button id="btn-nav-back" class="nav-jump-btn" type="button" aria-label="戻る">◀</button><button id="btn-nav-forward" class="nav-jump-btn" type="button" aria-label="進む">▶</button></div><div class="outline-tabs-inner" style="display:flex; gap:2px; flex:1;">
                 <span class="memo-tab active" onclick="switchOutlineTab('outline')" style="cursor:pointer;">目次</span>
                 <span class="memo-tab" onclick="switchOutlineTab('bookmark')" style="cursor:pointer;">🔖しおり</span>
+                <span class="memo-tab" onclick="switchOutlineTab('structure')" style="cursor:pointer;">📋構成</span>
             </div>
         </div>
         <!-- Outline extraction rules settings overlay -->
@@ -2169,6 +2386,18 @@
                     <button onclick="deleteSelectedBookmarks()" style="margin-left: 8px; padding: 2px 8px; font-size: 0.75rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; cursor: pointer;">🗑 選択削除</button>
                 </div>
                 <div id="bookmark-list"></div>
+            </div>
+            <div id="outline-tab-structure" class="outline-tab-content">
+                <div class="structure-toolbar">
+                    <button class="btn" onclick="addStructureCard('chapter')">＋章</button>
+                    <button class="btn" onclick="addStructureCard('episode')">＋話</button>
+                    <button class="btn" onclick="addStructureCard('scene')">＋シーン</button>
+                    <button class="btn" onclick="expandAllStructure()">全展開</button>
+                    <button class="btn" onclick="collapseAllStructure()">全折畳</button>
+                    <button class="btn structure-fullscreen-btn" onclick="toggleStructureFullscreen()">⛶</button>
+                    <button class="btn" onclick="exportStructureText()" title="構成をテキスト出力">📄出力</button>
+                </div>
+                <div class="structure-list" id="structure-list"></div>
             </div>
         </div>
         <div id="outline-summary" class="outline-summary"></div>
@@ -2245,6 +2474,52 @@
     <div class="modal-content">
         <div class="modal-header"><h3>📊 テキスト分析</h3><button class="modal-close" onclick="closeAnalysis()">✕</button></div>
         <div id="analysis-results"></div>
+    </div>
+</div>
+
+<div id="structure-edit-modal">
+    <div class="structure-edit-box">
+        <div class="structure-edit-header">
+            <h3 id="structure-edit-title">構成カードを編集</h3>
+            <button class="structure-edit-close" onclick="closeStructureEditModal()">✕</button>
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-name">タイトル</label>
+            <input type="text" id="structure-edit-name" placeholder="章/話/シーンのタイトル">
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-summary">要約</label>
+            <textarea id="structure-edit-summary" placeholder="この章/話/シーンの概要（200文字以内）" maxlength="200"></textarea>
+            <div class="structure-edit-hint"><span id="structure-summary-count">0</span>/200文字</div>
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-viewpoint">視点</label>
+            <input type="text" id="structure-edit-viewpoint" placeholder="主人公名 or 一人称/三人称">
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-tags">舞台タグ（カンマ区切り）</label>
+            <input type="text" id="structure-edit-tags" placeholder="例: 学校, 放課後, 屋上">
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-status">進捗ステータス</label>
+            <select id="structure-edit-status">
+                <option value="none">未着手</option>
+                <option value="draft">草稿</option>
+                <option value="revise">推敲</option>
+                <option value="done">完了</option>
+            </select>
+        </div>
+        <div class="structure-edit-field">
+            <label for="structure-edit-tab">紐づけタブ</label>
+            <select id="structure-edit-tab">
+                <option value="">（なし）</option>
+            </select>
+            <div class="structure-edit-hint">クリック時にジャンプするタブを選択</div>
+        </div>
+        <div class="structure-edit-actions">
+            <button class="btn" onclick="closeStructureEditModal()">キャンセル</button>
+            <button class="btn btn-save" onclick="saveStructureCard()">保存</button>
+        </div>
     </div>
 </div>
 
@@ -9079,6 +9354,525 @@ function setupMemoInteractionGuard() {
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+</script>
+
+<!-- ===== 構成ボード (Chapter Structure Board) ===== -->
+<script>
+(function() {
+  'use strict';
+
+  // ========== データ構造 ==========
+  const STRUCTURE_STORAGE_KEY = 'cc_structure_data';
+  let structureData = [];
+  let structureNextId = 1;
+  let editingCardId = null;
+  let draggingCardId = null;
+
+  // ステータスラベル
+  const STATUS_LABELS = {
+    none: '未着手',
+    draft: '草稿',
+    revise: '推敲',
+    done: '完了'
+  };
+
+  // 階層タイプラベル
+  const LEVEL_LABELS = {
+    chapter: '章',
+    episode: '話',
+    scene: 'シーン'
+  };
+
+  // ========== 初期化 ==========
+  function initStructure() {
+    loadStructureData();
+    renderStructureList();
+    setupStructureEventListeners();
+  }
+
+  // ========== データ管理 ==========
+  function loadStructureData() {
+    try {
+      const saved = localStorage.getItem(STRUCTURE_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        structureData = parsed.data || [];
+        structureNextId = parsed.nextId || 1;
+      }
+    } catch (e) {
+      console.warn('構成データの読み込みに失敗:', e);
+      structureData = [];
+      structureNextId = 1;
+    }
+  }
+
+  function saveStructureData() {
+    try {
+      localStorage.setItem(STRUCTURE_STORAGE_KEY, JSON.stringify({
+        data: structureData,
+        nextId: structureNextId
+      }));
+    } catch (e) {
+      console.warn('構成データの保存に失敗:', e);
+    }
+  }
+
+  // ========== カード追加 ==========
+  function addStructureCard(level) {
+    const newCard = {
+      id: structureNextId++,
+      level: level,
+      title: LEVEL_LABELS[level] + structureData.filter(c => c.level === level).length + 1,
+      summary: '',
+      viewpoint: '',
+      tags: [],
+      status: 'none',
+      tabId: null,
+      collapsed: false,
+      expanded: false
+    };
+
+    // 適切な位置に挿入
+    if (level === 'chapter') {
+      structureData.push(newCard);
+    } else if (level === 'episode') {
+      // 最後の章の後、または最後に追加
+      const lastChapterIdx = findLastIndex(structureData, c => c.level === 'chapter');
+      if (lastChapterIdx >= 0) {
+        // その章に属する最後の要素の後に挿入
+        let insertIdx = lastChapterIdx + 1;
+        while (insertIdx < structureData.length && structureData[insertIdx].level !== 'chapter') {
+          insertIdx++;
+        }
+        structureData.splice(insertIdx, 0, newCard);
+      } else {
+        structureData.push(newCard);
+      }
+    } else if (level === 'scene') {
+      // 最後の話の後、または最後の章の後、または最後に追加
+      const lastEpisodeIdx = findLastIndex(structureData, c => c.level === 'episode');
+      const lastChapterIdx = findLastIndex(structureData, c => c.level === 'chapter');
+      let insertIdx = structureData.length;
+      if (lastEpisodeIdx >= 0) {
+        insertIdx = lastEpisodeIdx + 1;
+        while (insertIdx < structureData.length && structureData[insertIdx].level === 'scene') {
+          insertIdx++;
+        }
+      } else if (lastChapterIdx >= 0) {
+        insertIdx = lastChapterIdx + 1;
+      }
+      structureData.splice(insertIdx, 0, newCard);
+    }
+
+    saveStructureData();
+    renderStructureList();
+    openEditModal(newCard.id);
+  }
+
+  function findLastIndex(arr, predicate) {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (predicate(arr[i])) return i;
+    }
+    return -1;
+  }
+
+  // ========== レンダリング ==========
+  function renderStructureList() {
+    const container = document.getElementById('structure-list');
+    if (!container) return;
+
+    if (structureData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; padding:20px; text-align:center;">構成カードがありません。<br>上のボタンから章・話・シーンを追加してください。</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    structureData.forEach((card, index) => {
+      const cardEl = createCardElement(card, index);
+      container.appendChild(cardEl);
+    });
+  }
+
+  function createCardElement(card, index) {
+    const div = document.createElement('div');
+    div.className = `structure-card level-${card.level}`;
+    if (card.expanded) div.classList.add('expanded');
+    if (card.collapsed) div.classList.add('collapsed');
+    div.dataset.id = card.id;
+    div.draggable = true;
+
+    // ヘッダー部分
+    const header = document.createElement('div');
+    header.className = 'structure-card-header';
+
+    // 折りたたみトグル（章/話のみ）
+    const toggle = document.createElement('span');
+    toggle.className = 'structure-toggle';
+    if (card.level !== 'scene') {
+      toggle.textContent = card.collapsed ? '▶' : '▼';
+      toggle.onclick = (e) => {
+        e.stopPropagation();
+        card.collapsed = !card.collapsed;
+        saveStructureData();
+        renderStructureList();
+      };
+    }
+    header.appendChild(toggle);
+
+    // タイトル
+    const title = document.createElement('span');
+    title.className = 'structure-title';
+    title.textContent = card.title;
+    title.onclick = () => {
+      if (card.tabId && window.inputTabs) {
+        const tab = window.inputTabs.find(t => t.id === card.tabId);
+        if (tab && typeof window.switchTab === 'function') {
+          window.switchTab(card.tabId);
+        }
+      }
+    };
+    header.appendChild(title);
+
+    // ステータスバッジ
+    const status = document.createElement('span');
+    status.className = `structure-status status-${card.status}`;
+    status.textContent = STATUS_LABELS[card.status];
+    header.appendChild(status);
+
+    // 展開ボタン
+    const expandBtn = document.createElement('span');
+    expandBtn.style.cssText = 'cursor:pointer; font-size:0.7rem; color:var(--text-muted); margin-left:4px;';
+    expandBtn.textContent = card.expanded ? '∧' : '∨';
+    expandBtn.title = card.expanded ? '詳細を閉じる' : '詳細を開く';
+    expandBtn.onclick = (e) => {
+      e.stopPropagation();
+      card.expanded = !card.expanded;
+      saveStructureData();
+      renderStructureList();
+    };
+    header.appendChild(expandBtn);
+
+    div.appendChild(header);
+
+    // ボディ部分（詳細）
+    const body = document.createElement('div');
+    body.className = 'structure-card-body';
+
+    if (card.summary) {
+      const summaryField = document.createElement('div');
+      summaryField.className = 'structure-field';
+      summaryField.innerHTML = `<div class="structure-field-label">要約</div><div class="structure-summary">${escapeHtml(card.summary)}</div>`;
+      body.appendChild(summaryField);
+    }
+
+    if (card.viewpoint) {
+      const viewpointField = document.createElement('div');
+      viewpointField.className = 'structure-field';
+      viewpointField.innerHTML = `<div class="structure-field-label">視点</div><span class="structure-viewpoint">${escapeHtml(card.viewpoint)}</span>`;
+      body.appendChild(viewpointField);
+    }
+
+    if (card.tags && card.tags.length > 0) {
+      const tagsField = document.createElement('div');
+      tagsField.className = 'structure-field';
+      tagsField.innerHTML = `<div class="structure-field-label">舞台</div><div class="structure-tags">${card.tags.map(t => `<span class="structure-tag">${escapeHtml(t)}</span>`).join('')}</div>`;
+      body.appendChild(tagsField);
+    }
+
+    if (card.tabId && window.inputTabs) {
+      const tab = window.inputTabs.find(t => t.id === card.tabId);
+      if (tab) {
+        const tabField = document.createElement('div');
+        tabField.className = 'structure-field';
+        tabField.innerHTML = `<div class="structure-field-label">紐づけタブ</div><span style="color:#2563eb; cursor:pointer;" onclick="if(window.switchTab) window.switchTab(${card.tabId})">📄 ${escapeHtml(tab.name)}</span>`;
+        body.appendChild(tabField);
+      }
+    }
+
+    // アクションボタン
+    const actions = document.createElement('div');
+    actions.className = 'structure-card-actions';
+    actions.innerHTML = `
+      <button onclick="openEditModal(${card.id})">✏️ 編集</button>
+      <button class="btn-delete" onclick="deleteStructureCard(${card.id})">🗑 削除</button>
+    `;
+    body.appendChild(actions);
+
+    div.appendChild(body);
+
+    // ドラッグイベント
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragend', handleDragEnd);
+    div.addEventListener('dragover', handleDragOver);
+    div.addEventListener('drop', handleDrop);
+    div.addEventListener('dragleave', handleDragLeave);
+
+    return div;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ========== ドラッグ＆ドロップ ==========
+  function handleDragStart(e) {
+    draggingCardId = parseInt(e.currentTarget.dataset.id);
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.structure-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    draggingCardId = null;
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const card = e.currentTarget;
+    if (parseInt(card.dataset.id) !== draggingCardId) {
+      card.classList.add('drag-over');
+    }
+  }
+
+  function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const targetId = parseInt(e.currentTarget.dataset.id);
+    e.currentTarget.classList.remove('drag-over');
+
+    if (draggingCardId === null || draggingCardId === targetId) return;
+
+    const dragIdx = structureData.findIndex(c => c.id === draggingCardId);
+    const targetIdx = structureData.findIndex(c => c.id === targetId);
+
+    if (dragIdx < 0 || targetIdx < 0) return;
+
+    const dragCard = structureData[dragIdx];
+    const targetCard = structureData[targetIdx];
+
+    // 同じ階層内でのみ移動を許可
+    if (dragCard.level !== targetCard.level) {
+      return;
+    }
+
+    // 配列から削除して挿入
+    structureData.splice(dragIdx, 1);
+    const newTargetIdx = structureData.findIndex(c => c.id === targetId);
+    structureData.splice(newTargetIdx, 0, dragCard);
+
+    saveStructureData();
+    renderStructureList();
+  }
+
+  // ========== 編集モーダル ==========
+  function openEditModal(cardId) {
+    const card = structureData.find(c => c.id === cardId);
+    if (!card) return;
+
+    editingCardId = cardId;
+
+    // フォームに値を設定
+    document.getElementById('structure-edit-name').value = card.title;
+    document.getElementById('structure-edit-summary').value = card.summary;
+    document.getElementById('structure-edit-viewpoint').value = card.viewpoint;
+    document.getElementById('structure-edit-tags').value = (card.tags || []).join(', ');
+    document.getElementById('structure-edit-status').value = card.status;
+
+    // 文字数カウント更新
+    updateSummaryCount();
+
+    // タブ選択肢を更新
+    const tabSelect = document.getElementById('structure-edit-tab');
+    tabSelect.innerHTML = '<option value="">（なし）</option>';
+    if (window.inputTabs) {
+      window.inputTabs.forEach(tab => {
+        const opt = document.createElement('option');
+        opt.value = tab.id;
+        opt.textContent = tab.name;
+        if (card.tabId === tab.id) opt.selected = true;
+        tabSelect.appendChild(opt);
+      });
+    }
+
+    // タイトル更新
+    document.getElementById('structure-edit-title').textContent = LEVEL_LABELS[card.level] + 'を編集';
+
+    // モーダル表示
+    document.getElementById('structure-edit-modal').classList.add('show');
+  }
+
+  function closeStructureEditModal() {
+    document.getElementById('structure-edit-modal').classList.remove('show');
+    editingCardId = null;
+  }
+
+  function saveStructureCard() {
+    if (editingCardId === null) return;
+
+    const card = structureData.find(c => c.id === editingCardId);
+    if (!card) return;
+
+    card.title = document.getElementById('structure-edit-name').value.trim() || card.title;
+    card.summary = document.getElementById('structure-edit-summary').value.trim();
+    card.viewpoint = document.getElementById('structure-edit-viewpoint').value.trim();
+    card.status = document.getElementById('structure-edit-status').value;
+
+    const tagsInput = document.getElementById('structure-edit-tags').value;
+    card.tags = tagsInput.split(/[,、]/).map(t => t.trim()).filter(t => t);
+
+    const tabId = document.getElementById('structure-edit-tab').value;
+    card.tabId = tabId ? parseInt(tabId) : null;
+
+    saveStructureData();
+    renderStructureList();
+    closeStructureEditModal();
+  }
+
+  function updateSummaryCount() {
+    const textarea = document.getElementById('structure-edit-summary');
+    const counter = document.getElementById('structure-summary-count');
+    if (textarea && counter) {
+      counter.textContent = textarea.value.length;
+    }
+  }
+
+  // ========== カード削除 ==========
+  function deleteStructureCard(cardId) {
+    if (!confirm('この構成カードを削除しますか？')) return;
+
+    const idx = structureData.findIndex(c => c.id === cardId);
+    if (idx >= 0) {
+      structureData.splice(idx, 1);
+      saveStructureData();
+      renderStructureList();
+    }
+  }
+
+  // ========== 全展開/全折畳 ==========
+  function expandAllStructure() {
+    structureData.forEach(c => {
+      c.collapsed = false;
+      c.expanded = true;
+    });
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function collapseAllStructure() {
+    structureData.forEach(c => {
+      c.collapsed = true;
+      c.expanded = false;
+    });
+    saveStructureData();
+    renderStructureList();
+  }
+
+  // ========== 全画面モード ==========
+  function toggleStructureFullscreen() {
+    document.body.classList.toggle('structure-fullscreen-mode');
+    if (document.body.classList.contains('structure-fullscreen-mode')) {
+      // 構成タブに切り替え
+      if (typeof window.switchOutlineTab === 'function') {
+        window.switchOutlineTab('structure');
+      }
+      const panel = document.getElementById('outline-panel');
+      if (panel) panel.classList.add('open');
+    }
+  }
+
+  // ========== テキスト出力 ==========
+  function exportStructureText() {
+    if (structureData.length === 0) {
+      alert('出力する構成データがありません。');
+      return;
+    }
+
+    let text = '【構成一覧】\n\n';
+    let chapterNum = 0, episodeNum = 0, sceneNum = 0;
+
+    structureData.forEach(card => {
+      let prefix = '';
+      if (card.level === 'chapter') {
+        chapterNum++;
+        episodeNum = 0;
+        sceneNum = 0;
+        prefix = `■ 第${chapterNum}章`;
+      } else if (card.level === 'episode') {
+        episodeNum++;
+        sceneNum = 0;
+        prefix = `  ├ 第${episodeNum}話`;
+      } else if (card.level === 'scene') {
+        sceneNum++;
+        prefix = `    └ シーン${sceneNum}`;
+      }
+
+      text += `${prefix}: ${card.title}\n`;
+      text += `    ステータス: ${STATUS_LABELS[card.status]}\n`;
+      if (card.viewpoint) text += `    視点: ${card.viewpoint}\n`;
+      if (card.tags && card.tags.length > 0) text += `    舞台: ${card.tags.join(', ')}\n`;
+      if (card.summary) text += `    要約: ${card.summary}\n`;
+      text += '\n';
+    });
+
+    // ダウンロード
+    const blob = new Blob([text], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '構成一覧.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ========== イベントリスナー設定 ==========
+  function setupStructureEventListeners() {
+    // 要約文字数カウント
+    const summaryEl = document.getElementById('structure-edit-summary');
+    if (summaryEl) {
+      summaryEl.addEventListener('input', updateSummaryCount);
+    }
+
+    // モーダル外クリックで閉じる
+    const modal = document.getElementById('structure-edit-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeStructureEditModal();
+      });
+    }
+
+    // ESCキーで全画面モード解除
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('structure-fullscreen-mode')) {
+        toggleStructureFullscreen();
+      }
+    });
+  }
+
+  // ========== グローバル公開 ==========
+  window.addStructureCard = addStructureCard;
+  window.openEditModal = openEditModal;
+  window.closeStructureEditModal = closeStructureEditModal;
+  window.saveStructureCard = saveStructureCard;
+  window.deleteStructureCard = deleteStructureCard;
+  window.expandAllStructure = expandAllStructure;
+  window.collapseAllStructure = collapseAllStructure;
+  window.toggleStructureFullscreen = toggleStructureFullscreen;
+  window.exportStructureText = exportStructureText;
+
+  // ========== 初期化実行 ==========
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStructure);
+  } else {
+    initStructure();
+  }
 })();
 </script>
 </body>

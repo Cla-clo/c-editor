@@ -980,6 +980,13 @@
         z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
         display: flex; flex-direction: column;
     }
+    .main-container.structure-right #structure-panel {
+        left: auto; right: 0;
+        border-right: none; border-left: 1px solid #a5b4fc;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        transform: translateX(100%);
+    }
+    .main-container.structure-right #structure-panel.open { transform: translateX(0); }
     body.theme-dark #structure-panel { background: var(--pane-structure-bg, #1e1b4b); border-color: #4338ca; }
     #structure-panel.open { transform: translateX(0); }
     .main-container.structure-docked #structure-panel {
@@ -1054,6 +1061,21 @@
         padding: 8px 10px; cursor: pointer;
         border-bottom: 1px solid transparent;
     }
+    .structure-card-header button { cursor: pointer; }
+    .structure-select {
+        width: 14px; height: 14px; accent-color: #6366f1;
+        cursor: pointer; flex-shrink: 0;
+    }
+    .structure-move-group { display: flex; gap: 2px; align-items: center; }
+    .structure-move-btn {
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        color: var(--text-muted);
+    }
+    .structure-move-btn:hover { background: var(--pane-header-bg); color: var(--text-color); }
     .structure-card.expanded .structure-card-header {
         border-bottom-color: var(--border-color);
     }
@@ -2172,6 +2194,7 @@
                 <label>プレビュー: <input type="number" id="st-pane-preview-width" value="520" min="120" max="3000" style="width:70px;">px</label>
                 <label>メモ: <input type="number" id="st-pane-memo-width" value="260" min="160" max="1200" style="width:70px;">px</label>
                 <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
+                <label>構成: <input type="number" id="st-pane-structure-width" value="300" min="160" max="1200" style="width:70px;">px</label>
                 <label>検索: <input type="number" id="st-pane-search-width" value="320" min="160" max="1200" style="width:70px;">px</label>
                 <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;" onchange="applyDividerSettings()">px</label>
             </div>
@@ -2380,6 +2403,8 @@
         <button class="btn" onclick="addStructureCard('scene')">＋シーン</button>
         <button class="btn" onclick="expandAllStructure()">全展開</button>
         <button class="btn" onclick="collapseAllStructure()">全折畳</button>
+        <button class="btn" onclick="deleteSelectedStructureCards()">選択削除</button>
+        <button class="btn" onclick="deleteAllStructureCards()">全削除</button>
         <button class="btn structure-fullscreen-btn" onclick="toggleStructureFullscreen()">⛶</button>
     </div>
     <div class="structure-content">
@@ -2836,6 +2861,7 @@ initTabScrollers();
         preview: 'cc_pane_preview_width_px',
         memo: 'cc_memo_width_px',
         outline: 'cc_outline_width_px',
+        structure: 'cc_structure_width_px',
         search: 'cc_search_width_px',
         legacyInput: 'cc_pane_input_width',
         legacyPreview: 'cc_pane_preview_width'
@@ -3231,6 +3257,7 @@ function addNewTab() {
                 preview: document.getElementById('st-pane-preview-width').value,
                 memo: document.getElementById('st-pane-memo-width').value,
                 outline: document.getElementById('st-pane-outline-width').value,
+                structure: document.getElementById('st-pane-structure-width').value,
                 search: document.getElementById('st-pane-search-width').value
             },
             paneHeights: {
@@ -3282,6 +3309,7 @@ function addNewTab() {
             document.getElementById('st-pane-preview-width').value = s.paneWidths.preview || 520;
             document.getElementById('st-pane-memo-width').value = s.paneWidths.memo || 260;
             document.getElementById('st-pane-outline-width').value = s.paneWidths.outline || 260;
+            document.getElementById('st-pane-structure-width').value = s.paneWidths.structure || 300;
             document.getElementById('st-pane-search-width').value = s.paneWidths.search || 320;
         }
         if (s.paneHeights) {
@@ -3446,6 +3474,7 @@ function addNewTab() {
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-pane-structure-width').value = 300;
         document.getElementById('st-pane-search-width').value = 320;
         document.getElementById('st-divider-width').value = 2;
         const inputH = document.getElementById('st-pane-input-height');
@@ -3466,6 +3495,9 @@ function addNewTab() {
         localStorage.removeItem('cc_active_tab_color');
         localStorage.removeItem('cc_reader_bookmarks_v1');
         localStorage.removeItem('cc_reader_bookmarks_v2');
+        localStorage.removeItem('cc_structure_data');
+        localStorage.removeItem('cc_pane_colors_v3');
+        localStorage.removeItem(TEXT_COLOR_KEY);
         sessionStorage.removeItem('cc_editor_session_started');
 
         // テーマとカラーをリセット
@@ -3473,14 +3505,14 @@ function addNewTab() {
         document.documentElement.style.setProperty('--active-tab-bg', '#fff59d');
 
         // ヘッダーカラーをリセット
-        const headerVars = ['--pane-input-head', '--pane-preview-head', '--pane-memo-head', '--pane-outline-head', '--pane-search-head'];
+        const headerVars = ['--pane-input-head', '--pane-preview-head', '--pane-memo-head', '--pane-outline-head', '--pane-structure-head', '--pane-search-head'];
         headerVars.forEach(v => {
             document.documentElement.style.removeProperty(v);
             try { localStorage.removeItem('cc_' + v.replace('--', '')); } catch(e){}
         });
 
         // 背景色をリセット
-        const bgVars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-search-bg'];
+        const bgVars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-structure-bg', '--pane-search-bg'];
         bgVars.forEach(v => {
             document.documentElement.style.removeProperty(v);
             try { localStorage.removeItem('cc_' + v.replace('--', '')); } catch(e){}
@@ -3506,6 +3538,14 @@ function addNewTab() {
         saveTabsToStorage();
         saveMemoTabs();
         saveWritingTime();
+        if (typeof resetSearchPanel === 'function') resetSearchPanel();
+        const searchInput = document.getElementById('search-input');
+        const replaceInput = document.getElementById('replace-input');
+        if (searchInput) searchInput.value = '';
+        if (replaceInput) replaceInput.value = '';
+        if (typeof closeSearchPanel === 'function') closeSearchPanel();
+        if (typeof closeStructurePanel === 'function') closeStructurePanel(true);
+        if (typeof window.initStructureFromReset === 'function') window.initStructureFromReset();
         applyDefaultStartupLayoutAfterReset();
         requestAnimationFrame(() => {
             if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -4289,6 +4329,7 @@ function applyDisplaySettings() {
         document.getElementById('st-pane-preview-width').value = 520;
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-pane-structure-width').value = 300;
         document.getElementById('st-pane-search-width').value = 320;
         document.getElementById('st-divider-width').value = 2;
         const inputH = document.getElementById('st-pane-input-height');
@@ -4312,6 +4353,7 @@ function applyDisplaySettings() {
         localStorage.removeItem(SETTINGS_KEY);
         localStorage.removeItem('cc_outline_rules_v1');
         localStorage.removeItem('cc_active_tab_color');
+        localStorage.removeItem('cc_pane_colors_v3');
 
         // 構成パネルを閉じてデータをクリア
         localStorage.removeItem('cc_structure_data');
@@ -4336,22 +4378,30 @@ function applyDisplaySettings() {
     function applyDockedPanelWidths() {
         const memoWidthRaw = parseInt(document.getElementById('st-pane-memo-width').value);
         const outlineWidthRaw = parseInt(document.getElementById('st-pane-outline-width').value);
+        const structureWidthRaw = parseInt(document.getElementById('st-pane-structure-width').value);
         const searchWidthRaw = parseInt(document.getElementById('st-pane-search-width').value);
         const memoWidth = clampValue(memoWidthRaw || 260, 160, 2000);
         const outlineWidth = clampValue(outlineWidthRaw || 260, 160, 2000);
+        const structureWidth = clampValue(structureWidthRaw || 300, 160, 2000);
         const searchWidth = clampValue(searchWidthRaw || 320, 160, 2000);
         const memoPanel = document.getElementById('memo-panel');
         const outlinePanel = document.getElementById('outline-panel');
+        const structurePanel = document.getElementById('structure-panel');
         const searchPanel = document.getElementById('search-panel');
 
         document.getElementById('st-pane-memo-width').value = memoWidth;
         document.getElementById('st-pane-outline-width').value = outlineWidth;
+        document.getElementById('st-pane-structure-width').value = structureWidth;
         document.getElementById('st-pane-search-width').value = searchWidth;
 
         memoPanel.style.width = `${memoWidth}px`;
         memoPanel.style.flexBasis = `${memoWidth}px`;
         outlinePanel.style.width = `${outlineWidth}px`;
         outlinePanel.style.flexBasis = `${outlineWidth}px`;
+        if (structurePanel) {
+            structurePanel.style.width = `${structureWidth}px`;
+            structurePanel.style.flexBasis = `${structureWidth}px`;
+        }
         if (searchPanel) {
             searchPanel.style.width = `${searchWidth}px`;
             searchPanel.style.flexBasis = `${searchWidth}px`;
@@ -4359,6 +4409,7 @@ function applyDisplaySettings() {
 
         localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
+        localStorage.setItem(PANE_WIDTH_KEYS.structure, structureWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.search, searchWidth);
     }
 
@@ -4421,12 +4472,14 @@ function resetPaneWidths() {
     document.getElementById('st-pane-preview-width').value = 520;
     document.getElementById('st-pane-memo-width').value = 260;
     document.getElementById('st-pane-outline-width').value = 260;
+    document.getElementById('st-pane-structure-width').value = 300;
     document.getElementById('st-pane-search-width').value = 320;
 
     localStorage.removeItem(PANE_WIDTH_KEYS.input);
     localStorage.removeItem(PANE_WIDTH_KEYS.preview);
     localStorage.removeItem(PANE_WIDTH_KEYS.memo);
     localStorage.removeItem(PANE_WIDTH_KEYS.outline);
+    localStorage.removeItem(PANE_WIDTH_KEYS.structure);
     localStorage.removeItem(PANE_WIDTH_KEYS.search);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
@@ -4472,6 +4525,7 @@ function updateDockSplitState() {
         const previewWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.preview), 10);
         const memoWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.memo), 10);
         const outlineWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.outline), 10);
+        const structureWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.structure), 10);
         const searchWidth = parseInt(localStorage.getItem(PANE_WIDTH_KEYS.search), 10);
 
         if (inputWidth || legacyInput) {
@@ -4487,6 +4541,9 @@ function updateDockSplitState() {
         }
         if (outlineWidth) {
             document.getElementById('st-pane-outline-width').value = outlineWidth;
+        }
+        if (structureWidth) {
+            document.getElementById('st-pane-structure-width').value = structureWidth;
         }
         if (searchWidth) {
             document.getElementById('st-pane-search-width').value = searchWidth;
@@ -5957,6 +6014,68 @@ if (typeof applyPaneHeightSettings === 'function') {
             () => (mainContainer.classList.contains('outline-left') ? 'left' : 'right')
         );
 
+        (function setupStructureDockResizer() {
+            const resizer = document.getElementById('resizer-structure');
+            const panel = document.getElementById('structure-panel');
+            if (!resizer || !panel || !mainContainer) return;
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', e => {
+                if (!panel.classList.contains('open')) return;
+                isResizing = true;
+                resizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (!isResizing) return;
+                const containerRect = mainContainer.getBoundingClientRect();
+                const panelRect = panel.getBoundingClientRect();
+                const minDockWidth = 160;
+                const minPaneWidth = 120;
+                const inputHidden = inputPane.classList.contains('hidden');
+                const previewHidden = previewPane.classList.contains('hidden');
+                let minCenter = 0;
+                if (!inputHidden) minCenter += minPaneWidth;
+                if (!previewHidden) minCenter += minPaneWidth;
+                if (!inputHidden && !previewHidden) minCenter += 2;
+                let otherDockWidth = 0;
+                const memoPanel = document.getElementById('memo-panel');
+                const outlinePanel = document.getElementById('outline-panel');
+                const searchPanel = document.getElementById('search-panel');
+                if (mainContainer.classList.contains('memo-docked') && memoPanel?.classList.contains('open')) {
+                    otherDockWidth += memoPanel.getBoundingClientRect().width;
+                }
+                if (mainContainer.classList.contains('outline-docked') && outlinePanel?.classList.contains('open')) {
+                    otherDockWidth += outlinePanel.getBoundingClientRect().width;
+                }
+                if (mainContainer.classList.contains('search-docked') && searchPanel?.classList.contains('open')) {
+                    otherDockWidth += searchPanel.getBoundingClientRect().width;
+                }
+                const maxDockWidth = Math.max(minDockWidth, containerRect.width - otherDockWidth - minCenter);
+                const side = mainContainer.classList.contains('structure-right') ? 'right' : 'left';
+                const rawWidth = side === 'left' ? e.clientX - panelRect.left : panelRect.right - e.clientX;
+                const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
+                panel.style.width = `${newWidth}px`;
+                panel.style.flexBasis = `${newWidth}px`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                const widthValue = Math.round(panel.getBoundingClientRect().width);
+                document.getElementById('st-pane-structure-width').value = widthValue;
+                localStorage.setItem(PANE_WIDTH_KEYS.structure, widthValue);
+                applyPaneWidthSettings();
+                try { updateDockSplitState(); } catch (e) {}
+            });
+        })();
+
         (function setupSearchDockResizer() {
             const resizer = document.getElementById('resizer-search');
             const panel = document.getElementById('search-panel');
@@ -6141,8 +6260,12 @@ function applyDefaultDockLayoutOnce() {
   const c = document.getElementById('main-container');
   const memo = document.getElementById('memo-panel');
   const outline = document.getElementById('outline-panel');
+  const structure = document.getElementById('structure-panel');
+  const search = document.getElementById('search-panel');
   const memoDock = document.getElementById('check-memo-dock');
   const outlineDock = document.getElementById('check-outline-dock');
+  const structureDock = document.getElementById('check-structure-dock');
+  const searchDock = document.getElementById('check-search-dock');
 
   if (!c || !memo || !outline || !memoDock || !outlineDock) return;
 
@@ -6157,6 +6280,15 @@ function applyDefaultDockLayoutOnce() {
   c.classList.add('outline-docked');
   c.classList.remove('outline-left');
   outline.classList.add('open');
+
+  // 構成・検索は閉じる
+  if (structureDock) structureDock.checked = false;
+  if (structure) structure.classList.remove('open');
+  c.classList.remove('structure-docked', 'structure-right');
+
+  if (searchDock) searchDock.checked = false;
+  if (search) search.classList.remove('open');
+  c.classList.remove('search-docked', 'search-left');
 
   // 余計な分割状態が残ってたらリセット
   c.classList.remove('dock-split-left', 'dock-split-right');
@@ -6590,6 +6722,7 @@ function setupMemoInteractionGuard() {
     preview: { bg: null, head: null },
     memo: { bg: null, head: null },
     outline: { bg: null, head: null },
+    structure: { bg: null, head: null },
   };
 
   function getDefaultComputedColors(){
@@ -6604,6 +6737,7 @@ function setupMemoInteractionGuard() {
       preview: { bg: previewBg, head: headerBg },
       memo: { bg: panelBg, head: headerBg },
       outline: { bg: panelBg, head: headerBg },
+      structure: { bg: panelBg, head: headerBg },
     };
   }
 
@@ -6611,7 +6745,7 @@ function setupMemoInteractionGuard() {
     const saved = lsGet(PANE_COLOR_KEY, null);
     if (!saved) return null;
     const out = JSON.parse(JSON.stringify(DEFAULT_PANE_COLORS));
-    for (const k of ['input','preview','memo','outline']){
+    for (const k of ['input','preview','memo','outline','structure']){
       if (saved[k]){
         out[k].bg = saved[k].bg || null;
         out[k].head = saved[k].head || null;
@@ -6628,6 +6762,7 @@ function setupMemoInteractionGuard() {
       preview: ['--pane-preview-bg','--pane-preview-head'],
       memo: ['--pane-memo-bg','--pane-memo-head'],
       outline: ['--pane-outline-bg','--pane-outline-head'],
+      structure: ['--pane-structure-bg','--pane-structure-head'],
     };
     for (const k of Object.keys(map)){
       const [bgVar, headVar] = map[k];
@@ -6689,8 +6824,8 @@ function setupMemoInteractionGuard() {
         <button class="btn" id="cc-pane-colors-reset">リセット</button>
       </div>
       <div class="setting-row" style="flex-direction:column; gap:10px; align-items:stretch;">
-        ${['input','preview','memo','outline'].map(k=>{
-          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次'})[k];
+        ${['input','preview','memo','outline','structure'].map(k=>{
+          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成'})[k];
           return `
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
             <div style="min-width:64px; font-weight:700;">${label}</div>
@@ -6726,14 +6861,14 @@ function setupMemoInteractionGuard() {
       });
     };
 
-    for (const k of ['input','preview','memo','outline']){
+    for (const k of ['input','preview','memo','outline','structure']){
       syncPair(document.getElementById(`cc-pane-${k}-bg`), document.getElementById(`cc-pane-${k}-bg-t`));
       syncPair(document.getElementById(`cc-pane-${k}-head`), document.getElementById(`cc-pane-${k}-head-t`));
     }
 
     function fillUIFrom(colors){
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline']){
+      for (const k of ['input','preview','memo','outline','structure']){
         const bg = (colors && colors[k] && colors[k].bg) ? colors[k].bg : defaults[k].bg;
         const head = (colors && colors[k] && colors[k].head) ? colors[k].head : defaults[k].head;
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
@@ -6748,8 +6883,8 @@ function setupMemoInteractionGuard() {
     fillUIFrom(loadPaneColors());
 
     document.getElementById('cc-pane-colors-apply')?.addEventListener('click', ()=>{
-      const out = {input:{},preview:{},memo:{},outline:{}};
-      for (const k of ['input','preview','memo','outline']){
+      const out = {input:{},preview:{},memo:{},outline:{},structure:{}};
+      for (const k of ['input','preview','memo','outline','structure']){
         const bg = document.getElementById(`cc-pane-${k}-bg-t`)?.value?.trim();
         const head = document.getElementById(`cc-pane-${k}-head-t`)?.value?.trim();
         out[k].bg = (/^#?[0-9a-fA-F]{6}$/.test(bg||'')) ? (bg.startsWith('#') ? bg : ('#'+bg)) : null;
@@ -6764,8 +6899,8 @@ function setupMemoInteractionGuard() {
     if (!applyBtn || applyBtn.dataset.bound==='1') return;
     applyBtn.dataset.bound='1';
     applyBtn.addEventListener('click', ()=>{
-      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null}};
-      for (const k of ['input','preview','memo','outline']){
+      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null}};
+      for (const k of ['input','preview','memo','outline','structure']){
         const bg = (document.getElementById(`cc-pane-${k}-bg-t`)?.value||'').trim();
         const head = (document.getElementById(`cc-pane-${k}-head-t`)?.value||'').trim();
         const norm = (v)=>{
@@ -6784,7 +6919,7 @@ function setupMemoInteractionGuard() {
       applyPaneColors(null);
       // refill UI
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline']){
+      for (const k of ['input','preview','memo','outline','structure']){
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
         const bgT = document.getElementById(`cc-pane-${k}-bg-t`);
         const hdEl = document.getElementById(`cc-pane-${k}-head`);
@@ -7721,8 +7856,8 @@ function setupMemoInteractionGuard() {
               <button class="btn" id="cc-pane-colors-reset">リセット</button>
             </div>
             <div class="setting-row" style="flex-direction:column; gap:10px; align-items:stretch;">
-              ${['input','preview','memo','outline'].map(k=>{
-                const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次'})[k];
+              ${['input','preview','memo','outline','structure'].map(k=>{
+                const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成'})[k];
                 return `
                 <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
                   <div style="min-width:64px; font-weight:700;">${label}</div>
@@ -7746,7 +7881,7 @@ function setupMemoInteractionGuard() {
       const saved = loadPaneColors();
       const use = saved || null;
       const norm = (v)=>{ if(!v) return null; return v.startsWith('#')?v:'#'+v; };
-      for (const k of ['input','preview','memo','outline']){
+      for (const k of ['input','preview','memo','outline','structure']){
         const bg = (use && use[k] && use[k].bg) ? use[k].bg : defaults[k].bg;
         const head = (use && use[k] && use[k].head) ? use[k].head : defaults[k].head;
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
@@ -8966,7 +9101,7 @@ function setupMemoInteractionGuard() {
       }
 
       // Pane header right-click for header color
-      const header = e.target.closest('.pane-header, .memo-header, .outline-header');
+      const header = e.target.closest('.pane-header, .memo-header, .outline-header, .structure-header');
       if (header && !e.target.closest('#novel-title')) {
         e.preventDefault();
         showHeaderContextMenu(e, header);
@@ -9400,7 +9535,7 @@ function setupMemoInteractionGuard() {
     picker.querySelector('#preset-apply').onclick = () => {
       const color = colorInput.value || '#ffffff';
       // Apply to all pane backgrounds
-      const vars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-search-bg'];
+      const vars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-structure-bg', '--pane-search-bg'];
       vars.forEach(v => {
         document.documentElement.style.setProperty(v, color);
         try { localStorage.setItem('cc_' + v.replace('--', ''), color); } catch(e){}
@@ -9474,7 +9609,12 @@ function setupMemoInteractionGuard() {
       const saved = localStorage.getItem(STRUCTURE_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        structureData = parsed.data || [];
+        structureData = (parsed.data || []).map(card => ({
+          ...card,
+          selected: false,
+          collapsed: !!card.collapsed,
+          expanded: !!card.expanded
+        }));
         structureNextId = parsed.nextId || 1;
       }
     } catch (e) {
@@ -9486,8 +9626,9 @@ function setupMemoInteractionGuard() {
 
   function saveStructureData() {
     try {
+      const sanitized = structureData.map(({ selected, ...rest }) => rest);
       localStorage.setItem(STRUCTURE_STORAGE_KEY, JSON.stringify({
-        data: structureData,
+        data: sanitized,
         nextId: structureNextId
       }));
     } catch (e) {
@@ -9507,7 +9648,8 @@ function setupMemoInteractionGuard() {
       status: 'none',
       tabId: null,
       collapsed: false,
-      expanded: false
+      expanded: false,
+      selected: false
     };
 
     // 適切な位置に挿入
@@ -9592,6 +9734,17 @@ function setupMemoInteractionGuard() {
     const header = document.createElement('div');
     header.className = 'structure-card-header';
 
+    const selection = document.createElement('input');
+    selection.type = 'checkbox';
+    selection.className = 'structure-select';
+    selection.checked = !!card.selected;
+    selection.onclick = (e) => {
+      e.stopPropagation();
+      card.selected = selection.checked;
+      saveStructureData();
+    };
+    header.appendChild(selection);
+
     // 折りたたみトグル（章/話のみ）
     const toggle = document.createElement('span');
     toggle.className = 'structure-toggle';
@@ -9638,6 +9791,37 @@ function setupMemoInteractionGuard() {
       renderStructureList();
     };
     header.appendChild(expandBtn);
+
+    const moveGroup = document.createElement('div');
+    moveGroup.className = 'structure-move-group';
+    const moveUp = document.createElement('button');
+    moveUp.type = 'button';
+    moveUp.className = 'structure-move-btn';
+    moveUp.textContent = '↑';
+    moveUp.title = '上のカードと入れ替える';
+    moveUp.onclick = (e) => {
+      e.stopPropagation();
+      moveStructureCard(card.id, -1);
+    };
+    const moveDown = document.createElement('button');
+    moveDown.type = 'button';
+    moveDown.className = 'structure-move-btn';
+    moveDown.textContent = '↓';
+    moveDown.title = '下のカードと入れ替える';
+    moveDown.onclick = (e) => {
+      e.stopPropagation();
+      moveStructureCard(card.id, 1);
+    };
+    moveGroup.appendChild(moveUp);
+    moveGroup.appendChild(moveDown);
+    header.appendChild(moveGroup);
+
+    header.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button, input')) return;
+      card.expanded = !card.expanded;
+      saveStructureData();
+      renderStructureList();
+    });
 
     div.appendChild(header);
 
@@ -9693,6 +9877,10 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragover', handleDragOver);
     div.addEventListener('drop', handleDrop);
     div.addEventListener('dragleave', handleDragLeave);
+    div.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showStructureContextMenu(e, card.id);
+    });
 
     return div;
   }
@@ -9701,6 +9889,262 @@ function setupMemoInteractionGuard() {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function findChapterIndexForIndex(startIdx) {
+    for (let i = startIdx; i >= 0; i--) {
+      if (structureData[i]?.level === 'chapter') return i;
+    }
+    return -1;
+  }
+
+  function findEpisodeIndexForIndex(startIdx) {
+    for (let i = startIdx; i >= 0; i--) {
+      if (structureData[i]?.level === 'episode') return i;
+      if (structureData[i]?.level === 'chapter') return -1;
+    }
+    return -1;
+  }
+
+  function findChapterEndIndex(chapterIdx) {
+    let i = chapterIdx + 1;
+    while (i < structureData.length && structureData[i].level !== 'chapter') {
+      i++;
+    }
+    return i;
+  }
+
+  function findEpisodeEndIndex(episodeIdx) {
+    let i = episodeIdx + 1;
+    while (i < structureData.length && structureData[i].level === 'scene') {
+      i++;
+    }
+    return i;
+  }
+
+  function moveCardToIndex(dragIdx, insertIdx) {
+    if (dragIdx === insertIdx) return;
+    const [card] = structureData.splice(dragIdx, 1);
+    let targetIdx = insertIdx;
+    if (dragIdx < insertIdx) targetIdx -= 1;
+    structureData.splice(targetIdx, 0, card);
+  }
+
+  function moveCardToChapter(dragIdx, chapterIdx) {
+    if (chapterIdx < 0) return;
+    const insertIdx = findChapterEndIndex(chapterIdx);
+    moveCardToIndex(dragIdx, insertIdx);
+  }
+
+  function moveCardToEpisode(dragIdx, episodeIdx) {
+    if (episodeIdx < 0) return;
+    const insertIdx = findEpisodeEndIndex(episodeIdx);
+    moveCardToIndex(dragIdx, insertIdx);
+  }
+
+  function moveStructureCard(cardId, direction) {
+    const idx = structureData.findIndex(c => c.id === cardId);
+    const targetIdx = idx + direction;
+    if (idx < 0 || targetIdx < 0 || targetIdx >= structureData.length) return;
+    const temp = structureData[targetIdx];
+    structureData[targetIdx] = structureData[idx];
+    structureData[idx] = temp;
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function duplicateStructureCard(cardId) {
+    const idx = structureData.findIndex(c => c.id === cardId);
+    if (idx < 0) return;
+    const card = structureData[idx];
+    const copy = {
+      ...card,
+      id: structureNextId++,
+      title: `${card.title}（コピー）`,
+      selected: false
+    };
+    structureData.splice(idx + 1, 0, copy);
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function deleteSelectedStructureCards() {
+    const hasSelected = structureData.some(c => c.selected);
+    if (!hasSelected) {
+      alert('選択されたカードがありません。');
+      return;
+    }
+    if (!confirm('選択した構成カードを削除しますか？')) return;
+    structureData = structureData.filter(c => !c.selected);
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function deleteAllStructureCards() {
+    if (structureData.length === 0) {
+      alert('削除する構成カードがありません。');
+      return;
+    }
+    if (!confirm('構成カードをすべて削除しますか？')) return;
+    structureData = [];
+    structureNextId = 1;
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function buildStructureIndexMap() {
+    let chapterNum = 0;
+    let episodeNum = 0;
+    const map = new Map();
+    structureData.forEach(card => {
+      if (card.level === 'chapter') {
+        chapterNum++;
+        episodeNum = 0;
+        map.set(card.id, { chapterNum, episodeNum: null });
+      } else if (card.level === 'episode') {
+        episodeNum++;
+        map.set(card.id, { chapterNum, episodeNum });
+      } else {
+        map.set(card.id, { chapterNum, episodeNum });
+      }
+    });
+    return map;
+  }
+
+  function getMoveTargetsForCard(card) {
+    const map = buildStructureIndexMap();
+    if (card.level === 'episode') {
+      return structureData
+        .filter(c => c.level === 'chapter')
+        .map(ch => {
+          const meta = map.get(ch.id) || { chapterNum: 0 };
+          return { type: 'chapter', id: ch.id, label: `第${meta.chapterNum}章: ${ch.title}` };
+        });
+    }
+    if (card.level === 'scene') {
+      const episodes = structureData.filter(c => c.level === 'episode');
+      if (episodes.length > 0) {
+        return episodes.map(ep => {
+          const meta = map.get(ep.id) || { chapterNum: 0, episodeNum: 0 };
+          return { type: 'episode', id: ep.id, label: `第${meta.chapterNum}章 第${meta.episodeNum}話: ${ep.title}` };
+        });
+      }
+      return structureData
+        .filter(c => c.level === 'chapter')
+        .map(ch => {
+          const meta = map.get(ch.id) || { chapterNum: 0 };
+          return { type: 'chapter', id: ch.id, label: `第${meta.chapterNum}章: ${ch.title}` };
+        });
+    }
+    return [];
+  }
+
+  function moveCardToChapterById(cardId, chapterId) {
+    const dragIdx = structureData.findIndex(c => c.id === cardId);
+    const chapterIdx = structureData.findIndex(c => c.id === chapterId);
+    if (dragIdx < 0 || chapterIdx < 0) return;
+    moveCardToChapter(dragIdx, chapterIdx);
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function moveCardToEpisodeById(cardId, episodeId) {
+    const dragIdx = structureData.findIndex(c => c.id === cardId);
+    const episodeIdx = structureData.findIndex(c => c.id === episodeId);
+    if (dragIdx < 0 || episodeIdx < 0) return;
+    moveCardToEpisode(dragIdx, episodeIdx);
+    saveStructureData();
+    renderStructureList();
+  }
+
+  let structureMenuClickHandler = null;
+
+  function showStructureContextMenu(e, cardId) {
+    if (typeof window.hideAllContextMenus === 'function') window.hideAllContextMenus();
+    let menu = document.getElementById('structure-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'structure-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:200px;';
+      document.body.appendChild(menu);
+    }
+
+    const card = structureData.find(c => c.id === cardId);
+    if (!card) return;
+
+    const moveTargets = getMoveTargetsForCard(card);
+    const moveSection = moveTargets.length
+      ? `
+        <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+        <div class="context-menu-item" style="color:var(--text-muted); pointer-events:none;">移動先</div>
+        ${moveTargets.map(t => `<div class="context-menu-item" data-action="move" data-target-type="${t.type}" data-target-id="${t.id}">➡ ${t.label}</div>`).join('')}
+      `
+      : '';
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="edit">✏️ 編集</div>
+      <div class="context-menu-item" data-action="duplicate">📋 複製</div>
+      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="move-up">⬆ 上へ</div>
+      <div class="context-menu-item" data-action="move-down">⬇ 下へ</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="delete" style="color:#dc2626;">🗑 削除</div>
+      ${moveSection}
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'edit') openEditModal(cardId);
+        if (action === 'duplicate') duplicateStructureCard(cardId);
+        if (action === 'toggle') {
+          const target = structureData.find(c => c.id === cardId);
+          if (target) {
+            target.expanded = !target.expanded;
+            saveStructureData();
+            renderStructureList();
+          }
+        }
+        if (action === 'move-up') moveStructureCard(cardId, -1);
+        if (action === 'move-down') moveStructureCard(cardId, 1);
+        if (action === 'delete') deleteStructureCard(cardId);
+        if (action === 'move') {
+          const type = item.dataset.targetType;
+          const targetId = parseInt(item.dataset.targetId);
+          if (type === 'chapter') moveCardToChapterById(cardId, targetId);
+          if (type === 'episode') moveCardToEpisodeById(cardId, targetId);
+        }
+        hideStructureContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    if (structureMenuClickHandler) {
+      document.removeEventListener('click', structureMenuClickHandler);
+    }
+    structureMenuClickHandler = (ev) => {
+      if (!ev.target.closest('#structure-context-menu')) {
+        hideStructureContextMenu();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', structureMenuClickHandler);
+    }, 0);
+  }
+
+  function hideStructureContextMenu() {
+    const menu = document.getElementById('structure-context-menu');
+    if (menu) menu.style.display = 'none';
+    if (structureMenuClickHandler) {
+      document.removeEventListener('click', structureMenuClickHandler);
+      structureMenuClickHandler = null;
+    }
   }
 
   // ========== ドラッグ＆ドロップ ==========
@@ -9744,15 +10188,20 @@ function setupMemoInteractionGuard() {
     const dragCard = structureData[dragIdx];
     const targetCard = structureData[targetIdx];
 
-    // 同じ階層内でのみ移動を許可
-    if (dragCard.level !== targetCard.level) {
-      return;
+    if (dragCard.level === targetCard.level) {
+      moveCardToIndex(dragIdx, targetIdx);
+    } else if (dragCard.level === 'scene' && targetCard.level === 'episode') {
+      moveCardToEpisode(dragIdx, targetIdx);
+    } else if (dragCard.level === 'scene' && targetCard.level === 'chapter') {
+      moveCardToChapter(dragIdx, targetIdx);
+    } else if (dragCard.level === 'episode' && targetCard.level === 'chapter') {
+      moveCardToChapter(dragIdx, targetIdx);
+    } else if (dragCard.level === 'episode' && targetCard.level === 'scene') {
+      const chapterIdx = findChapterIndexForIndex(targetIdx);
+      if (chapterIdx >= 0) moveCardToChapter(dragIdx, chapterIdx);
+    } else {
+      moveCardToIndex(dragIdx, targetIdx);
     }
-
-    // 配列から削除して挿入
-    structureData.splice(dragIdx, 1);
-    const newTargetIdx = structureData.findIndex(c => c.id === targetId);
-    structureData.splice(newTargetIdx, 0, dragCard);
 
     saveStructureData();
     renderStructureList();
@@ -9948,6 +10397,8 @@ function setupMemoInteractionGuard() {
   window.closeStructureEditModal = closeStructureEditModal;
   window.saveStructureCard = saveStructureCard;
   window.deleteStructureCard = deleteStructureCard;
+  window.deleteSelectedStructureCards = deleteSelectedStructureCards;
+  window.deleteAllStructureCards = deleteAllStructureCards;
   window.expandAllStructure = expandAllStructure;
   window.collapseAllStructure = collapseAllStructure;
   window.toggleStructureFullscreen = toggleStructureFullscreen;
@@ -9959,10 +10410,13 @@ function setupMemoInteractionGuard() {
   function toggleStructurePanel() {
     const panel = document.getElementById('structure-panel');
     const checkbox = document.getElementById('check-structure-dock');
+    const container = document.getElementById('main-container');
     if (!panel || !checkbox) return;
 
     const isOpen = panel.classList.contains('open');
     const isDocked = checkbox.checked;
+
+    if (container) container.classList.remove('structure-right');
 
     if (!isOpen) {
       // 閉じている → オーバーレイで開く
@@ -10029,6 +10483,8 @@ function setupMemoInteractionGuard() {
     if (container) {
       container.classList.toggle('structure-right');
     }
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    if (typeof updateDockSplitState === 'function') updateDockSplitState();
   }
 
   // パネルを閉じる
@@ -10064,14 +10520,12 @@ function setupMemoInteractionGuard() {
     const isDocked = checkbox && checkbox.checked;
     const icon = btn.querySelector('.panel-state-icon');
 
+    btn.classList.remove('active');
     if (isDocked) {
-      btn.classList.add('active');
       if (icon) icon.textContent = '📌';
     } else if (isOpen) {
-      btn.classList.add('active');
       if (icon) icon.textContent = '▾';
     } else {
-      btn.classList.remove('active');
       if (icon) icon.textContent = '▾';
     }
   }

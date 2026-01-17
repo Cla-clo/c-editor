@@ -5964,6 +5964,7 @@ function setupMemoInteractionGuard() {
 
       #pane-preview { background: var(--pane-preview-bg, var(--panel-bg)); }
       #pane-preview .pane-header, #pane-preview .pane-subheader, #pane-preview .tabs-scroll-wrap { background: var(--pane-preview-head, var(--pane-header-bg)); }
+      #pane-preview .pane-body { background-color: var(--pane-preview-bg, var(--preview-bg-color)); }
 
       #memo-panel { background: var(--pane-memo-bg, var(--panel-bg)); }
       #memo-panel .memo-header, #memo-panel .memo-toolbar { background: var(--pane-memo-head, var(--pane-header-bg)); }
@@ -6803,6 +6804,7 @@ function setupMemoInteractionGuard() {
       box.appendChild(note);
     }
   }
+  window.runProofread = runProofread;
 
   // -----------------------------
   // 10) Search/Replace: scope current/all + hits list + replace preview

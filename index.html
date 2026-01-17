@@ -4789,6 +4789,7 @@ function toggleOutlinePanel() {
     if (!isOpen) {
         generateOutline();
         panel.classList.add('open');
+        switchOutlineTabDirect('outline');
 
         if (isDocked) {
             checkbox.checked = false;
@@ -8223,17 +8224,21 @@ function setupMemoInteractionGuard() {
         checkbox.checked = false;
         if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
       }
-    } else if (isOpen && !isDocked) {
+    } else if (!isDocked) {
       // Open floating -> Docked
+      if (checkbox) checkbox.checked = true;
       if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
+      panel.classList.add('open');
     } else {
       // Docked -> Closed
+      if (checkbox) checkbox.checked = false;
       if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
       panel.classList.remove('open');
     }
 
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
+    try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}
   }
   window.toggleOutlinePanel = toggleOutlinePanel;
 

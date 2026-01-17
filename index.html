@@ -64,28 +64,32 @@
     body.focus-mode #pane-preview { display: none !important; }
     body.focus-mode .main-container { padding: 0; }
     body.focus-mode .pane { border-radius: 0; border: none; }
-    body.focus-mode #pane-input { flex: 1; width: 100%; }
+    body.focus-mode #pane-input { flex: 1; width: 100%; padding-bottom: 40px; }
     body.focus-mode #pane-input .pane-footer {
         display: flex !important;
         position: fixed;
-        bottom: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.6);
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: none;
+        background: rgba(0,0,0,0.8);
         color: white;
-        padding: 6px 16px;
-        border-radius: 16px;
+        padding: 8px 16px;
+        border-radius: 0;
         font-size: 0.75rem;
         z-index: 9998;
         gap: 12px;
+        justify-content: center;
     }
     body.focus-mode #pane-input .pane-footer span { color: white; }
     body.focus-mode #pane-preview .pane-footer { display: none !important; }
     .focus-exit-hint {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.7); color: white; padding: 8px 16px;
         border-radius: 20px; font-size: 0.8rem; z-index: 9999; display: none;
+        opacity: 1; transition: opacity 0.5s ease-out;
     }
+    .focus-exit-hint.fade-out { opacity: 0; }
     body.focus-mode .focus-exit-hint { display: block; }
 
     header {
@@ -200,9 +204,11 @@
     .setting-row.vertical { flex-direction: column; align-items: flex-start; gap: 6px; }
     input[type="number"] { width: 50px; }
     .settings-actions {
-        border-right: none; margin-left: auto; display: flex; flex-direction: column;
-        align-items: flex-end; gap: 8px; align-self: stretch; justify-content: flex-end;
-        text-align: right;
+        position: absolute; right: 2px; bottom: 2px;
+        display: flex; flex-direction: column;
+        align-items: flex-end; gap: 4px;
+        text-align: right; background: var(--panel-bg);
+        padding: 4px; border-radius: 4px;
     }
     .settings-actions-row {
         display: flex; gap: 8px; flex-direction: column;
@@ -2044,7 +2050,7 @@
 
 <!-- Independent Search Panel -->
 <div id="search-panel" style="display:none;">
-  <div class="search-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="search-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-search-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span>🔍 検索</span>
     <div class="search-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
       <button id="btn-search-swap" class="btn panel-swap-btn" onclick="swapSearchSide()">左右入替</button>
@@ -2078,7 +2084,7 @@
 <div id="resizer-search" class="dock-resizer" style="display:none;" title="検索パネルの幅を調整します"></div>
 
 <div id="memo-panel">
-  <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-memo-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span style="font-family: var(--font-ui);">📝 メモ</span>
     <div class="memo-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
 <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
@@ -2121,7 +2127,7 @@
                 <button class="panel-close-btn" onclick="closeOutlinePanel()">✕</button>
             </div>
         </div>
-        <div class="outline-toolbar" style="display:flex; padding:4px 8px; background:var(--pane-header-bg); border-bottom:1px solid var(--border-color); gap:4px; align-items:center;">
+        <div class="outline-toolbar" style="display:flex; padding:4px 8px; background:var(--pane-outline-head, var(--pane-header-bg)); border-bottom:1px solid var(--border-color); gap:4px; align-items:center;">
             <div class="nav-jump-controls" title="ジャンプ履歴"><button id="btn-nav-back" class="nav-jump-btn" type="button" aria-label="戻る">◀</button><button id="btn-nav-forward" class="nav-jump-btn" type="button" aria-label="進む">▶</button></div><div class="outline-tabs-inner" style="display:flex; gap:2px; flex:1;">
                 <span class="memo-tab active" onclick="switchOutlineTab('outline')" style="cursor:pointer;">目次</span>
                 <span class="memo-tab" onclick="switchOutlineTab('bookmark')" style="cursor:pointer;">🔖しおり</span>
@@ -3142,6 +3148,20 @@ function addNewTab() {
         document.body.classList.remove('theme-dark', 'theme-sepia', 'theme-blue', 'theme-green');
         document.documentElement.style.setProperty('--active-tab-bg', '#fff59d');
 
+        // ヘッダーカラーをリセット
+        const headerVars = ['--pane-input-head', '--pane-preview-head', '--pane-memo-head', '--pane-outline-head', '--pane-search-head'];
+        headerVars.forEach(v => {
+            document.documentElement.style.removeProperty(v);
+            try { localStorage.removeItem('cc_' + v.replace('--', '')); } catch(e){}
+        });
+
+        // 背景色をリセット
+        const bgVars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-search-bg'];
+        bgVars.forEach(v => {
+            document.documentElement.style.removeProperty(v);
+            try { localStorage.removeItem('cc_' + v.replace('--', '')); } catch(e){}
+        });
+
         // レイアウトをリセット
         layoutAxis = 'row';
         layoutReversed = false;
@@ -3193,6 +3213,12 @@ function addNewTab() {
         settingsCache.autosaveEnabled = enabled;
         const checkbox = document.getElementById('st-autosave-enabled');
         if (checkbox) checkbox.checked = enabled;
+        // Update save button icon based on autosave state
+        const saveBtn = document.querySelector('.btn-save');
+        if (saveBtn) {
+            saveBtn.innerHTML = enabled ? '🔄 保存' : '💾 保存';
+            saveBtn.title = enabled ? '自動保存オン' : '保存';
+        }
         startAutoSaveTimer();
     }
     function buildHtmlExport(scope) {
@@ -4276,7 +4302,30 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
     document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); });
 
-    function toggleFocusMode() { document.body.classList.toggle('focus-mode'); document.getElementById('btn-focus').classList.toggle('active'); if (document.body.classList.contains('focus-mode')) inputArea.focus(); }
+    let focusExitHintTimer = null;
+    function toggleFocusMode() {
+        document.body.classList.toggle('focus-mode');
+        document.getElementById('btn-focus').classList.toggle('active');
+        const hint = document.querySelector('.focus-exit-hint');
+        if (document.body.classList.contains('focus-mode')) {
+            inputArea.focus();
+            // Show hint and fade out after 5 seconds
+            if (hint) {
+                hint.classList.remove('fade-out');
+                if (focusExitHintTimer) clearTimeout(focusExitHintTimer);
+                focusExitHintTimer = setTimeout(() => {
+                    hint.classList.add('fade-out');
+                }, 5000);
+            }
+        } else {
+            // Clear timer and reset hint when exiting focus mode
+            if (focusExitHintTimer) {
+                clearTimeout(focusExitHintTimer);
+                focusExitHintTimer = null;
+            }
+            if (hint) hint.classList.remove('fade-out');
+        }
+    }
 
     inputArea.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
@@ -5436,7 +5485,13 @@ if (typeof applyPaneHeightSettings === 'function') {
                 const newWidth = clampValue(rawWidth, minDockWidth, maxDockWidth);
                 panel.style.width = `${newWidth}px`;
                 panel.style.flexBasis = `${newWidth}px`;
-                // otherPanel は mousedown 時点で固定しているので、ドラッグ中は触らない（目次が動くように見えるのを防止）
+                // otherPanelの幅を毎フレーム固定して、広がりを防止
+                if (lockedOtherWidth !== null && otherPanel) {
+                    otherPanel.style.width = `${lockedOtherWidth}px`;
+                    otherPanel.style.flexBasis = `${lockedOtherWidth}px`;
+                    otherPanel.style.flexGrow = '0';
+                    otherPanel.style.flexShrink = '0';
+                }
             });
 
             document.addEventListener('mouseup', () => {
@@ -6843,7 +6898,7 @@ function setupMemoInteractionGuard() {
   }
 
   function runProofread(){
-    const modal = document.getElementById('proofread-modal');
+    const modal = document.getElementById('proof-panel');
     const scope = $('#pf-scope',modal)?.value || 'current';
     const doUnclosed = !!$('#pf-unclosed',modal)?.checked;
     const doEnd = !!$('#pf-sentend',modal)?.checked;
@@ -8264,24 +8319,34 @@ function setupMemoInteractionGuard() {
 
   // ========== Search Panel Functions ==========
   // Toggle search panel (click cycle: closed -> open floating -> docked -> closed)
+  // Same behavior as memo panel
   function toggleSearchPanelNew(){
     const panel = document.getElementById('search-panel');
+    const checkbox = document.getElementById('check-search-dock');
     if (!panel) return;
-    const mainContainer = document.getElementById('main-container');
+
     const isOpen = panel.classList.contains('open');
-    const isDocked = mainContainer && mainContainer.classList.contains('search-docked');
+    const isDocked = checkbox && checkbox.checked;
 
     if (!isOpen) {
-      // Closed -> Open (floating)
+      // Closed -> Open (floating overlay)
       panel.classList.add('open');
       panel.style.display = 'flex';
+      // If was docked, undock first
+      if (isDocked) {
+        checkbox.checked = false;
+        toggleSearchDock();
+      }
       const input = document.getElementById('sp-search-input');
       if (input) setTimeout(()=> input.focus(), 0);
-    } else if (isOpen && !isDocked) {
-      // Open floating -> Docked
+    } else if (!isDocked) {
+      // Open floating -> Docked (pinned)
+      if (checkbox) checkbox.checked = true;
       toggleSearchDock();
+      panel.classList.add('open');
     } else {
-      // Docked -> Closed
+      // Docked -> Closed (undock and close)
+      if (checkbox) checkbox.checked = false;
       toggleSearchDock();
       panel.classList.remove('open');
       panel.style.display = 'none';
@@ -8289,6 +8354,7 @@ function setupMemoInteractionGuard() {
 
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
+    try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}
   }
   window.toggleSearchPanel = toggleSearchPanelNew;
 
@@ -8830,6 +8896,7 @@ function setupMemoInteractionGuard() {
       'pane-preview': '--pane-preview-head',
       'memo-panel': '--pane-memo-head',
       'outline-panel': '--pane-outline-head',
+      'search-panel': '--pane-search-head',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#f9fafb') : '#f9fafb';
@@ -8907,6 +8974,7 @@ function setupMemoInteractionGuard() {
       'pane-preview': '--pane-preview-bg',
       'memo-panel': '--pane-memo-bg',
       'outline-panel': '--pane-outline-bg',
+      'search-panel': '--pane-search-bg',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#ffffff') : '#ffffff';
@@ -8968,11 +9036,96 @@ function setupMemoInteractionGuard() {
   }
   window.showBgColorPicker = showBgColorPicker;
 
+  // Show preset panel color picker on right-click of theme select
+  function showPresetPanelColorPicker(e){
+    e.preventDefault();
+    hideContextMenusOnly();
+
+    let picker = document.getElementById('color-picker-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'color-picker-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:280px;';
+      document.body.appendChild(picker);
+    }
+
+    const presets = colorPresets.bg || ['#ffffff','#f9fafb','#f3f4f6','#e5e7eb','#d1d5db','#fffbeb','#fef3c7','#fde68a','#1f2937','#111827'];
+
+    let presetsHtml = presets.map(c =>
+      `<button class="color-preset" data-color="${c}" style="width:28px; height:28px; background:${c}; border:1px solid #888; border-radius:4px; cursor:pointer;"></button>`
+    ).join('');
+
+    picker.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">プリセットパネルカラー</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
+      <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">クリックで全パネルの背景色を変更</div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetsHtml}
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+        <input type="color" id="preset-color-input" value="#ffffff" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px;">
+        <input type="text" id="preset-color-text" value="#ffffff" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="preset-cancel">キャンセル</button>
+        <button class="btn btn-apply" id="preset-apply">全パネルに適用</button>
+      </div>
+    `;
+
+    picker.style.left = e.clientX + 'px';
+    picker.style.top = e.clientY + 'px';
+    picker.style.transform = 'none';
+    picker.style.display = 'block';
+
+    const colorInput = picker.querySelector('#preset-color-input');
+    const colorText = picker.querySelector('#preset-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.color-preset').forEach(btn => {
+      btn.onclick = () => {
+        const c = btn.dataset.color;
+        colorInput.value = c;
+        colorText.value = c;
+        picker.querySelectorAll('.color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => hideColorPicker();
+    picker.querySelector('#preset-cancel').onclick = () => hideColorPicker();
+    picker.querySelector('#preset-apply').onclick = () => {
+      const color = colorInput.value || '#ffffff';
+      // Apply to all pane backgrounds
+      const vars = ['--pane-input-bg', '--pane-preview-bg', '--pane-memo-bg', '--pane-outline-bg', '--pane-search-bg'];
+      vars.forEach(v => {
+        document.documentElement.style.setProperty(v, color);
+        try { localStorage.setItem('cc_' + v.replace('--', ''), color); } catch(e){}
+      });
+      hideColorPicker();
+    };
+
+    picker.onclick = (e) => e.stopPropagation();
+  }
+  window.showPresetPanelColorPicker = showPresetPanelColorPicker;
+
+  // Add right-click handler for theme select
+  function setupThemePresetContextMenu(){
+    const themeSelect = document.getElementById('st-theme-preset');
+    if (themeSelect) {
+      themeSelect.addEventListener('contextmenu', showPresetPanelColorPicker);
+    }
+  }
+
   // Initialize context menus
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupContextMenus);
+    document.addEventListener('DOMContentLoaded', setupThemePresetContextMenu);
   } else {
     setupContextMenus();
+    setupThemePresetContextMenu();
   }
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);

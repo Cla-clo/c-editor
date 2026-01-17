@@ -203,6 +203,11 @@
 
     #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
     .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
+    .btn-search-reset {
+        background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
+        font-weight: bold;
+    }
+    .btn-search-reset:hover { background: #fecaca; color: #991b1b; }
     .search-meta { color: var(--text-muted); font-size: 0.85em; }
 
     #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 48px; order: 1; }
@@ -666,8 +671,6 @@
     .dock-pin-checkbox { display: none; }
     .main-container.dock-split-right #resizer-memo-outline,
     .main-container.dock-split-left #resizer-memo-outline { display: flex; }
-    .main-container.dock-split-right #resizer-outline,
-    .main-container.dock-split-left #resizer-outline { display: none; }
     .main-container.dock-split-right #memo-panel { order: 10; }
     .main-container.dock-split-right #resizer-memo-outline { order: 11; }
     .main-container.dock-split-right #outline-panel { order: 12; }
@@ -2060,6 +2063,7 @@
       <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
       <button class="btn" onclick="findPrev()">▲ 前へ</button>
       <button class="btn" onclick="findNext()">▼ 次へ</button>
+      <button class="btn btn-search-reset" onclick="resetSearchPanel()">リセット</button>
       <span id="search-match-info" style="font-size:0.85rem; color:var(--text-muted);">0 / 0</span>
     </div>
     <div style="display:flex; gap:6px; align-items:center; padding-top:6px; border-top:1px solid var(--border-color);">
@@ -2587,6 +2591,10 @@ initTabScrollers();
         get: () => activeTabId,
         set: (value) => { activeTabId = value; }
     });
+    Object.defineProperty(window, 'nextTabId', {
+        get: () => nextTabId,
+        set: (value) => { nextTabId = value; }
+    });
 
     function renderInputTabs() {
         const container = document.getElementById('input-tabs-container');
@@ -2768,6 +2776,7 @@ function addNewTab() {
                 const d = JSON.parse(s);
                 if (d.tabs && d.tabs.length > 0) {
                     inputTabs = d.tabs;
+                    window.inputTabs = inputTabs;
                     activeTabId = d.activeTabId || inputTabs[0].id;
                     nextTabId = d.nextTabId || inputTabs.length + 1;
                     const activeTab = inputTabs.find(t => t.id === activeTabId);
@@ -3055,6 +3064,7 @@ function addNewTab() {
             { id: 1, name: 'タブはリネームできます', content: defaultText },
             { id: 2, name: '見本', content: sampleText }
         ];
+        window.inputTabs = inputTabs;
         activeTabId = 1;
         nextTabId = 3;
         inputArea.value = defaultText;
@@ -3064,6 +3074,7 @@ function addNewTab() {
         todayStartChars = 0;
         writingSeconds = 0;
         memoTabs = [{ id: 1, name: 'メモ1', content: '' }];
+        window.memoTabs = memoTabs;
         activeMemoTabId = 1;
         nextMemoTabId = 2;
         memoArea.value = '';
@@ -4481,6 +4492,15 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     let activeMemoTabId = 1;
     let nextMemoTabId = 2;
     let draggingMemoTabId = null;
+    window.memoTabs = memoTabs;
+    Object.defineProperty(window, 'activeMemoTabId', {
+        get: () => activeMemoTabId,
+        set: (value) => { activeMemoTabId = value; }
+    });
+    Object.defineProperty(window, 'nextMemoTabId', {
+        get: () => nextMemoTabId,
+        set: (value) => { nextMemoTabId = value; }
+    });
 
 
 function toggleMemoPanel() {
@@ -4694,6 +4714,7 @@ function toggleMemoDock() {
                 const data = JSON.parse(saved);
                 if (data.tabs && data.tabs.length > 0) {
                     memoTabs = data.tabs;
+                    window.memoTabs = memoTabs;
                     activeMemoTabId = data.activeId || memoTabs[0].id;
                     nextMemoTabId = data.nextId || Math.max(...memoTabs.map(t => t.id)) + 1;
                     const activeTab = memoTabs.find(t => t.id === activeMemoTabId);
@@ -7723,6 +7744,7 @@ function setupMemoInteractionGuard() {
 // ===== v0.98: Outline panel becomes NAV (目次/しおり/検索/メモ) + shortcuts Alt+O/M/F/B =====
 (function(){
   function $1(sel, root){ return (root||document).querySelector(sel); }
+  let suppressSearchRefresh = false;
 
   function genericSwitchOutlineTab(key){
     document.querySelectorAll('#outline-panel .outline-tab-content').forEach(d=>d.classList.remove('active'));
@@ -7926,25 +7948,30 @@ function setupMemoInteractionGuard() {
 
     function jumpTo(m){
       if (!m) return;
-      if (m.kind==='input'){
-        if (m.tabId!==window.activeTabId && typeof window.switchTab==='function') window.switchTab(m.tabId);
-        const ta = window.inputArea;
-        if (!ta) return;
-        ta.focus();
-        ta.setSelectionRange(m.start, m.end);
-        if (typeof window.scrollToCursorPosition==='function') setTimeout(()=>window.scrollToCursorPosition(m.start), 60);
-        if (typeof window.updateCursorLineDisplay==='function') window.updateCursorLineDisplay();
-      } else {
-        // memo
-        openNavTab('memo');
-        if (typeof window.switchMemoTab==='function' && m.memoTabId) window.switchMemoTab(m.memoTabId);
-        const ta = window.memoArea || document.getElementById('memo-area');
-        if (!ta) return;
-        ta.focus();
-        try{ ta.setSelectionRange(m.start, m.end); }catch(e){}
+      suppressSearchRefresh = true;
+      try {
+        if (m.kind==='input'){
+          if (m.tabId!==window.activeTabId && typeof window.switchTab==='function') window.switchTab(m.tabId);
+          const ta = window.inputArea;
+          if (!ta) return;
+          ta.focus();
+          ta.setSelectionRange(m.start, m.end);
+          if (typeof window.scrollToCursorPosition==='function') setTimeout(()=>window.scrollToCursorPosition(m.start), 60);
+          if (typeof window.updateCursorLineDisplay==='function') window.updateCursorLineDisplay();
+        } else {
+          // memo
+          openNavTab('memo');
+          if (typeof window.switchMemoTab==='function' && m.memoTabId) window.switchMemoTab(m.memoTabId);
+          const ta = window.memoArea || document.getElementById('memo-area');
+          if (!ta) return;
+          ta.focus();
+          try{ ta.setSelectionRange(m.start, m.end); }catch(e){}
+        }
+        idx = matches.findIndex(x=>x.kind===m.kind && x.tabId===m.tabId && x.start===m.start && x.end===m.end && x.memoTabId===m.memoTabId);
+        updateInfo();
+      } finally {
+        suppressSearchRefresh = false;
       }
-      idx = matches.findIndex(x=>x.kind===m.kind && x.tabId===m.tabId && x.start===m.start && x.end===m.end && x.memoTabId===m.memoTabId);
-      updateInfo();
     }
 
     function renderHits(){
@@ -8126,11 +8153,57 @@ function setupMemoInteractionGuard() {
     sel.addEventListener('change', ()=>{ if (document.getElementById('search-input')?.value) window.doSearch(); });
   }
 
+  function resetSearchPanel(){
+    const searchInput = document.getElementById('search-input');
+    const replaceInput = document.getElementById('replace-input');
+    if (searchInput) searchInput.value = '';
+    if (replaceInput) replaceInput.value = '';
+    if (typeof window.doSearch === 'function') window.doSearch();
+    const hits = document.getElementById('search-hits');
+    if (hits && !searchInput?.value) {
+      hits.innerHTML = '<div class="outline-empty">ヒット一覧はここに表示されます</div>';
+    }
+  }
+  window.resetSearchPanel = resetSearchPanel;
+
+  function hookSearchRefreshOnTabChange(){
+    const refreshIfCurrent = () => {
+      if (suppressSearchRefresh) return;
+      const q = document.getElementById('search-input')?.value || '';
+      const scope = document.getElementById('search-scope')?.value || 'input_current';
+      if (!q) return;
+      if (scope === 'input_current' || scope === 'memo_current') {
+        if (typeof window.doSearch === 'function') window.doSearch();
+      }
+    };
+
+    if (typeof window.switchTab === 'function' && !window.switchTab.__searchRefreshWrapped) {
+      const base = window.switchTab;
+      window.switchTab = function(){
+        const r = base.apply(this, arguments);
+        refreshIfCurrent();
+        return r;
+      };
+      window.switchTab.__searchRefreshWrapped = true;
+    }
+
+    if (typeof window.switchMemoTab === 'function' && !window.switchMemoTab.__searchRefreshWrapped) {
+      const base = window.switchMemoTab;
+      window.switchMemoTab = function(){
+        const r = base.apply(this, arguments);
+        refreshIfCurrent();
+        return r;
+      };
+      window.switchMemoTab.__searchRefreshWrapped = true;
+    }
+  }
+
   function init(){
     // relocatePanelsIntoNav(); // Disabled: keep panels independent per user request
     setupIndependentPanels();
     hookAltShortcuts();
     patchSearchTargetAndEngine();
+    hookSearchRefreshOnTabChange();
   }
 
   // Setup independent panels (memo, outline, search) instead of nav tabs
@@ -8320,16 +8393,23 @@ function setupMemoInteractionGuard() {
     const mainContainer = document.getElementById('main-container');
     const panel = document.getElementById('search-panel');
     const checkbox = document.getElementById('check-search-dock');
+    const swapBtn = document.getElementById('btn-search-swap');
+    const pinBtn = document.getElementById('btn-search-pin');
     if (!mainContainer || !panel) return;
 
     const isDocked = mainContainer.classList.contains('search-docked');
     if (isDocked) {
       mainContainer.classList.remove('search-docked');
       if (checkbox) checkbox.checked = false;
+      if (swapBtn) swapBtn.classList.remove('is-active');
+      mainContainer.classList.remove('search-left');
+      panel.style.width = '320px';
     } else {
       mainContainer.classList.add('search-docked');
       if (checkbox) checkbox.checked = true;
+      if (swapBtn) swapBtn.classList.add('is-active');
     }
+    if (pinBtn && checkbox) pinBtn.classList.toggle('pinned', checkbox.checked);
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
   }
@@ -8353,12 +8433,14 @@ function setupMemoInteractionGuard() {
     const panel = document.getElementById('search-panel');
     const mainContainer = document.getElementById('main-container');
     const checkbox = document.getElementById('check-search-dock');
+    const swapBtn = document.getElementById('btn-search-swap');
     if (panel) {
       panel.classList.remove('open');
       panel.style.display = 'none';
     }
     if (mainContainer) mainContainer.classList.remove('search-docked');
     if (checkbox) checkbox.checked = false;
+    if (swapBtn) swapBtn.classList.remove('is-active');
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
     try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}

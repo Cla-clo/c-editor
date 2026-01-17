@@ -6873,6 +6873,7 @@ function setupMemoInteractionGuard() {
 
     titleEl.addEventListener('contextmenu', (e)=>{
       e.preventDefault();
+      e.stopPropagation();
       menu.style.display='block';
       const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
       const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
@@ -8464,7 +8465,7 @@ function setupMemoInteractionGuard() {
 
       // Pane header right-click for header color
       const header = e.target.closest('.pane-header, .memo-header, .outline-header');
-      if (header) {
+      if (header && !e.target.closest('#novel-title')) {
         e.preventDefault();
         showHeaderContextMenu(e, header);
         return;

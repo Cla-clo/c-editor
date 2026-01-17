@@ -2593,6 +2593,10 @@ initTabScrollers();
         get: () => activeTabId,
         set: (value) => { activeTabId = value; }
     });
+    Object.defineProperty(window, 'nextTabId', {
+        get: () => nextTabId,
+        set: (value) => { nextTabId = value; }
+    });
 
     function renderInputTabs() {
         const container = document.getElementById('input-tabs-container');
@@ -2774,6 +2778,7 @@ function addNewTab() {
                 const d = JSON.parse(s);
                 if (d.tabs && d.tabs.length > 0) {
                     inputTabs = d.tabs;
+                    window.inputTabs = inputTabs;
                     activeTabId = d.activeTabId || inputTabs[0].id;
                     nextTabId = d.nextTabId || inputTabs.length + 1;
                     const activeTab = inputTabs.find(t => t.id === activeTabId);
@@ -3061,6 +3066,7 @@ function addNewTab() {
             { id: 1, name: 'タブはリネームできます', content: defaultText },
             { id: 2, name: '見本', content: sampleText }
         ];
+        window.inputTabs = inputTabs;
         activeTabId = 1;
         nextTabId = 3;
         inputArea.value = defaultText;
@@ -3070,6 +3076,7 @@ function addNewTab() {
         todayStartChars = 0;
         writingSeconds = 0;
         memoTabs = [{ id: 1, name: 'メモ1', content: '' }];
+        window.memoTabs = memoTabs;
         activeMemoTabId = 1;
         nextMemoTabId = 2;
         memoArea.value = '';
@@ -4487,6 +4494,15 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     let activeMemoTabId = 1;
     let nextMemoTabId = 2;
     let draggingMemoTabId = null;
+    window.memoTabs = memoTabs;
+    Object.defineProperty(window, 'activeMemoTabId', {
+        get: () => activeMemoTabId,
+        set: (value) => { activeMemoTabId = value; }
+    });
+    Object.defineProperty(window, 'nextMemoTabId', {
+        get: () => nextMemoTabId,
+        set: (value) => { nextMemoTabId = value; }
+    });
 
 
 function toggleMemoPanel() {
@@ -4700,6 +4716,7 @@ function toggleMemoDock() {
                 const data = JSON.parse(saved);
                 if (data.tabs && data.tabs.length > 0) {
                     memoTabs = data.tabs;
+                    window.memoTabs = memoTabs;
                     activeMemoTabId = data.activeId || memoTabs[0].id;
                     nextMemoTabId = data.nextId || Math.max(...memoTabs.map(t => t.id)) + 1;
                     const activeTab = memoTabs.find(t => t.id === activeMemoTabId);

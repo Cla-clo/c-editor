@@ -972,18 +972,54 @@
 
     /* Proof ignore modal */
 
-    /* ===== 構成ボード (Chapter Structure Board) ===== */
-    #outline-tab-structure { display: none; height: 100%; }
-    #outline-tab-structure.active { display: flex; flex-direction: column; }
+    /* ===== 構成パネル (Structure Panel) ===== */
+    #structure-panel {
+        position: fixed; top: var(--dock-top); left: 0; bottom: 0; width: 300px;
+        background: var(--pane-structure-bg, #f0f4ff); border-right: 1px solid #a5b4fc;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    body.theme-dark #structure-panel { background: var(--pane-structure-bg, #1e1b4b); border-color: #4338ca; }
+    #structure-panel.open { transform: translateX(0); }
+    .main-container.structure-docked #structure-panel {
+        position: relative; top: auto; left: auto; bottom: auto;
+        transform: none; box-shadow: none; z-index: 1; display: none;
+        flex: 0 0 auto; overflow: auto;
+        min-width: 0; max-width: 45vw; width: 300px;
+        border-right: 1px solid #a5b4fc; border-left: none;
+        order: 6; /* 検索(8)とメモ(-10)の間 */
+    }
+    .main-container.structure-docked #structure-panel.open { display: flex; }
+    .main-container.structure-docked.structure-right #structure-panel { order: 7; border-right: none; border-left: 1px solid #a5b4fc; }
+    .main-container.structure-docked #structure-panel.open ~ #resizer-structure { display: flex; }
+    .main-container.structure-docked.structure-right #resizer-structure { order: 8; }
+    .main-container.structure-docked:not(.structure-right) #resizer-structure { order: 5; }
+
+    body.focus-mode #structure-panel { display: none !important; }
+
+    .structure-header {
+        padding: 8px 10px; background: var(--pane-structure-head, #e0e7ff); border-bottom: 1px solid #a5b4fc;
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+        font-size: 0.85rem; flex-wrap: wrap; gap: 4px;
+    }
+    body.theme-dark .structure-header { background: var(--pane-structure-head, #312e81); border-color: #4338ca; }
+    .structure-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
     .structure-toolbar {
-        display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; padding-bottom: 8px;
+        display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 10px;
         border-bottom: 1px solid var(--border-color);
+        background: var(--pane-structure-head, #e0e7ff);
     }
+    body.theme-dark .structure-toolbar { background: var(--pane-structure-head, #312e81); }
     .structure-toolbar .btn { padding: 2px 6px; font-size: 0.7rem; }
 
+    .structure-content {
+        flex: 1; overflow: auto; padding: 10px;
+    }
+
     .structure-list {
-        flex: 1; overflow: auto; padding-right: 4px;
+        overflow: visible;
     }
 
     /* 構成カード */
@@ -1096,15 +1132,6 @@
     .structure-card-actions .btn-delete { color: #dc2626; }
     .structure-card-actions .btn-delete:hover { background: #fee2e2; }
 
-    /* 追加ボタン */
-    .structure-add-btn {
-        width: 100%; padding: 8px; margin-top: 8px;
-        background: var(--pane-header-bg); border: 1px dashed var(--border-color);
-        border-radius: 6px; cursor: pointer; font-size: 0.8rem;
-        color: var(--text-muted); text-align: center;
-    }
-    .structure-add-btn:hover { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
-
     /* 折りたたまれた子要素 */
     .structure-card.collapsed .structure-children { display: none; }
     .structure-children { margin-top: 6px; }
@@ -1168,17 +1195,24 @@
 
     body.structure-fullscreen-mode header,
     body.structure-fullscreen-mode .controls-wrapper,
-    body.structure-fullscreen-mode .pane-stack { display: none !important; }
-    body.structure-fullscreen-mode #outline-panel {
+    body.structure-fullscreen-mode .pane-stack,
+    body.structure-fullscreen-mode #memo-panel,
+    body.structure-fullscreen-mode #search-panel,
+    body.structure-fullscreen-mode #outline-panel { display: none !important; }
+    body.structure-fullscreen-mode #structure-panel {
         position: fixed !important; inset: 0 !important;
         width: 100% !important; max-width: none !important;
         transform: none !important; z-index: 9999 !important;
         border: none !important; border-radius: 0 !important;
+        display: flex !important;
+    }
+    body.structure-fullscreen-mode .structure-content {
+        display: flex; flex-direction: column;
     }
     body.structure-fullscreen-mode .structure-list {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 12px; padding: 12px;
+        gap: 12px; padding: 12px; flex: 1;
     }
     body.structure-fullscreen-mode .structure-card {
         margin: 0; margin-left: 0 !important;
@@ -1920,6 +1954,9 @@
         <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
             <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
         </button>
+        <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成" style="background:#e0e7ff; border-color:#a5b4fc;">
+            <span class="panel-label">📋 構成</span><span class="panel-state-icon">▾</span>
+        </button>
         <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
             <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
@@ -2327,6 +2364,31 @@
 </div>
 <div id="resizer-memo" class="dock-resizer" title="(左境界) プレビューとメモの幅を調整します"></div>
 
+<div id="structure-panel">
+    <div class="structure-header panel-drag-handle" data-panel-id="structure-panel" draggable="true">
+        <span>📋 構成</span>
+        <div class="structure-controls">
+            <button id="btn-structure-swap" class="btn panel-swap-btn" onclick="swapStructureSide()">左右入替</button>
+            <button class="panel-pin-btn" id="btn-structure-pin" onclick="toggleStructureDockPin()" title="固定/浮動切り替え">📌</button>
+            <input type="checkbox" id="check-structure-dock" class="dock-pin-checkbox" onchange="toggleStructureDock()">
+            <button class="panel-close-btn" onclick="closeStructurePanel(true)">✕</button>
+        </div>
+    </div>
+    <div class="structure-toolbar">
+        <button class="btn" onclick="addStructureCard('chapter')">＋章</button>
+        <button class="btn" onclick="addStructureCard('episode')">＋話</button>
+        <button class="btn" onclick="addStructureCard('scene')">＋シーン</button>
+        <button class="btn" onclick="expandAllStructure()">全展開</button>
+        <button class="btn" onclick="collapseAllStructure()">全折畳</button>
+        <button class="btn structure-fullscreen-btn" onclick="toggleStructureFullscreen()">⛶</button>
+        <button class="btn" onclick="exportStructureText()" title="構成をテキスト出力">📄</button>
+    </div>
+    <div class="structure-content">
+        <div class="structure-list" id="structure-list"></div>
+    </div>
+</div>
+<div id="resizer-structure" class="dock-resizer" title="構成パネルの幅を調整します"></div>
+
     <div class="dock-resizer" id="resizer-memo-outline" title="(右境界) Alt+ドラッグでメモと目次の配分を調整します"></div>
     <div id="outline-panel">
         <div class="outline-header panel-drag-handle" data-panel-id="outline-panel" draggable="true">
@@ -2343,7 +2405,6 @@
             <div class="nav-jump-controls" title="ジャンプ履歴"><button id="btn-nav-back" class="nav-jump-btn" type="button" aria-label="戻る">◀</button><button id="btn-nav-forward" class="nav-jump-btn" type="button" aria-label="進む">▶</button></div><div class="outline-tabs-inner" style="display:flex; gap:2px; flex:1;">
                 <span class="memo-tab active" onclick="switchOutlineTab('outline')" style="cursor:pointer;">目次</span>
                 <span class="memo-tab" onclick="switchOutlineTab('bookmark')" style="cursor:pointer;">🔖しおり</span>
-                <span class="memo-tab" onclick="switchOutlineTab('structure')" style="cursor:pointer;">📋構成</span>
             </div>
         </div>
         <!-- Outline extraction rules settings overlay -->
@@ -2386,18 +2447,6 @@
                     <button onclick="deleteSelectedBookmarks()" style="margin-left: 8px; padding: 2px 8px; font-size: 0.75rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; cursor: pointer;">🗑 選択削除</button>
                 </div>
                 <div id="bookmark-list"></div>
-            </div>
-            <div id="outline-tab-structure" class="outline-tab-content">
-                <div class="structure-toolbar">
-                    <button class="btn" onclick="addStructureCard('chapter')">＋章</button>
-                    <button class="btn" onclick="addStructureCard('episode')">＋話</button>
-                    <button class="btn" onclick="addStructureCard('scene')">＋シーン</button>
-                    <button class="btn" onclick="expandAllStructure()">全展開</button>
-                    <button class="btn" onclick="collapseAllStructure()">全折畳</button>
-                    <button class="btn structure-fullscreen-btn" onclick="toggleStructureFullscreen()">⛶</button>
-                    <button class="btn" onclick="exportStructureText()" title="構成をテキスト出力">📄出力</button>
-                </div>
-                <div class="structure-list" id="structure-list"></div>
             </div>
         </div>
         <div id="outline-summary" class="outline-summary"></div>
@@ -4485,6 +4534,7 @@ function updateDockSplitState() {
         updateDockPanelButton('memo-panel', 'btn-toggle-memo', 'check-memo-dock');
         updateDockPanelButton('outline-panel', 'btn-toggle-outline', 'check-outline-dock');
         updateDockPanelButton('search-panel', 'btn-toggle-search', 'check-search-dock');
+        if (typeof updateStructureButtonState === 'function') updateStructureButtonState();
     }
     function togglePanel(id) {
         const p = document.getElementById(id);
@@ -6584,6 +6634,9 @@ function setupMemoInteractionGuard() {
 
       #outline-panel { background: var(--pane-outline-bg, var(--panel-bg)); }
       #outline-panel .outline-toolbar, #outline-panel .outline-header { background: var(--pane-outline-head, var(--pane-header-bg)); }
+
+      #structure-panel { background: var(--pane-structure-bg, #f0f4ff); }
+      #structure-panel .structure-header, #structure-panel .structure-toolbar { background: var(--pane-structure-head, #e0e7ff); }
 
       /* Bookmark marker highlight in reader */
       .cc-reader-bm-mark { display:inline-block; margin-right:6px; font-size:0.9em; opacity:0.9; }
@@ -8965,7 +9018,7 @@ function setupMemoInteractionGuard() {
       document.body.appendChild(menu);
     }
 
-    const paneId = header.closest('.pane, #memo-panel, #outline-panel')?.id || '';
+    const paneId = header.closest('.pane, #memo-panel, #outline-panel, #structure-panel')?.id || '';
     menu.dataset.paneId = paneId;
 
     menu.innerHTML = `
@@ -9121,6 +9174,7 @@ function setupMemoInteractionGuard() {
       'memo-panel': '--pane-memo-head',
       'outline-panel': '--pane-outline-head',
       'search-panel': '--pane-search-head',
+      'structure-panel': '--pane-structure-head',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#f9fafb') : '#f9fafb';
@@ -9199,6 +9253,7 @@ function setupMemoInteractionGuard() {
       'memo-panel': '--pane-memo-bg',
       'outline-panel': '--pane-outline-bg',
       'search-panel': '--pane-search-bg',
+      'structure-panel': '--pane-structure-bg',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#ffffff') : '#ffffff';
@@ -9866,6 +9921,151 @@ function setupMemoInteractionGuard() {
   window.collapseAllStructure = collapseAllStructure;
   window.toggleStructureFullscreen = toggleStructureFullscreen;
   window.exportStructureText = exportStructureText;
+
+  // ========== パネル制御関数 ==========
+
+  // パネル開閉トグル（メモパネルと同様の3段階切り替え）
+  function toggleStructurePanel() {
+    const panel = document.getElementById('structure-panel');
+    const checkbox = document.getElementById('check-structure-dock');
+    if (!panel || !checkbox) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
+
+    if (!isOpen) {
+      // 閉じている → オーバーレイで開く
+      panel.classList.add('open');
+      if (isDocked) {
+        checkbox.checked = false;
+        toggleStructureDock();
+      }
+    } else if (!isDocked) {
+      // オーバーレイで開いている → 固定表示に
+      checkbox.checked = true;
+      toggleStructureDock();
+      panel.classList.add('open');
+    } else {
+      // 固定表示 → 閉じる
+      checkbox.checked = false;
+      toggleStructureDock();
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+    updateStructureButtonState();
+  }
+
+  // ドック切り替え
+  function toggleStructureDock() {
+    const checkbox = document.getElementById('check-structure-dock');
+    const container = document.getElementById('main-container');
+    const panel = document.getElementById('structure-panel');
+    const swapBtn = document.getElementById('btn-structure-swap');
+    const pinBtn = document.getElementById('btn-structure-pin');
+    if (!checkbox || !container || !panel) return;
+
+    if (checkbox.checked) {
+      container.classList.add('structure-docked');
+      if (swapBtn) swapBtn.classList.add('is-active');
+      if (pinBtn) pinBtn.classList.add('pinned');
+    } else {
+      container.classList.remove('structure-docked');
+      container.classList.remove('structure-right');
+      if (swapBtn) swapBtn.classList.remove('is-active');
+      if (pinBtn) pinBtn.classList.remove('pinned');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateStructureButtonState();
+  }
+
+  // ピン切り替え
+  function toggleStructureDockPin() {
+    const checkbox = document.getElementById('check-structure-dock');
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      toggleStructureDock();
+      const panel = document.getElementById('structure-panel');
+      if (panel && checkbox.checked) panel.classList.add('open');
+    }
+  }
+
+  // 左右入替
+  function swapStructureSide() {
+    const container = document.getElementById('main-container');
+    if (container) {
+      container.classList.toggle('structure-right');
+    }
+  }
+
+  // パネルを閉じる
+  function closeStructurePanel(force) {
+    const panel = document.getElementById('structure-panel');
+    const checkbox = document.getElementById('check-structure-dock');
+    const container = document.getElementById('main-container');
+    if (!panel) return;
+
+    if (force || !checkbox || !checkbox.checked) {
+      panel.classList.remove('open');
+      if (checkbox) checkbox.checked = false;
+      if (container) {
+        container.classList.remove('structure-docked');
+        container.classList.remove('structure-right');
+      }
+    } else {
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateStructureButtonState();
+  }
+
+  // ボタン状態更新
+  function updateStructureButtonState() {
+    const panel = document.getElementById('structure-panel');
+    const checkbox = document.getElementById('check-structure-dock');
+    const btn = document.getElementById('btn-toggle-structure');
+    if (!btn || !panel) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox && checkbox.checked;
+    const icon = btn.querySelector('.panel-state-icon');
+
+    if (isOpen && isDocked) {
+      btn.classList.add('active');
+      if (icon) icon.textContent = '◂';
+    } else if (isOpen) {
+      btn.classList.add('active');
+      if (icon) icon.textContent = '▾';
+    } else {
+      btn.classList.remove('active');
+      if (icon) icon.textContent = '▾';
+    }
+  }
+
+  // 全画面モード更新（構成パネル用）
+  function toggleStructureFullscreen() {
+    const panel = document.getElementById('structure-panel');
+    if (!panel) return;
+
+    if (document.body.classList.contains('structure-fullscreen-mode')) {
+      document.body.classList.remove('structure-fullscreen-mode');
+    } else {
+      // まずパネルを開く
+      panel.classList.add('open');
+      document.body.classList.add('structure-fullscreen-mode');
+    }
+  }
+
+  // パネル制御関数をグローバルに公開
+  window.toggleStructurePanel = toggleStructurePanel;
+  window.toggleStructureDock = toggleStructureDock;
+  window.toggleStructureDockPin = toggleStructureDockPin;
+  window.swapStructureSide = swapStructureSide;
+  window.closeStructurePanel = closeStructurePanel;
+  window.updateStructureButtonState = updateStructureButtonState;
 
   // ========== 初期化実行 ==========
   if (document.readyState === 'loading') {

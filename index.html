@@ -60,9 +60,27 @@
     body.scroll-mode { height: auto; overflow-y: auto; display: block; }
     body.allow-scroll { height: auto; overflow-y: auto; }
     body.focus-mode header, body.focus-mode .controls-wrapper, body.focus-mode .pane-header,
-    body.focus-mode .pane-subheader, body.focus-mode .pane-footer, body.focus-mode #outline-panel { display: none !important; }
+    body.focus-mode .pane-subheader, body.focus-mode #outline-panel { display: none !important; }
+    body.focus-mode #pane-preview { display: none !important; }
     body.focus-mode .main-container { padding: 0; }
     body.focus-mode .pane { border-radius: 0; border: none; }
+    body.focus-mode #pane-input { flex: 1; width: 100%; }
+    body.focus-mode #pane-input .pane-footer {
+        display: flex !important;
+        position: fixed;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 6px 16px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        z-index: 9998;
+        gap: 12px;
+    }
+    body.focus-mode #pane-input .pane-footer span { color: white; }
+    body.focus-mode #pane-preview .pane-footer { display: none !important; }
     .focus-exit-hint {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.7); color: white; padding: 8px 16px;
@@ -563,6 +581,29 @@
     }
     body.theme-dark .memo-footer { background: #713f12; border-color: #854d0e; }
     body.focus-mode #memo-panel { display: none !important; }
+    body.focus-mode #search-panel { display: none !important; }
+
+    #search-panel {
+        position: fixed; top: var(--dock-top); right: 0; bottom: 0; width: 320px;
+        background: var(--panel-bg); border-left: 1px solid var(--border-color);
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    #search-panel.open { transform: translateX(0); display: flex !important; }
+    .main-container.search-docked #search-panel {
+        position: relative; top: auto; right: auto; bottom: auto;
+        transform: none; box-shadow: none; z-index: 1; display: none;
+        flex: 0 0 auto; overflow: auto;
+        min-width: 0; max-width: 45vw; width: 320px;
+        border-left: 1px solid var(--border-color); border-right: none;
+        order: 8;
+    }
+    .main-container.search-docked #search-panel.open { display: flex; }
+    .main-container.search-docked.search-left #search-panel { order: -8; border-left: none; border-right: 1px solid var(--border-color); }
+    .main-container.search-docked #search-panel.open ~ #resizer-search { display: flex; }
+    .main-container.search-docked.search-left #resizer-search { order: -7; }
+    .main-container.search-docked:not(.search-left) #resizer-search { order: 7; }
 
     #outline-panel {
         position: fixed; top: var(--dock-top); right: 0; bottom: 0; width: 260px;
@@ -856,11 +897,7 @@
     .search-hit:hover { background: rgba(59,130,246,.10); }
     .search-hit code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.82rem; }
 
-    #tab-context-menu { position: fixed; z-index: 9999; display: none; min-width: 180px; background: var(--panel-bg); color: var(--text-color);
-        border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.18); padding: 6px; }
-    #tab-context-menu button { width: 100%; text-align: left; padding: 8px 10px; border: none; border-radius: 10px; background: transparent; color: inherit; cursor: pointer; }
-    #tab-context-menu button:hover { background: rgba(59,130,246,.10); }
-    #tab-context-menu hr { border: none; border-top: 1px solid var(--border-color); margin: 6px 0; }
+    /* Context menus are now dynamically created via JavaScript */
 
     #ruby-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(0,0,0,.35); }
     #ruby-modal .ruby-box { width: min(520px, 92vw); background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color);
@@ -1841,10 +1878,6 @@
               <button class="btn btn-apply" onclick="applyExtendedSettings()" style="font-size:0.65rem;">適用</button>
             </div>
             <div class="setting-row">
-              <label>アクティブタブ色: <input type="color" id="st-active-tab-color" value="#fff59d"></label>
-              <button class="btn btn-apply" onclick="applyExtendedSettings()" style="font-size:0.65rem;">適用</button>
-            </div>
-            <div class="setting-row">
                 <label><input type="checkbox" id="st-show-reading-time" checked> 読み上げ時間</label>
             </div>
             <div class="setting-row">
@@ -1877,24 +1910,7 @@
             </div>
         </div>
 
-        
-        <div class="setting-group">
-            <div class="setting-title">目次抽出ルール <button class="btn btn-apply" onclick="applyExtendedSettings()">適用</button></div>
-            <div class="setting-row" style="flex-wrap:wrap; gap:10px;">
-              <label><input type="checkbox" id="st-outline-use-hash" checked> #</label>
-              <label><input type="checkbox" id="st-outline-use-box" checked> ■□</label>
-              <label><input type="checkbox" id="st-outline-use-tri" checked> ▲</label>
-              <label><input type="checkbox" id="st-outline-use-dia" checked> ◆</label>
-              <label><input type="checkbox" id="st-outline-use-cir" checked> ○</label>
-              <label><input type="checkbox" id="st-outline-use-chapter" checked> 第○章</label>
-              <label><input type="checkbox" id="st-outline-use-circnum" checked> ①</label>
-              <label><input type="checkbox" id="st-outline-use-roman" checked> Ⅰ</label>
-            </div>
-            <div class="setting-row vertical">
-              <label>追加記号（例: ●★◇ など）: <input type="text" id="st-outline-extra" placeholder="任意" style="width:220px;"></label>
-              <div style="font-size:0.78rem; color:var(--text-muted);">チェックされたパターンから、行頭の見出しを抽出します。</div>
-            </div>
-        </div>
+        <!-- 目次抽出ルールは目次パネルの⚙ボタンから設定可能 -->
 
         <div class="setting-group">
             <div class="setting-title">ペイン幅 <button class="btn btn-apply" onclick="applyPaneWidthSettings()">適用</button></div>
@@ -2025,6 +2041,41 @@
             </div>
         </div>
     </div>
+
+<!-- Independent Search Panel -->
+<div id="search-panel" style="display:none;">
+  <div class="search-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+    <span>🔍 検索</span>
+    <div class="search-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+      <button id="btn-search-swap" class="btn panel-swap-btn" onclick="swapSearchSide()">左右入替</button>
+      <button class="panel-pin-btn" id="btn-search-pin" onclick="toggleSearchDockPin()" title="固定/浮動切り替え">📌</button>
+      <input type="checkbox" id="check-search-dock" class="dock-pin-checkbox" onchange="toggleSearchDock()">
+      <button class="panel-close-btn" onclick="closeSearchPanel()" style="background:none; border:none; cursor:pointer;">✖</button>
+    </div>
+  </div>
+  <div class="search-body" style="padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; overflow:auto;">
+    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+      <input type="text" id="sp-search-input" placeholder="検索ワード..." style="flex:1; min-width:120px; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--panel-bg); color:var(--text-color);" onkeydown="if(event.key==='Enter') doSearchPanel()">
+      <select id="sp-search-scope" style="height:32px; border-radius:6px; border:1px solid var(--border-color); padding:0 6px; background:var(--panel-bg); color:var(--text-color);">
+        <option value="current">このタブ</option>
+        <option value="all">全タブ</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="btn btn-search-exec" onclick="doSearchPanel()">検索</button>
+      <button class="btn" onclick="findPrevPanel()">▲ 前へ</button>
+      <button class="btn" onclick="findNextPanel()">▼ 次へ</button>
+      <span id="sp-search-match-info" style="font-size:0.85rem; color:var(--text-muted);">0 / 0</span>
+    </div>
+    <div style="display:flex; gap:6px; align-items:center; padding-top:6px; border-top:1px solid var(--border-color);">
+      <input type="text" id="sp-replace-input" placeholder="置換後..." style="flex:1; min-width:100px; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--panel-bg); color:var(--text-color);">
+      <button class="btn" onclick="replaceOnePanel()">置換</button>
+      <button class="btn" onclick="replaceAllPanel()">全置換</button>
+    </div>
+    <div id="sp-search-hits" style="flex:1; overflow:auto; border:1px solid var(--border-color); border-radius:6px; padding:6px; min-height:100px; background:var(--bg-color);"></div>
+  </div>
+</div>
+<div id="resizer-search" class="dock-resizer" style="display:none;" title="検索パネルの幅を調整します"></div>
 
 <div id="memo-panel">
   <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-header-bg); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
@@ -2256,10 +2307,6 @@
             <button class="btn" onclick="readerFindPrev()">▲</button>
             <button class="btn" onclick="readerFindNext()">▼</button>
             <span id="reader-search-info" style="min-width:52px; display:inline-block; text-align:right;">0/0</span>
-            <select id="reader-bookmark-select" style="height:30px; border-radius:10px; border:1px solid var(--border-color); padding:0 8px; background:var(--panel-bg); color:var(--text-color);" onchange="readerJumpBookmark()">
-              <option value="">🔖 しおり</option>
-            </select>
-            <button class="btn" onclick="readerAddBookmark()">＋しおり</button>
             <button class="btn" id="btn-reader-writing-mode" onclick="toggleReaderWritingMode()" title="書字方向切替">縦書きへ</button>
             <button class="btn btn-sync" onclick="closeReaderView()" title="元の画面に戻る（Esc）">↩ 元の画面に戻る</button>
             <button class="btn" onclick="closeReaderView()" title="閉じる">✕</button>
@@ -2278,14 +2325,7 @@
 </div>
 
 
-<!-- タブ右クリックメニュー -->
-<div id="tab-context-menu" aria-hidden="true">
-  <button onclick="ctxRenameTab()">✏️ リネーム</button>
-  <button onclick="ctxDuplicateTab()">📄 複製</button>
-  <button onclick="ctxNewTab()">＋ 新規タブ</button>
-  <hr>
-  <button onclick="ctxCloseTab()">✕ このタブを閉じる</button>
-</div>
+<!-- タブ右クリックメニュー (動的に生成される) -->
 
 <!-- ルビ入力モーダル -->
 <div id="ruby-modal" aria-hidden="true">
@@ -3024,6 +3064,7 @@ function addNewTab() {
     }
 
     function resetInputToStartup() {
+        // コンテンツのリセット
         inputTabs = [
             { id: 1, name: 'タブはリネームできます', content: defaultText },
             { id: 2, name: '見本', content: sampleText }
@@ -3044,25 +3085,69 @@ function addNewTab() {
         autoSaveTarget = { handle: null, type: null, scope: 'current' };
         settingsCache.autosaveInterval = 60;
         setAutoSaveEnabled(false);
+
+        // 設定のリセット（すべての設定を初期値に）
+        document.getElementById('st-in-size').value = 17;
+        document.getElementById('st-in-line').value = 1.7;
+        document.getElementById('st-in-font').value = 'font-gothic';
+        document.getElementById('st-in-v').checked = true;
+        document.getElementById('st-pv-size').value = 17;
+        document.getElementById('st-pv-line').value = 1.7;
+        document.getElementById('st-pv-font').value = 'font-gothic';
+        document.getElementById('st-pv-v').checked = true;
+        document.getElementById('check-show-input').checked = true;
+        document.getElementById('check-show-preview').checked = true;
+        document.getElementById('st-show-space').checked = true;
+        document.getElementById('st-show-highlight').checked = true;
+        document.getElementById('st-default-preview-hidden').checked = false;
+        document.getElementById('st-typewriter-mode').checked = false;
+        document.getElementById('st-writing-tracker').checked = true;
+        document.getElementById('st-goal-chars').value = 150000;
+        document.getElementById('st-today-goal').value = 2000;
+        document.getElementById('st-celebrate-goal').checked = true;
+        document.getElementById('st-show-reading-time').checked = true;
+        document.getElementById('st-manuscript-rows').value = 34;
+        document.getElementById('st-manuscript-cols').value = 42;
+        document.getElementById('st-show-manuscript').checked = true;
+        document.querySelector('input[name="st-open-mode"][value="current"]').checked = true;
         document.getElementById('st-autosave-interval').value = 60;
+        document.getElementById('st-autosave-enabled').checked = false;
+        document.getElementById('st-theme-preset').value = '';
+        document.getElementById('st-pane-input-width').value = 520;
+        document.getElementById('st-pane-preview-width').value = 520;
+        document.getElementById('st-pane-memo-width').value = 260;
+        document.getElementById('st-pane-outline-width').value = 260;
+        document.getElementById('st-divider-width').value = 2;
+        const inputH = document.getElementById('st-pane-input-height');
+        const previewH = document.getElementById('st-pane-preview-height');
+        if (inputH) inputH.value = 520;
+        if (previewH) previewH.value = 520;
+
+        // localStorage をクリア
         localStorage.removeItem(TABS_KEY);
         localStorage.removeItem(AUTOSAVE_KEY);
         localStorage.removeItem(TODAY_START_KEY);
         localStorage.removeItem(BOOKMARKS_KEY);
         localStorage.removeItem(MEMO_KEY);
         localStorage.removeItem(NOVEL_TITLE_KEY);
+        localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(DIVIDER_WIDTH_KEY);
+        localStorage.removeItem('cc_outline_rules_v1');
+        localStorage.removeItem('cc_active_tab_color');
+        localStorage.removeItem('cc_reader_bookmarks_v1');
+        localStorage.removeItem('cc_reader_bookmarks_v2');
         sessionStorage.removeItem('cc_editor_session_started');
-        document.getElementById('st-in-v').checked = true;
-        document.getElementById('st-pv-v').checked = true;
-        // 初期化時の既定レイアウト：横並び＆入力左
+
+        // テーマとカラーをリセット
+        document.body.classList.remove('theme-dark', 'theme-sepia', 'theme-blue', 'theme-green');
+        document.documentElement.style.setProperty('--active-tab-bg', '#fff59d');
+
+        // レイアウトをリセット
         layoutAxis = 'row';
         layoutReversed = false;
         applyLayoutState();
         saveLayoutSettings();
-        applyInputSettings();
-        applyPreviewSettings();
-        document.getElementById('st-pane-memo-width').value = 260;
-        document.getElementById('st-pane-outline-width').value = 260;
+        applyAllSettings();
 
         resetPaneWidths();
         resetPaneHeights();
@@ -3077,14 +3162,13 @@ function addNewTab() {
         saveTabsToStorage();
         saveMemoTabs();
         saveWritingTime();
-		applyDefaultStartupLayoutAfterReset();
-		requestAnimationFrame(() => {
-  if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
-  if (typeof updateDockSplitState === 'function') updateDockSplitState();
-  if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
-  if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
-});
-
+        applyDefaultStartupLayoutAfterReset();
+        requestAnimationFrame(() => {
+            if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+            if (typeof updateDockSplitState === 'function') updateDockSplitState();
+            if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+            if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
+        });
     }
 
     const AUTOSAVE_KEY = 'cc_editor_autosave';
@@ -3795,18 +3879,26 @@ function applyDisplaySettings() {
         document.getElementById('st-pane-memo-width').value = 260;
         document.getElementById('st-pane-outline-width').value = 260;
         document.getElementById('st-divider-width').value = 2;
-const inputH = document.getElementById('st-pane-input-height');
-const previewH = document.getElementById('st-pane-preview-height');
-if (inputH) inputH.value = 520;
-if (previewH) previewH.value = 520;
+        const inputH = document.getElementById('st-pane-input-height');
+        const previewH = document.getElementById('st-pane-preview-height');
+        if (inputH) inputH.value = 520;
+        if (previewH) previewH.value = 520;
+
+        // テーマとカラーをリセット
+        document.body.classList.remove('theme-dark', 'theme-sepia', 'theme-blue', 'theme-green');
+        document.documentElement.style.setProperty('--active-tab-bg', '#fff59d');
 
         applyAllSettings();
         autoSaveTarget = { handle: null, type: null, scope: 'current' };
         setAutoSaveEnabled(false);
         resetPaneWidths();
         resetPaneHeights();
+
+        // localStorage をクリア（設定関連のみ）
         localStorage.removeItem(DIVIDER_WIDTH_KEY);
         localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem('cc_outline_rules_v1');
+        localStorage.removeItem('cc_active_tab_color');
     }
 
     function clampValue(value, min, max) {
@@ -6676,64 +6768,18 @@ function setupMemoInteractionGuard() {
   }
 
   // -----------------------------
-  // 9) Proofreading button + modal (E-1/E-2)
+  // 9) Proofreading (modal version disabled - using floating panel instead)
   // -----------------------------
   function injectProofreadUI(){
-    // Add button next to analysis
-    const headerLeft = document.querySelector('.header-left');
-    if (!headerLeft) return;
-    if (!document.getElementById('btn-proofread')){
-      const btn = document.createElement('button');
-      btn.className='btn btn-analysis';
-      btn.id='btn-proofread';
-      btn.textContent='🧹 校正';
-      btn.addEventListener('click', openProofreadModal);
-      // insert before analysis button if present
-      const analysisBtn = headerLeft.querySelector('button.btn-analysis');
-      if (analysisBtn && analysisBtn.parentElement) analysisBtn.parentElement.insertBefore(btn, analysisBtn);
-      else headerLeft.appendChild(btn);
-    }
-
-    if (document.getElementById('proofread-modal')) return;
-    const modal = document.createElement('div');
-    modal.id='proofread-modal';
-    modal.className='modal-overlay';
-    modal.setAttribute('aria-hidden','true');
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header"><h3>🧹 校正</h3><button class="modal-close" id="btn-proofread-close">✕</button></div>
-        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
-          <label><input type="checkbox" id="pf-unclosed" checked> 会話の「」未閉じ / 括弧未閉じ</label>
-          <label><input type="checkbox" id="pf-sentend" checked> 「。」等の不足候補</label>
-          <span style="margin-left:auto;">
-            <select id="pf-scope" style="height:30px; border-radius:10px; border:1px solid var(--border-color); padding:0 8px; background:var(--panel-bg); color:var(--text-color);">
-              <option value="current">このタブ</option>
-              <option value="all">全タブ</option>
-            </select>
-          </span>
-        </div>
-        <div style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:10px;">
-          <button class="btn btn-apply" id="btn-proofread-run">チェック開始</button>
-        </div>
-        <div id="proofread-results"><div class="outline-empty">まだ結果はありません</div></div>
-        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:10px; line-height:1.5;">
-          ※結果をクリックすると該当箇所へジャンプします。
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-
-    const close = ()=>{ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); };
-    $('#btn-proofread-close', modal)?.addEventListener('click', close);
-    modal.addEventListener('mousedown', (e)=>{ if (e.target===modal) close(); });
-    document.addEventListener('keydown', (e)=>{ if (modal.classList.contains('show') && e.key==='Escape'){ e.preventDefault(); close(); } });
-    $('#btn-proofread-run', modal)?.addEventListener('click', runProofread);
+    // Disabled: using proof-panel floating window instead
+    // Old modal button and modal are no longer created
   }
 
   function openProofreadModal(){
-    const modal = document.getElementById('proofread-modal');
-    if (!modal) return;
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden','false');
+    // Redirect to floating panel
+    if (typeof window.toggleProofPanel === 'function') {
+      window.toggleProofPanel();
+    }
   }
 
   function getTabsByScope(scope){
@@ -7384,41 +7430,9 @@ function setupMemoInteractionGuard() {
     }catch(e){ return ''; }
   }
 
-  function renderReaderBookmarkSelect(){
-    const {select} = getReaderEls();
-    if (!select) return;
-    const bms = loadBMs();
-    select.innerHTML = '<option value="">しおりへ…</option>';
-    bms.forEach((b,i)=>{
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = b.label || `しおり${i+1}`;
-      select.appendChild(opt);
-    });
-  }
-
-  function renderReaderBookmarkPins(){
-    const {content} = getReaderEls();
-    if (!content) return;
-    content.querySelectorAll('.reader-bm-pin').forEach(n=>n.remove());
-    const bms = loadBMs();
-    const secs = readerSections();
-    bms.forEach((b,i)=>{
-      const si = Number(b.sectionIndex);
-      if (!Number.isFinite(si) || !secs[si]) return;
-      const sec = secs[si];
-      sec.style.position = 'relative';
-      const pin = document.createElement('div');
-      pin.className = 'reader-bm-pin';
-      pin.textContent = '🔖';
-      pin.title = b.label || `しおり${i+1}`;
-      pin.dataset.idx = String(i);
-      const top = Math.max(8, Math.min(sec.scrollHeight-20, Number(b.offset||0)));
-      pin.style.top = top + 'px';
-      pin.addEventListener('click', ()=>{ window.readerJumpBookmark?.(i); });
-      sec.appendChild(pin);
-    });
-  }
+  // Reader bookmark render functions disabled (feature removed)
+  function renderReaderBookmarkSelect(){ /* disabled */ }
+  function renderReaderBookmarkPins(){ /* disabled */ }
 
   // Ensure styles exist
   (function ensureReaderBmCss(){
@@ -7435,39 +7449,9 @@ function setupMemoInteractionGuard() {
     document.head.appendChild(st);
   })();
 
-  // Patch/override reader bookmark functions to use section+offset and readable labels
-  window.readerAddBookmark = function(){
-    const {scroll} = getReaderEls();
-    if (!scroll) return;
-    const {idx, offset} = findSectionAt(scroll.scrollTop);
-    const ratio = scroll.clientHeight ? ((scroll.scrollTop - readerSections()[idx].offsetTop) / Math.max(1, readerSections()[idx].scrollHeight)) : 0;
-    const ex = excerptFromTab(idx, Math.max(0, Math.min(1, ratio)));
-    const label = `${getTabName(idx)}：${ex||'（位置）'}`;
-    const bms = loadBMs();
-    bms.push({sectionIndex: idx, offset: offset, label: label, created: Date.now()});
-    saveBMs(bms);
-    renderReaderBookmarkSelect();
-    renderReaderBookmarkPins();
-    const {select} = getReaderEls();
-    if (select) select.value = String(bms.length-1);
-  };
-
-  window.readerJumpBookmark = function(forcedIndex){
-    const {scroll, select} = getReaderEls();
-    if (!scroll) return;
-    const bms = loadBMs();
-    const idx = (typeof forcedIndex==='number') ? forcedIndex : (select && select.value!=='' ? Number(select.value) : -1);
-    if (!Number.isFinite(idx) || idx<0 || idx>=bms.length) return;
-    const b = bms[idx];
-    const secs = readerSections();
-    const si = Number(b.sectionIndex);
-    if (!Number.isFinite(si) || !secs[si]) return;
-    const y = secs[si].offsetTop + Number(b.offset||0);
-    scroll.scrollTop = y;
-    // flash pin
-    const pin = secs[si].querySelector(`.reader-bm-pin[data-idx="${idx}"]`);
-    if (pin){ pin.animate?.([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}], {duration:380}); }
-  };
+  // Reader bookmark functions disabled (feature removed)
+  window.readerAddBookmark = function(){ /* disabled */ };
+  window.readerJumpBookmark = function(){ /* disabled */ };
 
   // Reader search: make Enter work and ensure active hit scrolls
   if (typeof window.readerDoSearch === 'function'){
@@ -8163,20 +8147,29 @@ function setupMemoInteractionGuard() {
   }
   window.toggleSearchPanel = toggleSearchPanel;
 
-  // Toggle outline panel
+  // Toggle outline panel (click cycle: closed -> open floating -> docked -> closed)
   function toggleOutlinePanel(){
     const panel = document.getElementById('outline-panel');
     if (!panel) return;
+    const mainContainer = document.getElementById('main-container');
     const isOpen = panel.classList.contains('open');
-    if (isOpen) {
-      panel.classList.remove('open');
-    } else {
+    const isDocked = mainContainer && mainContainer.classList.contains('outline-docked');
+
+    if (!isOpen) {
+      // Closed -> Open (floating)
       panel.classList.add('open');
-      // Show outline tab by default
       switchOutlineTabDirect('outline');
+    } else if (isOpen && !isDocked) {
+      // Open floating -> Docked
+      if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
+    } else {
+      // Docked -> Closed
+      if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
+      panel.classList.remove('open');
     }
-    checkPanelLimit();
+
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
+    try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
   }
   window.toggleOutlinePanel = toggleOutlinePanel;
 
@@ -8191,31 +8184,9 @@ function setupMemoInteractionGuard() {
   }
   window.switchOutlineTabDirect = switchOutlineTabDirect;
 
-  // Panel limit check (max 4 panels including input/preview)
+  // Panel limit check - disabled per user request
   function checkPanelLimit(){
-    const MAX_PANELS = 4;
-    const openPanels = [];
-
-    // Count open panels (input and preview always count as 1 each if visible)
-    const inputPane = document.getElementById('pane-input');
-    const previewPane = document.getElementById('pane-preview');
-    if (inputPane && inputPane.style.display !== 'none') openPanels.push({id: 'pane-input', name: '入力'});
-    if (previewPane && previewPane.style.display !== 'none') openPanels.push({id: 'pane-preview', name: 'プレビュー'});
-
-    const memoPanel = document.getElementById('memo-panel');
-    const outlinePanel = document.getElementById('outline-panel');
-    const searchBar = document.getElementById('search-bar');
-
-    if (memoPanel && memoPanel.classList.contains('open')) openPanels.push({id: 'memo-panel', name: 'メモ'});
-    if (outlinePanel && outlinePanel.classList.contains('open')) openPanels.push({id: 'outline-panel', name: '目次'});
-    if (searchBar && (searchBar.classList.contains('active') || searchBar.style.display === 'flex')) openPanels.push({id: 'search-bar', name: '検索'});
-
-    // Show swap notification if over limit
-    if (openPanels.length > MAX_PANELS) {
-      showPanelSwapNotification(openPanels);
-    } else {
-      hidePanelSwapNotification();
-    }
+    // No longer showing panel limit warnings
   }
   window.checkPanelLimit = checkPanelLimit;
 
@@ -8288,9 +8259,247 @@ function setupMemoInteractionGuard() {
     } else {
       panel.style.display = 'block';
     }
-    checkPanelLimit();
   }
   window.toggleProofPanel = toggleProofPanel;
+
+  // ========== Search Panel Functions ==========
+  // Toggle search panel (click cycle: closed -> open floating -> docked -> closed)
+  function toggleSearchPanelNew(){
+    const panel = document.getElementById('search-panel');
+    if (!panel) return;
+    const mainContainer = document.getElementById('main-container');
+    const isOpen = panel.classList.contains('open');
+    const isDocked = mainContainer && mainContainer.classList.contains('search-docked');
+
+    if (!isOpen) {
+      // Closed -> Open (floating)
+      panel.classList.add('open');
+      panel.style.display = 'flex';
+      const input = document.getElementById('sp-search-input');
+      if (input) setTimeout(()=> input.focus(), 0);
+    } else if (isOpen && !isDocked) {
+      // Open floating -> Docked
+      toggleSearchDock();
+    } else {
+      // Docked -> Closed
+      toggleSearchDock();
+      panel.classList.remove('open');
+      panel.style.display = 'none';
+    }
+
+    try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
+    try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
+  }
+  window.toggleSearchPanel = toggleSearchPanelNew;
+
+  function toggleSearchDock(){
+    const mainContainer = document.getElementById('main-container');
+    const panel = document.getElementById('search-panel');
+    const checkbox = document.getElementById('check-search-dock');
+    if (!mainContainer || !panel) return;
+
+    const isDocked = mainContainer.classList.contains('search-docked');
+    if (isDocked) {
+      mainContainer.classList.remove('search-docked');
+      if (checkbox) checkbox.checked = false;
+    } else {
+      mainContainer.classList.add('search-docked');
+      if (checkbox) checkbox.checked = true;
+    }
+    try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
+  }
+  window.toggleSearchDock = toggleSearchDock;
+
+  function toggleSearchDockPin(){
+    const checkbox = document.getElementById('check-search-dock');
+    if (checkbox) checkbox.checked = !checkbox.checked;
+    toggleSearchDock();
+  }
+  window.toggleSearchDockPin = toggleSearchDockPin;
+
+  function swapSearchSide(){
+    const mainContainer = document.getElementById('main-container');
+    if (!mainContainer) return;
+    mainContainer.classList.toggle('search-left');
+  }
+  window.swapSearchSide = swapSearchSide;
+
+  function closeSearchPanel(){
+    const panel = document.getElementById('search-panel');
+    const mainContainer = document.getElementById('main-container');
+    const checkbox = document.getElementById('check-search-dock');
+    if (panel) {
+      panel.classList.remove('open');
+      panel.style.display = 'none';
+    }
+    if (mainContainer) mainContainer.classList.remove('search-docked');
+    if (checkbox) checkbox.checked = false;
+  }
+  window.closeSearchPanel = closeSearchPanel;
+
+  // Search panel search functions
+  let spMatches = [];
+  let spIdx = -1;
+
+  function doSearchPanel(){
+    const q = (document.getElementById('sp-search-input')?.value || '').trim();
+    const scope = document.getElementById('sp-search-scope')?.value || 'current';
+    if (!q){
+      spMatches = []; spIdx = -1;
+      updateSearchPanelInfo();
+      renderSearchPanelHits();
+      return;
+    }
+
+    const tabs = Array.isArray(window.inputTabs) ? window.inputTabs : [];
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(esc, 'g');
+    spMatches = [];
+
+    const tabList = (scope === 'all') ? tabs : [tabs.find(t=>t.id===window.activeTabId)].filter(Boolean);
+    for (const tab of tabList){
+      const text = tab.id === window.activeTabId ? (window.inputArea?.value ?? tab.content ?? '') : (tab.content ?? '');
+      let m;
+      rx.lastIndex = 0;
+      while((m = rx.exec(text)) !== null){
+        const pos = m.index;
+        const before = text.slice(0, pos);
+        const lineNum = (before.match(/\n/g)||[]).length + 1;
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const lineEnd = text.indexOf('\n', pos);
+        const lineText = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd).trim();
+        spMatches.push({
+          tabId: tab.id,
+          tabName: tab.name || '',
+          start: pos,
+          end: pos + m[0].length,
+          lineNum: lineNum,
+          preview: lineText.slice(0, 80)
+        });
+      }
+    }
+
+    spIdx = spMatches.length ? 0 : -1;
+    updateSearchPanelInfo();
+    renderSearchPanelHits();
+    if (spIdx >= 0) jumpToSearchPanelMatch(spMatches[0]);
+  }
+  window.doSearchPanel = doSearchPanel;
+
+  function findNextPanel(){
+    if (!spMatches.length) return;
+    spIdx = (spIdx + 1) % spMatches.length;
+    updateSearchPanelInfo();
+    jumpToSearchPanelMatch(spMatches[spIdx]);
+  }
+  window.findNextPanel = findNextPanel;
+
+  function findPrevPanel(){
+    if (!spMatches.length) return;
+    spIdx = (spIdx - 1 + spMatches.length) % spMatches.length;
+    updateSearchPanelInfo();
+    jumpToSearchPanelMatch(spMatches[spIdx]);
+  }
+  window.findPrevPanel = findPrevPanel;
+
+  function replaceOnePanel(){
+    const q = document.getElementById('sp-search-input')?.value || '';
+    const rep = document.getElementById('sp-replace-input')?.value || '';
+    if (!q || spMatches.length === 0 || spIdx < 0) return;
+    const m = spMatches[spIdx];
+    if (m.tabId !== window.activeTabId && typeof window.switchTab === 'function') window.switchTab(m.tabId);
+    const ta = window.inputArea;
+    if (!ta) return;
+    const text = ta.value;
+    if (text.slice(m.start, m.end) !== q) { doSearchPanel(); return; }
+    ta.setRangeText(rep, m.start, m.end, 'select');
+    ta.dispatchEvent(new Event('input', {bubbles:true}));
+    doSearchPanel();
+  }
+  window.replaceOnePanel = replaceOnePanel;
+
+  function replaceAllPanel(){
+    const q = document.getElementById('sp-search-input')?.value || '';
+    const rep = document.getElementById('sp-replace-input')?.value || '';
+    if (!q) return;
+    const scope = document.getElementById('sp-search-scope')?.value || 'current';
+    const tabs = Array.isArray(window.inputTabs) ? window.inputTabs : [];
+    const tabList = (scope === 'all') ? tabs : [tabs.find(t=>t.id===window.activeTabId)].filter(Boolean);
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(esc, 'g');
+
+    for (const tab of tabList){
+      if (tab.id === window.activeTabId) {
+        const ta = window.inputArea;
+        if (ta) {
+          ta.value = ta.value.replace(rx, rep);
+          ta.dispatchEvent(new Event('input', {bubbles:true}));
+        }
+      } else {
+        tab.content = (tab.content || '').replace(rx, rep);
+      }
+    }
+    doSearchPanel();
+  }
+  window.replaceAllPanel = replaceAllPanel;
+
+  function updateSearchPanelInfo(){
+    const info = document.getElementById('sp-search-match-info');
+    if (info) info.textContent = `${spMatches.length ? (spIdx + 1) : 0} / ${spMatches.length}`;
+  }
+
+  function renderSearchPanelHits(){
+    const box = document.getElementById('sp-search-hits');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!spMatches.length){
+      box.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:20px;">ヒットなし</div>';
+      return;
+    }
+
+    const grouped = {};
+    for (const m of spMatches.slice(0, 200)){
+      const key = 'tab-' + m.tabId;
+      const name = m.tabName || ('タブ' + m.tabId);
+      (grouped[key] ||= {name, items:[]}).items.push(m);
+    }
+
+    for (const g of Object.values(grouped)){
+      const head = document.createElement('div');
+      head.style.cssText = 'font-weight:700; margin:6px 0 2px; font-size:0.8rem;';
+      head.textContent = `【${g.name}】 (${g.items.length})`;
+      box.appendChild(head);
+      for (const m of g.items){
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:4px 6px; cursor:pointer; font-size:0.8rem; border-bottom:1px solid var(--border-color);';
+        div.textContent = `${m.lineNum}行: ${m.preview}`;
+        div.addEventListener('click', ()=> jumpToSearchPanelMatch(m));
+        div.addEventListener('mouseenter', ()=> div.style.background = 'var(--pane-header-bg)');
+        div.addEventListener('mouseleave', ()=> div.style.background = '');
+        box.appendChild(div);
+      }
+    }
+
+    if (spMatches.length > 200){
+      const note = document.createElement('div');
+      note.style.cssText = 'color:var(--text-muted); font-size:0.8rem; text-align:center; padding:10px;';
+      note.textContent = `表示は200件まで（全${spMatches.length}件）`;
+      box.appendChild(note);
+    }
+  }
+
+  function jumpToSearchPanelMatch(m){
+    if (!m) return;
+    if (m.tabId !== window.activeTabId && typeof window.switchTab === 'function') window.switchTab(m.tabId);
+    const ta = window.inputArea;
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(m.start, m.end);
+    if (typeof window.scrollToCursorPosition === 'function') setTimeout(()=> window.scrollToCursorPosition(m.start), 60);
+    if (typeof window.updateCursorLineDisplay === 'function') window.updateCursorLineDisplay();
+    spIdx = spMatches.findIndex(x => x.tabId === m.tabId && x.start === m.start);
+    updateSearchPanelInfo();
+  }
 
   // Toggle outline settings overlay
   function toggleOutlineSettings(){
@@ -8298,59 +8507,56 @@ function setupMemoInteractionGuard() {
     if (!overlay) return;
     overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
 
-    // Sync with current settings if opening
+    // Load from localStorage when opening
     if (overlay.style.display === 'block') {
-      syncOutlineRulesToOverlay();
+      loadOutlineRulesToOverlay();
     }
   }
   window.toggleOutlineSettings = toggleOutlineSettings;
 
-  // Sync outline rules from settings panel to overlay
-  function syncOutlineRulesToOverlay(){
-    const mappings = [
-      ['st-outline-use-hash', 'or-use-hash'],
-      ['st-outline-use-box', 'or-use-box'],
-      ['st-outline-use-tri', 'or-use-tri'],
-      ['st-outline-use-dia', 'or-use-dia'],
-      ['st-outline-use-cir', 'or-use-cir'],
-      ['st-outline-use-chapter', 'or-use-chapter'],
-      ['st-outline-use-circnum', 'or-use-circnum'],
-      ['st-outline-use-roman', 'or-use-roman'],
-    ];
-    mappings.forEach(([srcId, dstId]) => {
-      const src = document.getElementById(srcId);
-      const dst = document.getElementById(dstId);
-      if (src && dst) dst.checked = src.checked;
-    });
-    const srcCustom = document.getElementById('st-outline-extra');
-    const dstCustom = document.getElementById('or-extra');
-    if (srcCustom && dstCustom) dstCustom.value = srcCustom.value;
+  // Load outline rules from localStorage to overlay
+  function loadOutlineRulesToOverlay(){
+    const OUTLINE_RULES_KEY = 'cc_outline_rules_v1';
+    let rules = { useHash:true, useBox:true, useTri:true, useDia:true, useCir:true, useChapter:true, useCircNum:true, useRoman:true, extra:'' };
+    try {
+      const saved = localStorage.getItem(OUTLINE_RULES_KEY);
+      if (saved) rules = { ...rules, ...JSON.parse(saved) };
+    } catch(e){}
+
+    const el = (id) => document.getElementById(id);
+    if (el('or-use-hash')) el('or-use-hash').checked = rules.useHash !== false;
+    if (el('or-use-box')) el('or-use-box').checked = rules.useBox !== false;
+    if (el('or-use-tri')) el('or-use-tri').checked = rules.useTri !== false;
+    if (el('or-use-dia')) el('or-use-dia').checked = rules.useDia !== false;
+    if (el('or-use-cir')) el('or-use-cir').checked = rules.useCir !== false;
+    if (el('or-use-chapter')) el('or-use-chapter').checked = rules.useChapter !== false;
+    if (el('or-use-circnum')) el('or-use-circnum').checked = rules.useCircNum !== false;
+    if (el('or-use-roman')) el('or-use-roman').checked = rules.useRoman !== false;
+    if (el('or-extra')) el('or-extra').value = rules.extra || '';
   }
 
-  // Apply outline rules from overlay
+  // Apply outline rules from overlay directly to localStorage
   function applyOutlineRulesFromOverlay(){
-    const mappings = [
-      ['or-use-hash', 'st-outline-use-hash'],
-      ['or-use-box', 'st-outline-use-box'],
-      ['or-use-tri', 'st-outline-use-tri'],
-      ['or-use-dia', 'st-outline-use-dia'],
-      ['or-use-cir', 'st-outline-use-cir'],
-      ['or-use-chapter', 'st-outline-use-chapter'],
-      ['or-use-circnum', 'st-outline-use-circnum'],
-      ['or-use-roman', 'st-outline-use-roman'],
-    ];
-    mappings.forEach(([srcId, dstId]) => {
-      const src = document.getElementById(srcId);
-      const dst = document.getElementById(dstId);
-      if (src && dst) dst.checked = src.checked;
-    });
-    const srcCustom = document.getElementById('or-extra');
-    const dstCustom = document.getElementById('st-outline-extra');
-    if (srcCustom && dstCustom) dstCustom.value = srcCustom.value;
+    const OUTLINE_RULES_KEY = 'cc_outline_rules_v1';
+    const el = (id) => document.getElementById(id);
 
-    // Apply and regenerate outline
-    if (typeof window.applyExtendedSettings === 'function') window.applyExtendedSettings();
+    const rules = {
+      useHash: el('or-use-hash')?.checked ?? true,
+      useBox: el('or-use-box')?.checked ?? true,
+      useTri: el('or-use-tri')?.checked ?? true,
+      useDia: el('or-use-dia')?.checked ?? true,
+      useCir: el('or-use-cir')?.checked ?? true,
+      useChapter: el('or-use-chapter')?.checked ?? true,
+      useCircNum: el('or-use-circnum')?.checked ?? true,
+      useRoman: el('or-use-roman')?.checked ?? true,
+      extra: el('or-extra')?.value || ''
+    };
+
+    try { localStorage.setItem(OUTLINE_RULES_KEY, JSON.stringify(rules)); } catch(e){}
+
+    // Regenerate outline with new rules
     if (typeof window.generateOutline === 'function') window.generateOutline();
+    else if (typeof window.updateOutline === 'function') window.updateOutline();
 
     toggleOutlineSettings();
   }
@@ -8404,8 +8610,10 @@ function setupMemoInteractionGuard() {
     });
   }
 
+  let contextMenuClickHandler = null;
+
   function showTabContextMenu(e, tab){
-    hideAllContextMenus();
+    hideContextMenusOnly();
     let menu = document.getElementById('tab-context-menu');
     if (!menu) {
       menu = document.createElement('div');
@@ -8416,27 +8624,48 @@ function setupMemoInteractionGuard() {
     }
 
     menu.innerHTML = `
-      <div class="context-menu-item" onclick="renameActiveTab()">リネーム</div>
-      <div class="context-menu-item" onclick="duplicateTab()">複製</div>
-      <div class="context-menu-item" onclick="addNewTab()">＋ 新しいタブ</div>
+      <div class="context-menu-item" data-action="rename">リネーム</div>
+      <div class="context-menu-item" data-action="duplicate">複製</div>
+      <div class="context-menu-item" data-action="new">＋ 新しいタブ</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-      <div class="context-menu-item" onclick="showTabColorPicker(event)">🎨 カラーリングの変更</div>
+      <div class="context-menu-item" data-action="color">🎨 カラーリングの変更</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-      <div class="context-menu-item" style="color:#dc2626;" onclick="closeActiveTab()">× このタブを閉じる</div>
+      <div class="context-menu-item" style="color:#dc2626;" data-action="close">× このタブを閉じる</div>
     `;
+
+    // Add event listeners to menu items
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'rename') { renameActiveTab(); hideContextMenusOnly(); }
+        else if (action === 'duplicate') { duplicateTab(); hideContextMenusOnly(); }
+        else if (action === 'new') { addNewTab(); hideContextMenusOnly(); }
+        else if (action === 'color') { showTabColorPicker(); }
+        else if (action === 'close') { closeActiveTab(); hideContextMenusOnly(); }
+      };
+    });
 
     menu.style.left = e.clientX + 'px';
     menu.style.top = e.clientY + 'px';
     menu.style.display = 'block';
 
     // Close on click outside
+    if (contextMenuClickHandler) {
+      document.removeEventListener('click', contextMenuClickHandler);
+    }
+    contextMenuClickHandler = (ev) => {
+      if (!ev.target.closest('#tab-context-menu, #header-context-menu, #color-picker-popup')) {
+        hideAllContextMenus();
+      }
+    };
     setTimeout(() => {
-      document.addEventListener('click', hideAllContextMenus, { once: true });
+      document.addEventListener('click', contextMenuClickHandler);
     }, 0);
   }
 
   function showHeaderContextMenu(e, header){
-    hideAllContextMenus();
+    hideContextMenusOnly();
     let menu = document.getElementById('header-context-menu');
     if (!menu) {
       menu = document.createElement('div');
@@ -8450,17 +8679,43 @@ function setupMemoInteractionGuard() {
     menu.dataset.paneId = paneId;
 
     menu.innerHTML = `
-      <div class="context-menu-item" onclick="showHeaderColorPicker('${paneId}')">🎨 ヘッダーカラーの変更</div>
-      <div class="context-menu-item" onclick="showBgColorPicker('${paneId}')">🖼️ 背景色の変更</div>
+      <div class="context-menu-item" data-action="header-color" data-pane="${paneId}">🎨 ヘッダーカラーの変更</div>
+      <div class="context-menu-item" data-action="bg-color" data-pane="${paneId}">🖼️ 背景色の変更</div>
     `;
+
+    // Add event listeners
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        const pId = item.dataset.pane;
+        if (action === 'header-color') { showHeaderColorPicker(pId); }
+        else if (action === 'bg-color') { showBgColorPicker(pId); }
+      };
+    });
 
     menu.style.left = e.clientX + 'px';
     menu.style.top = e.clientY + 'px';
     menu.style.display = 'block';
 
+    if (contextMenuClickHandler) {
+      document.removeEventListener('click', contextMenuClickHandler);
+    }
+    contextMenuClickHandler = (ev) => {
+      if (!ev.target.closest('#tab-context-menu, #header-context-menu, #color-picker-popup')) {
+        hideAllContextMenus();
+      }
+    };
     setTimeout(() => {
-      document.addEventListener('click', hideAllContextMenus, { once: true });
+      document.addEventListener('click', contextMenuClickHandler);
     }, 0);
+  }
+
+  function hideContextMenusOnly(){
+    ['tab-context-menu', 'header-context-menu'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
   }
 
   function hideAllContextMenus(){
@@ -8468,36 +8723,54 @@ function setupMemoInteractionGuard() {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    if (contextMenuClickHandler) {
+      document.removeEventListener('click', contextMenuClickHandler);
+      contextMenuClickHandler = null;
+    }
   }
   window.hideAllContextMenus = hideAllContextMenus;
 
-  function showTabColorPicker(e){
-    if (e) e.stopPropagation();
-    hideAllContextMenus();
+  // Color presets
+  const colorPresets = {
+    tab: ['#fff59d', '#fecaca', '#bfdbfe', '#bbf7d0', '#ddd6fe', '#fed7aa', '#fce7f3', '#f5f5dc', '#e0e7ff', '#ccfbf1'],
+    header: ['#f9fafb', '#fef3c7', '#dbeafe', '#dcfce7', '#fce7f3', '#e0e7ff', '#f5f5dc', '#fef2f2', '#ecfdf5', '#faf5ff'],
+    bg: ['#ffffff', '#fdfcf0', '#f0f9ff', '#f0fdf4', '#fdf2f8', '#eef2ff', '#fffbeb', '#fef2f2', '#f5f5f4', '#1f2937']
+  };
+
+  function showTabColorPicker(){
+    hideContextMenusOnly();
 
     let picker = document.getElementById('color-picker-popup');
     if (!picker) {
       picker = document.createElement('div');
       picker.id = 'color-picker-popup';
-      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
       document.body.appendChild(picker);
     }
 
+    // Get current color
+    const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--active-tab-bg').trim() || '#fff59d';
+
+    let presetsHtml = colorPresets.tab.map(c =>
+      `<button class="color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`
+    ).join('');
+
     picker.innerHTML = `
-      <div style="margin-bottom:8px; font-weight:bold;">アクティブタブの色</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">アクティブタブの色</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
       <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-        <input type="color" id="tab-color-input" value="#fff59d" style="width:50px; height:30px;">
-        <input type="text" id="tab-color-text" value="#fff59d" style="width:80px; padding:4px;">
+        <input type="color" id="tab-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px;">
+        <input type="text" id="tab-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
       </div>
-      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">
-        <button onclick="setTabColor('#fff59d')" style="width:24px; height:24px; background:#fff59d; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
-        <button onclick="setTabColor('#fecaca')" style="width:24px; height:24px; background:#fecaca; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
-        <button onclick="setTabColor('#bfdbfe')" style="width:24px; height:24px; background:#bfdbfe; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
-        <button onclick="setTabColor('#bbf7d0')" style="width:24px; height:24px; background:#bbf7d0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
-        <button onclick="setTabColor('#ddd6fe')" style="width:24px; height:24px; background:#ddd6fe; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
-        <button onclick="setTabColor('#fed7aa')" style="width:24px; height:24px; background:#fed7aa; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetsHtml}
       </div>
-      <button class="btn btn-apply" onclick="applyTabColor()">適用</button>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="picker-cancel">キャンセル</button>
+        <button class="btn btn-apply" id="picker-apply">適用</button>
+      </div>
     `;
 
     picker.style.left = '50%';
@@ -8505,96 +8778,82 @@ function setupMemoInteractionGuard() {
     picker.style.transform = 'translate(-50%, -50%)';
     picker.style.display = 'block';
 
-    const colorInput = document.getElementById('tab-color-input');
-    const colorText = document.getElementById('tab-color-text');
-    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
-    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
+    // Event handlers
+    const colorInput = picker.querySelector('#tab-color-input');
+    const colorText = picker.querySelector('#tab-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.color-preset').forEach(btn => {
+      btn.onclick = () => {
+        const c = btn.dataset.color;
+        colorInput.value = c;
+        colorText.value = c;
+        picker.querySelectorAll('.color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-cancel').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-apply').onclick = () => {
+      const color = colorInput.value || '#fff59d';
+      document.documentElement.style.setProperty('--active-tab-bg', color);
+      try { localStorage.setItem('cc_active_tab_color', color); } catch(e){}
+      hideColorPicker();
+    };
+
+    // Stop propagation to prevent closing
+    picker.onclick = (e) => e.stopPropagation();
   }
   window.showTabColorPicker = showTabColorPicker;
 
-  function setTabColor(color){
-    document.getElementById('tab-color-input').value = color;
-    document.getElementById('tab-color-text').value = color;
+  function hideColorPicker(){
+    const picker = document.getElementById('color-picker-popup');
+    if (picker) picker.style.display = 'none';
   }
-  window.setTabColor = setTabColor;
-
-  function applyTabColor(){
-    const color = document.getElementById('tab-color-input')?.value || '#fff59d';
-    document.documentElement.style.setProperty('--active-tab-bg', color);
-    try { localStorage.setItem('cc_active_tab_color', color); } catch(e){}
-    hideAllContextMenus();
-  }
-  window.applyTabColor = applyTabColor;
+  window.hideColorPicker = hideColorPicker;
 
   function showHeaderColorPicker(paneId){
-    hideAllContextMenus();
+    hideContextMenusOnly();
 
     let picker = document.getElementById('color-picker-popup');
     if (!picker) {
       picker = document.createElement('div');
       picker.id = 'color-picker-popup';
-      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
       document.body.appendChild(picker);
     }
 
-    picker.dataset.paneId = paneId;
-    picker.dataset.colorType = 'header';
-
-    picker.innerHTML = `
-      <div style="margin-bottom:8px; font-weight:bold;">ヘッダーカラー</div>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-        <input type="color" id="header-color-input" value="#f9fafb" style="width:50px; height:30px;">
-        <input type="text" id="header-color-text" value="#f9fafb" style="width:80px; padding:4px;">
-      </div>
-      <button class="btn btn-apply" onclick="applyHeaderColor('${paneId}')">適用</button>
-    `;
-
-    picker.style.left = '50%';
-    picker.style.top = '50%';
-    picker.style.transform = 'translate(-50%, -50%)';
-    picker.style.display = 'block';
-
-    const colorInput = document.getElementById('header-color-input');
-    const colorText = document.getElementById('header-color-text');
-    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
-    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
-  }
-  window.showHeaderColorPicker = showHeaderColorPicker;
-
-  function applyHeaderColor(paneId){
-    const color = document.getElementById('header-color-input')?.value || '#f9fafb';
     const paneMap = {
       'pane-input': '--pane-input-head',
       'pane-preview': '--pane-preview-head',
       'memo-panel': '--pane-memo-head',
       'outline-panel': '--pane-outline-head',
     };
-    const varName = paneMap[paneId];
-    if (varName) {
-      document.documentElement.style.setProperty(varName, color);
-    }
-    hideAllContextMenus();
-  }
-  window.applyHeaderColor = applyHeaderColor;
+    const varName = paneMap[paneId] || '';
+    const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#f9fafb') : '#f9fafb';
 
-  function showBgColorPicker(paneId){
-    hideAllContextMenus();
-
-    let picker = document.getElementById('color-picker-popup');
-    if (!picker) {
-      picker = document.createElement('div');
-      picker.id = 'color-picker-popup';
-      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
-      document.body.appendChild(picker);
-    }
+    let presetsHtml = colorPresets.header.map(c =>
+      `<button class="color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`
+    ).join('');
 
     picker.innerHTML = `
-      <div style="margin-bottom:8px; font-weight:bold;">背景色</div>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-        <input type="color" id="bg-color-input" value="#ffffff" style="width:50px; height:30px;">
-        <input type="text" id="bg-color-text" value="#ffffff" style="width:80px; padding:4px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">ヘッダーカラー</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
       </div>
-      <button class="btn btn-apply" onclick="applyBgColor('${paneId}')">適用</button>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="header-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px;">
+        <input type="text" id="header-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetsHtml}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="picker-cancel">キャンセル</button>
+        <button class="btn btn-apply" id="picker-apply">適用</button>
+      </div>
     `;
 
     picker.style.left = '50%';
@@ -8602,28 +8861,112 @@ function setupMemoInteractionGuard() {
     picker.style.transform = 'translate(-50%, -50%)';
     picker.style.display = 'block';
 
-    const colorInput = document.getElementById('bg-color-input');
-    const colorText = document.getElementById('bg-color-text');
-    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
-    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
-  }
-  window.showBgColorPicker = showBgColorPicker;
+    const colorInput = picker.querySelector('#header-color-input');
+    const colorText = picker.querySelector('#header-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
 
-  function applyBgColor(paneId){
-    const color = document.getElementById('bg-color-input')?.value || '#ffffff';
+    picker.querySelectorAll('.color-preset').forEach(btn => {
+      btn.onclick = () => {
+        const c = btn.dataset.color;
+        colorInput.value = c;
+        colorText.value = c;
+        picker.querySelectorAll('.color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-cancel').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-apply').onclick = () => {
+      const color = colorInput.value || '#f9fafb';
+      if (varName) {
+        document.documentElement.style.setProperty(varName, color);
+        try { localStorage.setItem('cc_' + varName.replace('--', ''), color); } catch(e){}
+      }
+      hideColorPicker();
+    };
+
+    picker.onclick = (e) => e.stopPropagation();
+  }
+  window.showHeaderColorPicker = showHeaderColorPicker;
+
+  function showBgColorPicker(paneId){
+    hideContextMenusOnly();
+
+    let picker = document.getElementById('color-picker-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'color-picker-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
+      document.body.appendChild(picker);
+    }
+
     const paneMap = {
       'pane-input': '--pane-input-bg',
       'pane-preview': '--pane-preview-bg',
       'memo-panel': '--pane-memo-bg',
       'outline-panel': '--pane-outline-bg',
     };
-    const varName = paneMap[paneId];
-    if (varName) {
-      document.documentElement.style.setProperty(varName, color);
-    }
-    hideAllContextMenus();
+    const varName = paneMap[paneId] || '';
+    const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#ffffff') : '#ffffff';
+
+    let presetsHtml = colorPresets.bg.map(c =>
+      `<button class="color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`
+    ).join('');
+
+    picker.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">背景色</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="bg-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px;">
+        <input type="text" id="bg-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetsHtml}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="picker-cancel">キャンセル</button>
+        <button class="btn btn-apply" id="picker-apply">適用</button>
+      </div>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = picker.querySelector('#bg-color-input');
+    const colorText = picker.querySelector('#bg-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.color-preset').forEach(btn => {
+      btn.onclick = () => {
+        const c = btn.dataset.color;
+        colorInput.value = c;
+        colorText.value = c;
+        picker.querySelectorAll('.color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-cancel').onclick = () => hideColorPicker();
+    picker.querySelector('#picker-apply').onclick = () => {
+      const color = colorInput.value || '#ffffff';
+      if (varName) {
+        document.documentElement.style.setProperty(varName, color);
+        try { localStorage.setItem('cc_' + varName.replace('--', ''), color); } catch(e){}
+      }
+      hideColorPicker();
+    };
+
+    picker.onclick = (e) => e.stopPropagation();
   }
-  window.applyBgColor = applyBgColor;
+  window.showBgColorPicker = showBgColorPicker;
 
   // Initialize context menus
   if (document.readyState === 'loading') {

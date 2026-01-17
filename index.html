@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ⓒエディタ（更新テスト）</title>
-<!-- favicon: ローカルに icons/ が無い場合の ERR_FILE_NOT_FOUND を避けるため、SVG を埋め込み -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232563eb'/%3E%3Ctext x='32' y='42' font-size='34' text-anchor='middle' fill='white' font-family='system-ui,Segoe UI'%3Ec%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='32' fill='%232563eb'/%3E%3Ctext x='90' y='122' font-size='96' text-anchor='middle' fill='white' font-family='system-ui,Segoe UI'%3Ec%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Noto+Sans+JP&family=Zen+Old+Mincho&family=M+PLUS+Rounded+1c&family=Yuji+Syuku&display=swap" rel="stylesheet">
 
 <style>
@@ -201,8 +201,16 @@
     .panel-pin-btn:hover { opacity: 1; }
     .panel-pin-btn.pinned { color: #dc2626; opacity: 1; }
 
+    .panel-drag-handle { cursor: move; }
+    .panel-drag-handle.dragging { opacity: 0.6; }
+
     #search-match-info { font-weight: bold; color: #15803d; min-width: 60px; text-align: center; }
     .btn-search-exec { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: bold; }
+    .btn-search-reset {
+        background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
+        font-weight: bold;
+    }
+    .btn-search-reset:hover { background: #fecaca; color: #991b1b; }
     .search-meta { color: var(--text-muted); font-size: 0.85em; }
 
     #help-bar { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; line-height: 1.8; flex-direction: column; padding-right: 48px; order: 1; }
@@ -666,8 +674,6 @@
     .dock-pin-checkbox { display: none; }
     .main-container.dock-split-right #resizer-memo-outline,
     .main-container.dock-split-left #resizer-memo-outline { display: flex; }
-    .main-container.dock-split-right #resizer-outline,
-    .main-container.dock-split-left #resizer-outline { display: none; }
     .main-container.dock-split-right #memo-panel { order: 10; }
     .main-container.dock-split-right #resizer-memo-outline { order: 11; }
     .main-container.dock-split-right #outline-panel { order: 12; }
@@ -2039,7 +2045,7 @@
 
 <!-- Independent Search Panel -->
 <div id="search-panel" style="display:none;">
-  <div class="search-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-search-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="search-header panel-drag-handle" data-panel-id="search-panel" draggable="true" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-search-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span>🔍 検索</span>
     <div class="search-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
       <button id="btn-search-swap" class="btn panel-swap-btn" onclick="swapSearchSide()">左右入替</button>
@@ -2060,6 +2066,7 @@
       <button class="btn btn-search-exec" onclick="doSearch()">検索</button>
       <button class="btn" onclick="findPrev()">▲ 前へ</button>
       <button class="btn" onclick="findNext()">▼ 次へ</button>
+      <button class="btn btn-search-reset" onclick="resetSearchPanel()">リセット</button>
       <span id="search-match-info" style="font-size:0.85rem; color:var(--text-muted);">0 / 0</span>
     </div>
     <div style="display:flex; gap:6px; align-items:center; padding-top:6px; border-top:1px solid var(--border-color);">
@@ -2073,7 +2080,7 @@
 <div id="resizer-search" class="dock-resizer" style="display:none;" title="検索パネルの幅を調整します"></div>
 
 <div id="memo-panel">
-  <div class="memo-header" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-memo-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
+  <div class="memo-header panel-drag-handle" data-panel-id="memo-panel" draggable="true" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--pane-memo-head, var(--pane-header-bg)); border-bottom: 1px solid var(--border-color); font-weight:bold; font-size:0.85rem; flex-wrap:wrap; gap:4px;">
     <span style="font-family: var(--font-ui);">📝 メモ</span>
     <div class="memo-controls" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
 <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
@@ -2106,7 +2113,7 @@
 
     <div class="dock-resizer" id="resizer-memo-outline" title="(右境界) Alt+ドラッグでメモと目次の配分を調整します"></div>
     <div id="outline-panel">
-        <div class="outline-header">
+        <div class="outline-header panel-drag-handle" data-panel-id="outline-panel" draggable="true">
             <span>📑 目次</span>
             <div class="outline-controls">
                 <button id="btn-outline-settings" class="btn" onclick="toggleOutlineSettings()" title="抽出ルール設定" style="padding:2px 6px; font-size:0.75rem;">⚙</button>
@@ -2587,6 +2594,10 @@ initTabScrollers();
         get: () => activeTabId,
         set: (value) => { activeTabId = value; }
     });
+    Object.defineProperty(window, 'nextTabId', {
+        get: () => nextTabId,
+        set: (value) => { nextTabId = value; }
+    });
 
     function renderInputTabs() {
         const container = document.getElementById('input-tabs-container');
@@ -2768,6 +2779,7 @@ function addNewTab() {
                 const d = JSON.parse(s);
                 if (d.tabs && d.tabs.length > 0) {
                     inputTabs = d.tabs;
+                    window.inputTabs = inputTabs;
                     activeTabId = d.activeTabId || inputTabs[0].id;
                     nextTabId = d.nextTabId || inputTabs.length + 1;
                     const activeTab = inputTabs.find(t => t.id === activeTabId);
@@ -3055,6 +3067,7 @@ function addNewTab() {
             { id: 1, name: 'タブはリネームできます', content: defaultText },
             { id: 2, name: '見本', content: sampleText }
         ];
+        window.inputTabs = inputTabs;
         activeTabId = 1;
         nextTabId = 3;
         inputArea.value = defaultText;
@@ -3064,6 +3077,7 @@ function addNewTab() {
         todayStartChars = 0;
         writingSeconds = 0;
         memoTabs = [{ id: 1, name: 'メモ1', content: '' }];
+        window.memoTabs = memoTabs;
         activeMemoTabId = 1;
         nextMemoTabId = 2;
         memoArea.value = '';
@@ -4481,6 +4495,15 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     let activeMemoTabId = 1;
     let nextMemoTabId = 2;
     let draggingMemoTabId = null;
+    window.memoTabs = memoTabs;
+    Object.defineProperty(window, 'activeMemoTabId', {
+        get: () => activeMemoTabId,
+        set: (value) => { activeMemoTabId = value; }
+    });
+    Object.defineProperty(window, 'nextMemoTabId', {
+        get: () => nextMemoTabId,
+        set: (value) => { nextMemoTabId = value; }
+    });
 
 
 function toggleMemoPanel() {
@@ -4694,6 +4717,7 @@ function toggleMemoDock() {
                 const data = JSON.parse(saved);
                 if (data.tabs && data.tabs.length > 0) {
                     memoTabs = data.tabs;
+                    window.memoTabs = memoTabs;
                     activeMemoTabId = data.activeId || memoTabs[0].id;
                     nextMemoTabId = data.nextId || Math.max(...memoTabs.map(t => t.id)) + 1;
                     const activeTab = memoTabs.find(t => t.id === activeMemoTabId);
@@ -7723,6 +7747,7 @@ function setupMemoInteractionGuard() {
 // ===== v0.98: Outline panel becomes NAV (目次/しおり/検索/メモ) + shortcuts Alt+O/M/F/B =====
 (function(){
   function $1(sel, root){ return (root||document).querySelector(sel); }
+  let suppressSearchRefresh = false;
 
   function genericSwitchOutlineTab(key){
     document.querySelectorAll('#outline-panel .outline-tab-content').forEach(d=>d.classList.remove('active'));
@@ -7926,25 +7951,30 @@ function setupMemoInteractionGuard() {
 
     function jumpTo(m){
       if (!m) return;
-      if (m.kind==='input'){
-        if (m.tabId!==window.activeTabId && typeof window.switchTab==='function') window.switchTab(m.tabId);
-        const ta = window.inputArea;
-        if (!ta) return;
-        ta.focus();
-        ta.setSelectionRange(m.start, m.end);
-        if (typeof window.scrollToCursorPosition==='function') setTimeout(()=>window.scrollToCursorPosition(m.start), 60);
-        if (typeof window.updateCursorLineDisplay==='function') window.updateCursorLineDisplay();
-      } else {
-        // memo
-        openNavTab('memo');
-        if (typeof window.switchMemoTab==='function' && m.memoTabId) window.switchMemoTab(m.memoTabId);
-        const ta = window.memoArea || document.getElementById('memo-area');
-        if (!ta) return;
-        ta.focus();
-        try{ ta.setSelectionRange(m.start, m.end); }catch(e){}
+      suppressSearchRefresh = true;
+      try {
+        if (m.kind==='input'){
+          if (m.tabId!==window.activeTabId && typeof window.switchTab==='function') window.switchTab(m.tabId);
+          const ta = window.inputArea;
+          if (!ta) return;
+          ta.focus();
+          ta.setSelectionRange(m.start, m.end);
+          if (typeof window.scrollToCursorPosition==='function') setTimeout(()=>window.scrollToCursorPosition(m.start), 60);
+          if (typeof window.updateCursorLineDisplay==='function') window.updateCursorLineDisplay();
+        } else {
+          // memo
+          openNavTab('memo');
+          if (typeof window.switchMemoTab==='function' && m.memoTabId) window.switchMemoTab(m.memoTabId);
+          const ta = window.memoArea || document.getElementById('memo-area');
+          if (!ta) return;
+          ta.focus();
+          try{ ta.setSelectionRange(m.start, m.end); }catch(e){}
+        }
+        idx = matches.findIndex(x=>x.kind===m.kind && x.tabId===m.tabId && x.start===m.start && x.end===m.end && x.memoTabId===m.memoTabId);
+        updateInfo();
+      } finally {
+        suppressSearchRefresh = false;
       }
-      idx = matches.findIndex(x=>x.kind===m.kind && x.tabId===m.tabId && x.start===m.start && x.end===m.end && x.memoTabId===m.memoTabId);
-      updateInfo();
     }
 
     function renderHits(){
@@ -8126,11 +8156,123 @@ function setupMemoInteractionGuard() {
     sel.addEventListener('change', ()=>{ if (document.getElementById('search-input')?.value) window.doSearch(); });
   }
 
+  function resetSearchPanel(){
+    const searchInput = document.getElementById('search-input');
+    const replaceInput = document.getElementById('replace-input');
+    if (searchInput) searchInput.value = '';
+    if (replaceInput) replaceInput.value = '';
+    if (typeof window.doSearch === 'function') window.doSearch();
+    const hits = document.getElementById('search-hits');
+    if (hits && !searchInput?.value) {
+      hits.innerHTML = '<div class="outline-empty">ヒット一覧はここに表示されます</div>';
+    }
+  }
+  window.resetSearchPanel = resetSearchPanel;
+
+  function hookSearchRefreshOnTabChange(){
+    const refreshIfCurrent = () => {
+      if (suppressSearchRefresh) return;
+      const q = document.getElementById('search-input')?.value || '';
+      const scope = document.getElementById('search-scope')?.value || 'input_current';
+      if (!q) return;
+      if (scope === 'input_current' || scope === 'memo_current') {
+        if (typeof window.doSearch === 'function') window.doSearch();
+      }
+    };
+
+    if (typeof window.switchTab === 'function' && !window.switchTab.__searchRefreshWrapped) {
+      const base = window.switchTab;
+      window.switchTab = function(){
+        const r = base.apply(this, arguments);
+        refreshIfCurrent();
+        return r;
+      };
+      window.switchTab.__searchRefreshWrapped = true;
+    }
+
+    if (typeof window.switchMemoTab === 'function' && !window.switchMemoTab.__searchRefreshWrapped) {
+      const base = window.switchMemoTab;
+      window.switchMemoTab = function(){
+        const r = base.apply(this, arguments);
+        refreshIfCurrent();
+        return r;
+      };
+      window.switchMemoTab.__searchRefreshWrapped = true;
+    }
+  }
+
+  function setupPanelDragSwap(){
+    const headers = document.querySelectorAll('.panel-drag-handle[data-panel-id]');
+    if (!headers.length) return;
+    const container = document.getElementById('main-container');
+    if (!container) return;
+
+    const isPanelDocked = (panelId) => {
+      if (panelId === 'memo-panel') return container.classList.contains('memo-docked');
+      if (panelId === 'outline-panel') return container.classList.contains('outline-docked');
+      if (panelId === 'search-panel') return container.classList.contains('search-docked');
+      return false;
+    };
+
+    const getPanelSide = (panelId) => {
+      if (panelId === 'memo-panel') return container.classList.contains('memo-right') ? 'right' : 'left';
+      if (panelId === 'outline-panel') return container.classList.contains('outline-left') ? 'left' : 'right';
+      if (panelId === 'search-panel') return container.classList.contains('search-left') ? 'left' : 'right';
+      return 'right';
+    };
+
+    const setPanelSide = (panelId, side) => {
+      if (panelId === 'memo-panel') container.classList.toggle('memo-right', side === 'right');
+      if (panelId === 'outline-panel') container.classList.toggle('outline-left', side === 'left');
+      if (panelId === 'search-panel') container.classList.toggle('search-left', side === 'left');
+    };
+
+    headers.forEach(header => {
+      header.addEventListener('dragstart', (e) => {
+        const panelId = header.dataset.panelId;
+        if (!panelId || !isPanelDocked(panelId)) {
+          e.preventDefault();
+          return;
+        }
+        header.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', panelId);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      header.addEventListener('dragend', () => {
+        header.classList.remove('dragging');
+      });
+
+      header.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+
+      header.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const sourceId = e.dataTransfer.getData('text/plain');
+        const targetId = header.dataset.panelId;
+        if (!sourceId || !targetId || sourceId === targetId) return;
+        if (!isPanelDocked(sourceId) || !isPanelDocked(targetId)) return;
+        const sourceSide = getPanelSide(sourceId);
+        const targetSide = getPanelSide(targetId);
+        if (sourceSide === targetSide) return;
+        setPanelSide(sourceId, targetSide);
+        setPanelSide(targetId, sourceSide);
+        try{ if (typeof window.updateDockSplitState === 'function') window.updateDockSplitState(); }catch(e){}
+        try{ if (typeof window.applyPaneWidthSettings === 'function') window.applyPaneWidthSettings(); }catch(e){}
+        try{ if (typeof window.updatePanelButtonStates === 'function') window.updatePanelButtonStates(); }catch(e){}
+      });
+    });
+  }
+
   function init(){
     // relocatePanelsIntoNav(); // Disabled: keep panels independent per user request
     setupIndependentPanels();
     hookAltShortcuts();
     patchSearchTargetAndEngine();
+    hookSearchRefreshOnTabChange();
+    setupPanelDragSwap();
   }
 
   // Setup independent panels (memo, outline, search) instead of nav tabs
@@ -8320,16 +8462,23 @@ function setupMemoInteractionGuard() {
     const mainContainer = document.getElementById('main-container');
     const panel = document.getElementById('search-panel');
     const checkbox = document.getElementById('check-search-dock');
+    const swapBtn = document.getElementById('btn-search-swap');
+    const pinBtn = document.getElementById('btn-search-pin');
     if (!mainContainer || !panel) return;
 
     const isDocked = mainContainer.classList.contains('search-docked');
     if (isDocked) {
       mainContainer.classList.remove('search-docked');
       if (checkbox) checkbox.checked = false;
+      if (swapBtn) swapBtn.classList.remove('is-active');
+      mainContainer.classList.remove('search-left');
+      panel.style.width = '320px';
     } else {
       mainContainer.classList.add('search-docked');
       if (checkbox) checkbox.checked = true;
+      if (swapBtn) swapBtn.classList.add('is-active');
     }
+    if (pinBtn && checkbox) pinBtn.classList.toggle('pinned', checkbox.checked);
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
   }
@@ -8353,12 +8502,14 @@ function setupMemoInteractionGuard() {
     const panel = document.getElementById('search-panel');
     const mainContainer = document.getElementById('main-container');
     const checkbox = document.getElementById('check-search-dock');
+    const swapBtn = document.getElementById('btn-search-swap');
     if (panel) {
       panel.classList.remove('open');
       panel.style.display = 'none';
     }
     if (mainContainer) mainContainer.classList.remove('search-docked');
     if (checkbox) checkbox.checked = false;
+    if (swapBtn) swapBtn.classList.remove('is-active');
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
     try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}

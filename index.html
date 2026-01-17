@@ -999,6 +999,27 @@
     outline: 2px solid rgba(255, 140, 0, 0.9);
     background: rgba(255, 200, 0, 0.85);
   }
+
+  /* Context menu styles */
+  .context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .context-menu-item:hover {
+    background: var(--pane-header-bg, #f3f4f6);
+  }
+  body.theme-dark .context-menu-item:hover {
+    background: #4b5563;
+  }
+
+  /* Floating panel styles */
+  .floating-panel {
+    font-family: inherit;
+  }
+  .floating-panel-header {
+    user-select: none;
+  }
 </style>
 
 <script>
@@ -1621,13 +1642,17 @@
         <button class="btn btn-sync" id="btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
         <button class="btn btn-view" onclick="openReaderView()" title="全タブをまとめて閲覧（Escで戻る）">👁 閲覧</button>
         <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
+        <button class="btn" id="btn-toggle-proof" onclick="toggleProofPanel()">🧹 校正</button>
         <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
     </div>
     <div class="header-right">
-        <button class="btn panel-toggle" id="btn-toggle-memo" onclick="openNavTab('memo')" data-label="📝 メモ">
+        <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()">
+            <span class="panel-label">🔍 検索</span>
+        </button>
+        <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
             <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
         </button>
-        <button class="btn panel-toggle" id="btn-toggle-outline" onclick="openNavTab('outline')" data-label="📑 目次">
+        <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
             <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
@@ -2038,6 +2063,7 @@
         <div class="outline-header">
             <span>📑 目次</span>
             <div class="outline-controls">
+                <button id="btn-outline-settings" class="btn" onclick="toggleOutlineSettings()" title="抽出ルール設定" style="padding:2px 6px; font-size:0.75rem;">⚙</button>
                 <button id="btn-outline-swap" class="btn panel-swap-btn" onclick="swapOutlineSide()">左右入替</button>
                 <input type="checkbox" id="check-outline-dock" class="dock-pin-checkbox" onchange="toggleOutlineDock()">
                 <button class="panel-pin-btn" id="btn-outline-pin" onclick="toggleOutlineDockPin()" title="固定">📌</button>
@@ -2048,10 +2074,31 @@
             <div class="nav-jump-controls" title="ジャンプ履歴"><button id="btn-nav-back" class="nav-jump-btn" type="button" aria-label="戻る">◀</button><button id="btn-nav-forward" class="nav-jump-btn" type="button" aria-label="進む">▶</button></div><div class="outline-tabs-inner" style="display:flex; gap:2px; flex:1;">
                 <span class="memo-tab active" onclick="switchOutlineTab('outline')" style="cursor:pointer;">目次</span>
                 <span class="memo-tab" onclick="switchOutlineTab('bookmark')" style="cursor:pointer;">🔖しおり</span>
-                <span class="memo-tab" onclick="switchOutlineTab('search')" style="cursor:pointer;">🔍検索</span>
-                <span class="memo-tab" onclick="switchOutlineTab('proof')" style="cursor:pointer;">🧹校正</span>
-                <span class="memo-tab" onclick="switchOutlineTab('memo')" style="cursor:pointer;">📝メモ</span>
             </div>
+        </div>
+        <!-- Outline extraction rules settings overlay -->
+        <div id="outline-settings-overlay" style="display:none; position:absolute; top:80px; left:10px; right:10px; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-weight:bold;">目次抽出ルール</span>
+                <button onclick="toggleOutlineSettings()" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">✕</button>
+            </div>
+            <div id="outline-rules-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <label><input type="checkbox" id="or-use-hash" checked> #</label>
+                <label><input type="checkbox" id="or-use-box" checked> ■□</label>
+                <label><input type="checkbox" id="or-use-tri" checked> ▲</label>
+                <label><input type="checkbox" id="or-use-dia" checked> ◆</label>
+                <label><input type="checkbox" id="or-use-cir" checked> ○</label>
+                <label><input type="checkbox" id="or-use-chapter" checked> 第○章</label>
+                <label><input type="checkbox" id="or-use-circnum" checked> ①</label>
+                <label><input type="checkbox" id="or-use-roman" checked> Ⅰ</label>
+            </div>
+            <div style="margin-bottom:8px;">
+                <label>追加記号 (例: ★●◎ など):
+                    <input type="text" id="or-extra" placeholder="任意" style="width:100px; padding:2px 6px; border:1px solid var(--border-color); border-radius:4px;">
+                </label>
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">チェックされたパターンから、行頭の見出しを抽出します。</div>
+            <button class="btn btn-apply" onclick="applyOutlineRulesFromOverlay()">適用</button>
         </div>
         <div class="outline-content">
             <div id="outline-tab-outline" class="outline-tab-content active">
@@ -2069,33 +2116,6 @@
                     <button onclick="deleteSelectedBookmarks()" style="margin-left: 8px; padding: 2px 8px; font-size: 0.75rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; cursor: pointer;">🗑 選択削除</button>
                 </div>
                 <div id="bookmark-list"></div>
-            </div>
-
-            <div id="outline-tab-search" class="outline-tab-content">
-                <div class="outline-empty" style="margin-bottom:8px;">検索パネルをここに表示します（Alt+Fで一発表示）</div>
-                <div id="nav-search-host"></div>
-            </div>
-            <div id="outline-tab-proof" class="outline-tab-content">
-                <div id="proofread-modal" class="proofread-embedded">
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
-                        <label style="display:flex; align-items:center; gap:6px;">範囲
-                            <select id="pf-scope" style="height:30px; border-radius:10px; border:1px solid var(--border-color); padding:0 8px; background:var(--panel-bg); color:var(--text-color);">
-                                <option value="current" selected>このタブ</option>
-                                <option value="all">全タブ</option>
-                            </select>
-                        </label>
-                        <label><input type="checkbox" id="pf-unclosed" checked>「」等の未閉じ</label>
-                        <label><input type="checkbox" id="pf-sentend" checked>文末（。！？）の不足</label>
-                        <label><input type="checkbox" id="pf-punct" checked>約物・空白のゆらぎ</label>
-                        <button class="btn btn-apply" id="btn-proofread-run-inline" onclick="runProofread()">チェック開始</button>
-                        <button class="btn" id="btn-proofread-ignore" type="button" onclick="openProofIgnoreManager()">無視リスト</button>
-                    </div>
-                    <div id="proofread-results"><div class="outline-empty">まだ結果はありません</div></div>
-                    <div style="font-size:0.85rem; color:var(--text-muted); margin-top:10px; line-height:1.5;">※結果をクリックすると該当箇所へジャンプします。</div>
-                </div>
-            </div>
-            <div id="outline-tab-memo" class="outline-tab-content">
-                <div id="nav-memo-host"></div>
             </div>
         </div>
         <div id="outline-summary" class="outline-summary"></div>
@@ -2120,6 +2140,33 @@
     <button onclick="quickWrapSelection('『', '』')">『』</button>
     <button onclick="quickWrapSelection('（', '）')">（）</button>
     <button style="color:#d97706;" onclick="quickAddBookmark()">🔖しおり</button>
+</div>
+
+<!-- Independent Proofread Panel -->
+<div id="proof-panel" class="floating-panel" style="display:none; position:fixed; top:100px; right:20px; width:420px; max-width:90vw; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:10px; z-index:1000; box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+    <div class="floating-panel-header" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--pane-header-bg); border-bottom:1px solid var(--border-color); border-radius:10px 10px 0 0; cursor:move;" onmousedown="startDragPanel(event, 'proof-panel')">
+        <span style="font-weight:bold;">🧹 校正チェック</span>
+        <button onclick="toggleProofPanel()" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">✕</button>
+    </div>
+    <div style="padding:12px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:6px;">範囲
+                <select id="pf-scope" style="height:30px; border-radius:10px; border:1px solid var(--border-color); padding:0 8px; background:var(--panel-bg); color:var(--text-color);">
+                    <option value="current" selected>このタブ</option>
+                    <option value="all">全タブ</option>
+                </select>
+            </label>
+            <label><input type="checkbox" id="pf-unclosed" checked>「」等の未閉じ</label>
+            <label><input type="checkbox" id="pf-sentend" checked>文末（。！？）の不足</label>
+            <label><input type="checkbox" id="pf-punct" checked>約物・空白のゆらぎ</label>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <button class="btn btn-apply" onclick="runProofread()">チェック開始</button>
+            <button class="btn" onclick="openProofIgnoreManager()">無視リスト</button>
+        </div>
+        <div id="proofread-results" style="max-height:300px; overflow:auto; border:1px solid var(--border-color); border-radius:8px; padding:8px; background:var(--bg-color);"><div class="outline-empty">まだ結果はありません</div></div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">※結果をクリックすると該当箇所へジャンプします。</div>
+    </div>
 </div>
 
 <div id="save-dialog-overlay" class="save-dialog-overlay" style="display:none;">
@@ -5964,6 +6011,7 @@ function setupMemoInteractionGuard() {
 
       #pane-preview { background: var(--pane-preview-bg, var(--panel-bg)); }
       #pane-preview .pane-header, #pane-preview .pane-subheader, #pane-preview .tabs-scroll-wrap { background: var(--pane-preview-head, var(--pane-header-bg)); }
+      #pane-preview .pane-body { background-color: var(--pane-preview-bg, var(--preview-bg-color)); }
 
       #memo-panel { background: var(--pane-memo-bg, var(--panel-bg)); }
       #memo-panel .memo-header, #memo-panel .memo-toolbar { background: var(--pane-memo-head, var(--pane-header-bg)); }
@@ -6803,6 +6851,7 @@ function setupMemoInteractionGuard() {
       box.appendChild(note);
     }
   }
+  window.runProofread = runProofread;
 
   // -----------------------------
   // 10) Search/Replace: scope current/all + hits list + replace preview
@@ -8050,9 +8099,537 @@ function setupMemoInteractionGuard() {
   }
 
   function init(){
-    relocatePanelsIntoNav();
+    // relocatePanelsIntoNav(); // Disabled: keep panels independent per user request
+    setupIndependentPanels();
     hookAltShortcuts();
     patchSearchTargetAndEngine();
+  }
+
+  // Setup independent panels (memo, outline, search, proof) instead of nav tabs
+  function setupIndependentPanels(){
+    // Keep search-bar in controls-wrapper (don't move to nav)
+    const searchBar = document.getElementById('search-bar');
+    if (searchBar) {
+      const pin = searchBar.querySelector('.panel-pin-btn');
+      const close = searchBar.querySelector('.panel-close-btn');
+      if (pin) pin.style.display = '';
+      if (close) close.style.display = '';
+    }
+
+    // Keep memo-panel independent
+    const memoPanel = document.getElementById('memo-panel');
+    if (memoPanel) {
+      memoPanel.classList.remove('open');
+    }
+
+    // Show resizers
+    const rz1 = document.getElementById('resizer-memo');
+    const rz2 = document.getElementById('resizer-memo-outline');
+    if (rz1) rz1.style.display = '';
+    if (rz2) rz2.style.display = '';
+
+    // Header buttons -> toggle individual panels
+    const btnMemo = document.getElementById('btn-toggle-memo');
+    if (btnMemo) btnMemo.onclick = ()=> toggleMemoPanel();
+    const btnOutline = document.getElementById('btn-toggle-outline');
+    if (btnOutline) btnOutline.onclick = ()=> toggleOutlinePanel();
+    const btnSearch = document.getElementById('btn-toggle-search');
+    if (btnSearch) btnSearch.onclick = ()=> toggleSearchPanel();
+
+    // Ctrl+F -> search panel
+    document.addEventListener('keydown', (e)=>{
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && (e.key==='f' || e.key==='F')){
+        e.preventDefault();
+        toggleSearchPanel();
+      }
+    }, true);
+  }
+
+  // Toggle search panel
+  function toggleSearchPanel(){
+    const panel = document.getElementById('search-bar');
+    if (!panel) return;
+    const isOpen = panel.classList.contains('active') || panel.style.display === 'flex';
+    if (isOpen) {
+      panel.classList.remove('active');
+      panel.style.display = 'none';
+    } else {
+      panel.classList.add('active');
+      panel.style.display = 'flex';
+      const input = document.getElementById('search-input');
+      if (input) setTimeout(()=> input.focus(), 0);
+    }
+    checkPanelLimit();
+  }
+  window.toggleSearchPanel = toggleSearchPanel;
+
+  // Toggle outline panel
+  function toggleOutlinePanel(){
+    const panel = document.getElementById('outline-panel');
+    if (!panel) return;
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open');
+    } else {
+      panel.classList.add('open');
+      // Show outline tab by default
+      switchOutlineTabDirect('outline');
+    }
+    checkPanelLimit();
+    try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
+  }
+  window.toggleOutlinePanel = toggleOutlinePanel;
+
+  // Switch outline tab directly (for independent outline panel)
+  function switchOutlineTabDirect(tabName){
+    document.querySelectorAll('#outline-panel .outline-tab-content').forEach(d=>d.classList.remove('active'));
+    const content = document.getElementById('outline-tab-'+tabName);
+    if (content) content.classList.add('active');
+    document.querySelectorAll('#outline-panel .memo-tab').forEach(t=>t.classList.remove('active'));
+    const tabEl = document.querySelector(`#outline-panel .memo-tab[onclick*="${tabName}"]`);
+    if (tabEl) tabEl.classList.add('active');
+  }
+  window.switchOutlineTabDirect = switchOutlineTabDirect;
+
+  // Panel limit check (max 4 panels including input/preview)
+  function checkPanelLimit(){
+    const MAX_PANELS = 4;
+    const openPanels = [];
+
+    // Count open panels (input and preview always count as 1 each if visible)
+    const inputPane = document.getElementById('pane-input');
+    const previewPane = document.getElementById('pane-preview');
+    if (inputPane && inputPane.style.display !== 'none') openPanels.push({id: 'pane-input', name: '入力'});
+    if (previewPane && previewPane.style.display !== 'none') openPanels.push({id: 'pane-preview', name: 'プレビュー'});
+
+    const memoPanel = document.getElementById('memo-panel');
+    const outlinePanel = document.getElementById('outline-panel');
+    const searchBar = document.getElementById('search-bar');
+
+    if (memoPanel && memoPanel.classList.contains('open')) openPanels.push({id: 'memo-panel', name: 'メモ'});
+    if (outlinePanel && outlinePanel.classList.contains('open')) openPanels.push({id: 'outline-panel', name: '目次'});
+    if (searchBar && (searchBar.classList.contains('active') || searchBar.style.display === 'flex')) openPanels.push({id: 'search-bar', name: '検索'});
+
+    // Show swap notification if over limit
+    if (openPanels.length > MAX_PANELS) {
+      showPanelSwapNotification(openPanels);
+    } else {
+      hidePanelSwapNotification();
+    }
+  }
+  window.checkPanelLimit = checkPanelLimit;
+
+  // Show panel swap notification
+  function showPanelSwapNotification(panels){
+    let notify = document.getElementById('panel-swap-notify');
+    if (!notify) {
+      notify = document.createElement('div');
+      notify.id = 'panel-swap-notify';
+      notify.style.cssText = 'position:fixed; bottom:60px; right:20px; background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:12px 16px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:0.85rem;';
+      document.body.appendChild(notify);
+    }
+
+    // Build swap options (exclude input/preview)
+    const swappable = panels.filter(p => p.id !== 'pane-input' && p.id !== 'pane-preview');
+    const lastPanel = swappable[swappable.length - 1];
+
+    let html = '<div style="margin-bottom:8px; font-weight:bold;">⚠ パネルが4枚を超えています</div>';
+    html += '<div style="margin-bottom:8px;">閉じるパネルを選択してください：</div>';
+    html += '<select id="panel-swap-select" style="padding:4px 8px; border-radius:4px; border:1px solid #d4a574; margin-right:8px;">';
+    swappable.forEach(p => {
+      html += `<option value="${p.id}">${p.name}</option>`;
+    });
+    html += '</select>';
+    html += '<button onclick="closePanelFromSwap()" style="padding:4px 12px; background:#f59e0b; color:white; border:none; border-radius:4px; cursor:pointer;">閉じる</button>';
+    html += '<button onclick="hidePanelSwapNotification()" style="padding:4px 8px; background:#e5e7eb; border:none; border-radius:4px; cursor:pointer; margin-left:4px;">×</button>';
+
+    notify.innerHTML = html;
+    notify.style.display = 'block';
+  }
+  window.showPanelSwapNotification = showPanelSwapNotification;
+
+  function hidePanelSwapNotification(){
+    const notify = document.getElementById('panel-swap-notify');
+    if (notify) notify.style.display = 'none';
+  }
+  window.hidePanelSwapNotification = hidePanelSwapNotification;
+
+  function closePanelFromSwap(){
+    const sel = document.getElementById('panel-swap-select');
+    if (!sel) return;
+    const panelId = sel.value;
+
+    if (panelId === 'memo-panel') {
+      const panel = document.getElementById('memo-panel');
+      if (panel) panel.classList.remove('open');
+    } else if (panelId === 'outline-panel') {
+      const panel = document.getElementById('outline-panel');
+      if (panel) panel.classList.remove('open');
+    } else if (panelId === 'search-bar') {
+      const panel = document.getElementById('search-bar');
+      if (panel) {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      }
+    }
+
+    hidePanelSwapNotification();
+    checkPanelLimit();
+  }
+  window.closePanelFromSwap = closePanelFromSwap;
+
+  // Toggle proof panel
+  function toggleProofPanel(){
+    const panel = document.getElementById('proof-panel');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    if (isOpen) {
+      panel.style.display = 'none';
+    } else {
+      panel.style.display = 'block';
+    }
+    checkPanelLimit();
+  }
+  window.toggleProofPanel = toggleProofPanel;
+
+  // Toggle outline settings overlay
+  function toggleOutlineSettings(){
+    const overlay = document.getElementById('outline-settings-overlay');
+    if (!overlay) return;
+    overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
+
+    // Sync with current settings if opening
+    if (overlay.style.display === 'block') {
+      syncOutlineRulesToOverlay();
+    }
+  }
+  window.toggleOutlineSettings = toggleOutlineSettings;
+
+  // Sync outline rules from settings panel to overlay
+  function syncOutlineRulesToOverlay(){
+    const mappings = [
+      ['st-outline-use-hash', 'or-use-hash'],
+      ['st-outline-use-box', 'or-use-box'],
+      ['st-outline-use-tri', 'or-use-tri'],
+      ['st-outline-use-dia', 'or-use-dia'],
+      ['st-outline-use-cir', 'or-use-cir'],
+      ['st-outline-use-chapter', 'or-use-chapter'],
+      ['st-outline-use-circnum', 'or-use-circnum'],
+      ['st-outline-use-roman', 'or-use-roman'],
+    ];
+    mappings.forEach(([srcId, dstId]) => {
+      const src = document.getElementById(srcId);
+      const dst = document.getElementById(dstId);
+      if (src && dst) dst.checked = src.checked;
+    });
+    const srcCustom = document.getElementById('st-outline-extra');
+    const dstCustom = document.getElementById('or-extra');
+    if (srcCustom && dstCustom) dstCustom.value = srcCustom.value;
+  }
+
+  // Apply outline rules from overlay
+  function applyOutlineRulesFromOverlay(){
+    const mappings = [
+      ['or-use-hash', 'st-outline-use-hash'],
+      ['or-use-box', 'st-outline-use-box'],
+      ['or-use-tri', 'st-outline-use-tri'],
+      ['or-use-dia', 'st-outline-use-dia'],
+      ['or-use-cir', 'st-outline-use-cir'],
+      ['or-use-chapter', 'st-outline-use-chapter'],
+      ['or-use-circnum', 'st-outline-use-circnum'],
+      ['or-use-roman', 'st-outline-use-roman'],
+    ];
+    mappings.forEach(([srcId, dstId]) => {
+      const src = document.getElementById(srcId);
+      const dst = document.getElementById(dstId);
+      if (src && dst) dst.checked = src.checked;
+    });
+    const srcCustom = document.getElementById('or-extra');
+    const dstCustom = document.getElementById('st-outline-extra');
+    if (srcCustom && dstCustom) dstCustom.value = srcCustom.value;
+
+    // Apply and regenerate outline
+    if (typeof window.applyExtendedSettings === 'function') window.applyExtendedSettings();
+    if (typeof window.generateOutline === 'function') window.generateOutline();
+
+    toggleOutlineSettings();
+  }
+  window.applyOutlineRulesFromOverlay = applyOutlineRulesFromOverlay;
+
+  // Drag functionality for floating panels
+  let dragState = { panel: null, offsetX: 0, offsetY: 0 };
+  function startDragPanel(e, panelId){
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    dragState.panel = panel;
+    dragState.offsetX = e.clientX - panel.offsetLeft;
+    dragState.offsetY = e.clientY - panel.offsetTop;
+    document.addEventListener('mousemove', onDragPanel);
+    document.addEventListener('mouseup', stopDragPanel);
+    e.preventDefault();
+  }
+  window.startDragPanel = startDragPanel;
+
+  function onDragPanel(e){
+    if (!dragState.panel) return;
+    dragState.panel.style.left = (e.clientX - dragState.offsetX) + 'px';
+    dragState.panel.style.top = (e.clientY - dragState.offsetY) + 'px';
+    dragState.panel.style.right = 'auto';
+  }
+
+  function stopDragPanel(){
+    dragState.panel = null;
+    document.removeEventListener('mousemove', onDragPanel);
+    document.removeEventListener('mouseup', stopDragPanel);
+  }
+
+  // Right-click context menu for coloring
+  function setupContextMenus(){
+    // Tab right-click for active tab color
+    document.addEventListener('contextmenu', (e) => {
+      const tab = e.target.closest('.input-tab, .preview-tab, .memo-tab');
+      if (tab) {
+        e.preventDefault();
+        showTabContextMenu(e, tab);
+        return;
+      }
+
+      // Pane header right-click for header color
+      const header = e.target.closest('.pane-header, .memo-header, .outline-header');
+      if (header) {
+        e.preventDefault();
+        showHeaderContextMenu(e, header);
+        return;
+      }
+    });
+  }
+
+  function showTabContextMenu(e, tab){
+    hideAllContextMenus();
+    let menu = document.getElementById('tab-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'tab-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:160px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" onclick="renameActiveTab()">リネーム</div>
+      <div class="context-menu-item" onclick="duplicateTab()">複製</div>
+      <div class="context-menu-item" onclick="addNewTab()">＋ 新しいタブ</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" onclick="showTabColorPicker(event)">🎨 カラーリングの変更</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" style="color:#dc2626;" onclick="closeActiveTab()">× このタブを閉じる</div>
+    `;
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    // Close on click outside
+    setTimeout(() => {
+      document.addEventListener('click', hideAllContextMenus, { once: true });
+    }, 0);
+  }
+
+  function showHeaderContextMenu(e, header){
+    hideAllContextMenus();
+    let menu = document.getElementById('header-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'header-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:180px;';
+      document.body.appendChild(menu);
+    }
+
+    const paneId = header.closest('.pane, #memo-panel, #outline-panel')?.id || '';
+    menu.dataset.paneId = paneId;
+
+    menu.innerHTML = `
+      <div class="context-menu-item" onclick="showHeaderColorPicker('${paneId}')">🎨 ヘッダーカラーの変更</div>
+      <div class="context-menu-item" onclick="showBgColorPicker('${paneId}')">🖼️ 背景色の変更</div>
+    `;
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    setTimeout(() => {
+      document.addEventListener('click', hideAllContextMenus, { once: true });
+    }, 0);
+  }
+
+  function hideAllContextMenus(){
+    ['tab-context-menu', 'header-context-menu', 'color-picker-popup'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+  window.hideAllContextMenus = hideAllContextMenus;
+
+  function showTabColorPicker(e){
+    if (e) e.stopPropagation();
+    hideAllContextMenus();
+
+    let picker = document.getElementById('color-picker-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'color-picker-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
+      document.body.appendChild(picker);
+    }
+
+    picker.innerHTML = `
+      <div style="margin-bottom:8px; font-weight:bold;">アクティブタブの色</div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="tab-color-input" value="#fff59d" style="width:50px; height:30px;">
+        <input type="text" id="tab-color-text" value="#fff59d" style="width:80px; padding:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">
+        <button onclick="setTabColor('#fff59d')" style="width:24px; height:24px; background:#fff59d; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+        <button onclick="setTabColor('#fecaca')" style="width:24px; height:24px; background:#fecaca; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+        <button onclick="setTabColor('#bfdbfe')" style="width:24px; height:24px; background:#bfdbfe; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+        <button onclick="setTabColor('#bbf7d0')" style="width:24px; height:24px; background:#bbf7d0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+        <button onclick="setTabColor('#ddd6fe')" style="width:24px; height:24px; background:#ddd6fe; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+        <button onclick="setTabColor('#fed7aa')" style="width:24px; height:24px; background:#fed7aa; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></button>
+      </div>
+      <button class="btn btn-apply" onclick="applyTabColor()">適用</button>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = document.getElementById('tab-color-input');
+    const colorText = document.getElementById('tab-color-text');
+    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
+  }
+  window.showTabColorPicker = showTabColorPicker;
+
+  function setTabColor(color){
+    document.getElementById('tab-color-input').value = color;
+    document.getElementById('tab-color-text').value = color;
+  }
+  window.setTabColor = setTabColor;
+
+  function applyTabColor(){
+    const color = document.getElementById('tab-color-input')?.value || '#fff59d';
+    document.documentElement.style.setProperty('--active-tab-bg', color);
+    try { localStorage.setItem('cc_active_tab_color', color); } catch(e){}
+    hideAllContextMenus();
+  }
+  window.applyTabColor = applyTabColor;
+
+  function showHeaderColorPicker(paneId){
+    hideAllContextMenus();
+
+    let picker = document.getElementById('color-picker-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'color-picker-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
+      document.body.appendChild(picker);
+    }
+
+    picker.dataset.paneId = paneId;
+    picker.dataset.colorType = 'header';
+
+    picker.innerHTML = `
+      <div style="margin-bottom:8px; font-weight:bold;">ヘッダーカラー</div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="header-color-input" value="#f9fafb" style="width:50px; height:30px;">
+        <input type="text" id="header-color-text" value="#f9fafb" style="width:80px; padding:4px;">
+      </div>
+      <button class="btn btn-apply" onclick="applyHeaderColor('${paneId}')">適用</button>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = document.getElementById('header-color-input');
+    const colorText = document.getElementById('header-color-text');
+    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
+  }
+  window.showHeaderColorPicker = showHeaderColorPicker;
+
+  function applyHeaderColor(paneId){
+    const color = document.getElementById('header-color-input')?.value || '#f9fafb';
+    const paneMap = {
+      'pane-input': '--pane-input-head',
+      'pane-preview': '--pane-preview-head',
+      'memo-panel': '--pane-memo-head',
+      'outline-panel': '--pane-outline-head',
+    };
+    const varName = paneMap[paneId];
+    if (varName) {
+      document.documentElement.style.setProperty(varName, color);
+    }
+    hideAllContextMenus();
+  }
+  window.applyHeaderColor = applyHeaderColor;
+
+  function showBgColorPicker(paneId){
+    hideAllContextMenus();
+
+    let picker = document.getElementById('color-picker-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'color-picker-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:200px;';
+      document.body.appendChild(picker);
+    }
+
+    picker.innerHTML = `
+      <div style="margin-bottom:8px; font-weight:bold;">背景色</div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="bg-color-input" value="#ffffff" style="width:50px; height:30px;">
+        <input type="text" id="bg-color-text" value="#ffffff" style="width:80px; padding:4px;">
+      </div>
+      <button class="btn btn-apply" onclick="applyBgColor('${paneId}')">適用</button>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = document.getElementById('bg-color-input');
+    const colorText = document.getElementById('bg-color-text');
+    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+    colorText.addEventListener('change', () => { colorInput.value = colorText.value; });
+  }
+  window.showBgColorPicker = showBgColorPicker;
+
+  function applyBgColor(paneId){
+    const color = document.getElementById('bg-color-input')?.value || '#ffffff';
+    const paneMap = {
+      'pane-input': '--pane-input-bg',
+      'pane-preview': '--pane-preview-bg',
+      'memo-panel': '--pane-memo-bg',
+      'outline-panel': '--pane-outline-bg',
+    };
+    const varName = paneMap[paneId];
+    if (varName) {
+      document.documentElement.style.setProperty(varName, color);
+    }
+    hideAllContextMenus();
+  }
+  window.applyBgColor = applyBgColor;
+
+  // Initialize context menus
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupContextMenus);
+  } else {
+    setupContextMenus();
   }
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);

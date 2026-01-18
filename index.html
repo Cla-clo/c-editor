@@ -10669,6 +10669,7 @@ function setupMemoInteractionGuard() {
 
     if (!isOpen) {
       // 閉じている → オーバーレイで開く
+      if (container) container.classList.remove('structure-right');
       panel.classList.add('open');
       if (isDocked) {
         checkbox.checked = false;

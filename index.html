@@ -10304,12 +10304,15 @@ function setupMemoInteractionGuard() {
       renderStructureList();
     };
     picker.addEventListener('input', structureColorPickerHandler);
-    picker.focus();
-    if (typeof picker.showPicker === 'function') {
-      picker.showPicker();
-    } else {
-      picker.click();
-    }
+    // メニューが閉じた後にピッカーを表示するためsetTimeoutを使用
+    setTimeout(() => {
+      picker.focus();
+      if (typeof picker.showPicker === 'function') {
+        picker.showPicker();
+      } else {
+        picker.click();
+      }
+    }, 0);
   }
 
   function resetStructureCardColor(cardId) {
@@ -10662,6 +10665,7 @@ function setupMemoInteractionGuard() {
   function toggleStructurePanel() {
     const panel = document.getElementById('structure-panel');
     const checkbox = document.getElementById('check-structure-dock');
+    const container = document.getElementById('main-container');
     if (!panel || !checkbox) return;
 
     const isOpen = panel.classList.contains('open');

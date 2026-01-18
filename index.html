@@ -1384,29 +1384,57 @@
         background: #bae6fd;
     }
 
-    /* 構成編集モーダル内のリンク選択 */
+    /* 構成編集モーダル内のリンク選択（タグクリック形式） */
     .structure-link-select-container {
-        max-height: 200px;
+        max-height: 150px;
         overflow-y: auto;
-        overflow-x: auto;
         border: 1px solid var(--border-color);
         border-radius: 6px;
-        padding: 8px;
+        padding: 6px;
         background: var(--pane-header-bg);
-    }
-    .structure-link-checkbox-item {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        border-bottom: 1px solid var(--border-color);
-        white-space: nowrap;
-        min-width: max-content;
+        flex-wrap: wrap;
+        gap: 6px;
     }
-    .structure-link-checkbox-item:last-child {
-        border-bottom: none;
+    .link-tag-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .link-tag-item:hover {
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+    }
+    .link-tag-item.selected {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1d4ed8;
+    }
+    .link-tag-item .link-tag-badge {
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        border-radius: 6px;
+        background: rgba(0,0,0,0.08);
+    }
+    .link-tag-item.selected .link-tag-badge {
+        background: rgba(59,130,246,0.2);
+    }
+    body.theme-dark .link-tag-item:hover {
+        background: #1e3a5f;
+        border-color: #3b82f6;
+    }
+    body.theme-dark .link-tag-item.selected {
+        background: #1e40af;
+        border-color: #60a5fa;
+        color: #93c5fd;
     }
     .structure-link-checkbox-item:hover {
         background: rgba(0,0,0,0.05);
@@ -5653,6 +5681,13 @@ function updateDockSplitState() {
     document.addEventListener('click', e => {
         // パネル操作中（タブクリック等）に誤って閉じないようにする
         if (window.memoInteracting || window.outlineInteracting) return;
+        // モーダルやダイアログ、コンテキストメニュー、色選択が開いている場合は閉じない
+        if (e.target.closest('.modal-overlay') || e.target.closest('.save-dialog-overlay') || e.target.closest('.import-dialog-overlay')) return;
+        if (e.target.closest('#structure-edit-modal') || e.target.closest('#character-edit-modal') || e.target.closest('#world-edit-modal')) return;
+        if (e.target.closest('#structure-context-menu') || e.target.closest('#character-context-menu') || e.target.closest('#world-context-menu')) return;
+        if (e.target.closest('#structure-color-popup') || e.target.closest('#character-color-popup') || e.target.closest('#world-color-popup')) return;
+        if (e.target.closest('.structure-link-popup') || e.target.closest('.tag-suggestions') || e.target.closest('.structure-tag-suggestions')) return;
+        // パネル自体をクリックした場合は閉じない
         if (e.target.closest('#memo-panel') || e.target.closest('#outline-panel') || e.target.closest('#structure-panel')) return;
         if (e.target.closest('#character-panel') || e.target.closest('#world-panel') || e.target.closest('#search-panel')) return;
         if (e.target.closest('#btn-toggle-memo') || e.target.closest('#btn-toggle-outline') || e.target.closest('#btn-toggle-structure')) return;
@@ -9094,8 +9129,8 @@ function setupMemoInteractionGuard() {
               <button class="btn" id="cc-pane-colors-reset">リセット</button>
             </div>
             <div class="setting-row" style="flex-direction:column; gap:10px; align-items:stretch;">
-              ${['input','preview','memo','outline','structure'].map(k=>{
-                const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成'})[k];
+              ${['input','preview','memo','outline','structure','character','world'].map(k=>{
+                const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成',character:'登場人物',world:'世界観'})[k];
                 return `
                 <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
                   <div style="min-width:64px; font-weight:700;">${label}</div>
@@ -9119,7 +9154,7 @@ function setupMemoInteractionGuard() {
       const saved = loadPaneColors();
       const use = saved || null;
       const norm = (v)=>{ if(!v) return null; return v.startsWith('#')?v:'#'+v; };
-      for (const k of ['input','preview','memo','outline','structure']){
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bg = (use && use[k] && use[k].bg) ? use[k].bg : defaults[k].bg;
         const head = (use && use[k] && use[k].head) ? use[k].head : defaults[k].head;
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
@@ -11792,13 +11827,16 @@ function setupMemoInteractionGuard() {
 
     const CHARACTER_ROLES = { protagonist: '主人公', heroine: 'ヒロイン', antagonist: '敵役', supporting: 'サブ', mob: 'モブ' };
     container.innerHTML = characterData.map(c => {
-      const checked = selectedIds.includes(c.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="struct-char-${c.id}" value="${c.id}" ${checked}>
-        <label for="struct-char-${c.id}">${escapeHtml(c.name)}</label>
-        <span class="link-item-badge role-${c.role}">${CHARACTER_ROLES[c.role] || c.role}</span>
-      </div>`;
+      const selected = selectedIds.includes(c.id) ? 'selected' : '';
+      const roleLabel = CHARACTER_ROLES[c.role] || c.role || '';
+      return `<span class="link-tag-item ${selected}" data-id="${c.id}" onclick="toggleStructureCharacterLink(${c.id})">${escapeHtml(c.name)}${roleLabel ? `<span class="link-tag-badge">${roleLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleStructureCharacterLink(id) {
+    const container = document.getElementById('structure-edit-characters');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function populateWorldCheckboxes(selectedIds) {
@@ -11813,13 +11851,16 @@ function setupMemoInteractionGuard() {
 
     const WORLD_LEVELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
     container.innerHTML = worldData.map(w => {
-      const checked = selectedIds.includes(w.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="struct-world-${w.id}" value="${w.id}" ${checked}>
-        <label for="struct-world-${w.id}">${escapeHtml(w.name)}</label>
-        <span class="link-item-badge level-${w.level}">${WORLD_LEVELS[w.level] || w.level}</span>
-      </div>`;
+      const selected = selectedIds.includes(w.id) ? 'selected' : '';
+      const levelLabel = WORLD_LEVELS[w.level] || w.level || '';
+      return `<span class="link-tag-item ${selected}" data-id="${w.id}" onclick="toggleStructureWorldLink(${w.id})">${escapeHtml(w.name)}${levelLabel ? `<span class="link-tag-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleStructureWorldLink(id) {
+    const container = document.getElementById('structure-edit-worlds');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function closeStructureEditModal() {
@@ -11854,18 +11895,18 @@ function setupMemoInteractionGuard() {
     const tabId = document.getElementById('structure-edit-tab').value;
     card.tabId = tabId ? parseInt(tabId) : null;
 
-    // リンクされた登場人物を取得
+    // リンクされた登場人物を取得（タグクリック形式）
     const charContainer = document.getElementById('structure-edit-characters');
     if (charContainer) {
-      const checkedChars = charContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedCharacters = Array.from(checkedChars).map(cb => parseInt(cb.value));
+      const selectedChars = charContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedCharacters = Array.from(selectedChars).map(el => parseInt(el.dataset.id));
     }
 
-    // リンクされた世界観を取得
+    // リンクされた世界観を取得（タグクリック形式）
     const worldContainer = document.getElementById('structure-edit-worlds');
     if (worldContainer) {
-      const checkedWorlds = worldContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedWorlds = Array.from(checkedWorlds).map(cb => parseInt(cb.value));
+      const selectedWorlds = worldContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedWorlds = Array.from(selectedWorlds).map(el => parseInt(el.dataset.id));
     }
 
     card.isNew = false;
@@ -12715,13 +12756,16 @@ function setupMemoInteractionGuard() {
 
     const LEVEL_LABELS = { chapter: '章', episode: '話', scene: 'シーン' };
     container.innerHTML = structureData.map(s => {
-      const checked = selectedIds.includes(s.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="char-struct-${s.id}" value="${s.id}" ${checked}>
-        <label for="char-struct-${s.id}">${escapeHtml(s.title)}</label>
-        <span class="link-item-badge">${LEVEL_LABELS[s.level] || s.level}</span>
-      </div>`;
+      const selected = selectedIds.includes(s.id) ? 'selected' : '';
+      const levelLabel = LEVEL_LABELS[s.level] || s.level || '';
+      return `<span class="link-tag-item ${selected}" data-id="${s.id}" onclick="toggleCharacterStructureLink(${s.id})">${escapeHtml(s.title)}${levelLabel ? `<span class="link-tag-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleCharacterStructureLink(id) {
+    const container = document.getElementById('character-edit-structures');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function populateCharacterWorldCheckboxes(selectedIds) {
@@ -12736,13 +12780,16 @@ function setupMemoInteractionGuard() {
 
     const WORLD_LEVELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
     container.innerHTML = worldData.map(w => {
-      const checked = selectedIds.includes(w.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="char-world-${w.id}" value="${w.id}" ${checked}>
-        <label for="char-world-${w.id}">${escapeHtml(w.name)}</label>
-        <span class="link-item-badge">${WORLD_LEVELS[w.level] || w.level}</span>
-      </div>`;
+      const selected = selectedIds.includes(w.id) ? 'selected' : '';
+      const levelLabel = WORLD_LEVELS[w.level] || w.level || '';
+      return `<span class="link-tag-item ${selected}" data-id="${w.id}" onclick="toggleCharacterWorldLink(${w.id})">${escapeHtml(w.name)}${levelLabel ? `<span class="link-tag-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleCharacterWorldLink(id) {
+    const container = document.getElementById('character-edit-worlds');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function closeCharacterEditModal() {
@@ -12765,8 +12812,11 @@ function setupMemoInteractionGuard() {
     const card = characterData.find(c => c.id === editingCharacterId);
     if (!card) return;
 
-    const roleValue = document.getElementById('character-edit-role').value.trim();
-    card.name = document.getElementById('character-edit-name').value.trim() || roleValue || '名前未設定';
+    const roleInputValue = document.getElementById('character-edit-role').value.trim();
+    // 日本語ラベルをキーに変換（プリセット役割のみ）
+    const LABEL_TO_KEY = { '主人公': 'protagonist', 'ヒロイン': 'heroine', '敵役': 'antagonist', 'サブ': 'supporting', 'モブ': 'mob' };
+    const roleValue = LABEL_TO_KEY[roleInputValue] || roleInputValue;
+    card.name = document.getElementById('character-edit-name').value.trim() || roleInputValue || '名前未設定';
     card.reading = document.getElementById('character-edit-reading').value.trim();
     card.outlineLevel = document.getElementById('character-edit-level')?.value || '1';
     card.role = roleValue || '未設定';
@@ -12774,18 +12824,18 @@ function setupMemoInteractionGuard() {
     card.freeTags = document.getElementById('character-edit-freetags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('character-edit-description').value.trim();
 
-    // 関連する構成を取得
+    // 関連する構成を取得（タグクリック形式）
     const structContainer = document.getElementById('character-edit-structures');
     if (structContainer) {
-      const checkedStructs = structContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedStructures = Array.from(checkedStructs).map(cb => parseInt(cb.value));
+      const selectedStructs = structContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedStructures = Array.from(selectedStructs).map(el => parseInt(el.dataset.id));
     }
 
-    // 関連する世界観を取得
+    // 関連する世界観を取得（タグクリック形式）
     const worldContainer = document.getElementById('character-edit-worlds');
     if (worldContainer) {
-      const checkedWorlds = worldContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedWorlds = Array.from(checkedWorlds).map(cb => parseInt(cb.value));
+      const selectedWorlds = worldContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedWorlds = Array.from(selectedWorlds).map(el => parseInt(el.dataset.id));
     }
 
     card.isNew = false;
@@ -13109,22 +13159,42 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('character-role-suggestions');
     if (!container) return;
     if (container.style.display === 'none') {
-      const presets = ['主人公', 'ヒロイン', '敵役', 'サブ', 'モブ'];
-      const existingRoles = getAllCharacterRoles().filter(r => !presets.includes(r));
-      const allRoles = [...presets, ...existingRoles];
-      container.innerHTML = allRoles.map(r => {
-        const isPreset = presets.includes(r) ? ' style="background:#fef3c7; color:#92400e;"' : '';
-        return `<span class="tag-item"${isPreset} onclick="setCharacterRole('${r.replace(/'/g, "\\'")}')">${r}</span>`;
-      }).join('');
+      // プリセット: キー→日本語ラベルのマッピング
+      const ROLE_PRESETS = [
+        { key: 'protagonist', label: '主人公' },
+        { key: 'heroine', label: 'ヒロイン' },
+        { key: 'antagonist', label: '敵役' },
+        { key: 'supporting', label: 'サブ' },
+        { key: 'mob', label: 'モブ' }
+      ];
+      const presetKeys = ROLE_PRESETS.map(p => p.key);
+      const presetLabels = ROLE_PRESETS.map(p => p.label);
+      const existingRoles = getAllCharacterRoles().filter(r => !presetKeys.includes(r) && !presetLabels.includes(r));
+
+      let html = ROLE_PRESETS.map(p =>
+        `<span class="tag-item" style="background:#fef3c7; color:#92400e;" onclick="setCharacterRole('${p.key}')">${p.label}</span>`
+      ).join('');
+
+      if (existingRoles.length > 0) {
+        html += existingRoles.map(r =>
+          `<span class="tag-item" onclick="setCharacterRole('${r.replace(/'/g, "\\'")}')">${r}</span>`
+        ).join('');
+      }
+
+      container.innerHTML = html;
       container.style.display = 'flex';
     } else {
       container.style.display = 'none';
     }
   }
 
-  function setCharacterRole(role) {
+  function setCharacterRole(roleKeyOrLabel) {
     const input = document.getElementById('character-edit-role');
-    if (input) input.value = role;
+    if (input) {
+      // キーが渡された場合はラベルに変換して表示
+      const ROLE_LABELS = { protagonist: '主人公', heroine: 'ヒロイン', antagonist: '敵役', supporting: 'サブ', mob: 'モブ' };
+      input.value = ROLE_LABELS[roleKeyOrLabel] || roleKeyOrLabel;
+    }
     const container = document.getElementById('character-role-suggestions');
     if (container) container.style.display = 'none';
   }
@@ -13608,7 +13678,7 @@ function setupMemoInteractionGuard() {
     // カテゴリタグ（旧形式との互換性: enumをテキストに変換）
     const levelInput = document.getElementById('world-edit-level');
     if (levelInput) {
-      const LEVEL_LABELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細項目' };
+      const LEVEL_LABELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
       const levelValue = LEVEL_LABELS[card.level] || card.level || '';
       levelInput.value = levelValue;
     }
@@ -13636,13 +13706,16 @@ function setupMemoInteractionGuard() {
 
     const CHARACTER_ROLES = { protagonist: '主人公', heroine: 'ヒロイン', antagonist: '敵役', supporting: 'サブ', mob: 'モブ' };
     container.innerHTML = characterData.map(c => {
-      const checked = selectedIds.includes(c.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="world-char-${c.id}" value="${c.id}" ${checked}>
-        <label for="world-char-${c.id}">${escapeHtml(c.name)}</label>
-        <span class="link-item-badge">${CHARACTER_ROLES[c.role] || c.role}</span>
-      </div>`;
+      const selected = selectedIds.includes(c.id) ? 'selected' : '';
+      const roleLabel = CHARACTER_ROLES[c.role] || c.role || '';
+      return `<span class="link-tag-item ${selected}" data-id="${c.id}" onclick="toggleWorldCharacterLink(${c.id})">${escapeHtml(c.name)}${roleLabel ? `<span class="link-tag-badge">${roleLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleWorldCharacterLink(id) {
+    const container = document.getElementById('world-edit-characters');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function populateWorldWorldCheckboxes(currentId, selectedIds) {
@@ -13658,13 +13731,16 @@ function setupMemoInteractionGuard() {
 
     const WORLD_LEVELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
     container.innerHTML = otherWorlds.map(w => {
-      const checked = selectedIds.includes(w.id) ? 'checked' : '';
-      return `<div class="structure-link-checkbox-item">
-        <input type="checkbox" id="world-world-${w.id}" value="${w.id}" ${checked}>
-        <label for="world-world-${w.id}">${escapeHtml(w.name)}</label>
-        <span class="link-item-badge">${WORLD_LEVELS[w.level] || w.level}</span>
-      </div>`;
+      const selected = selectedIds.includes(w.id) ? 'selected' : '';
+      const levelLabel = WORLD_LEVELS[w.level] || w.level || '';
+      return `<span class="link-tag-item ${selected}" data-id="${w.id}" onclick="toggleWorldWorldLink(${w.id})">${escapeHtml(w.name)}${levelLabel ? `<span class="link-tag-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
+  }
+
+  function toggleWorldWorldLink(id) {
+    const container = document.getElementById('world-edit-worlds');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
   }
 
   function closeWorldEditModal() {
@@ -13687,25 +13763,28 @@ function setupMemoInteractionGuard() {
     const card = worldData.find(c => c.id === editingWorldId);
     if (!card) return;
 
-    const levelValue = document.getElementById('world-edit-level').value.trim();
-    card.name = document.getElementById('world-edit-name').value.trim() || levelValue || '名前未設定';
+    const levelInputValue = document.getElementById('world-edit-level').value.trim();
+    // 日本語ラベルをキーに変換（プリセットカテゴリのみ）
+    const LABEL_TO_KEY = { '大カテゴリ': 'major', '中カテゴリ': 'middle', '詳細': 'detail' };
+    const levelValue = LABEL_TO_KEY[levelInputValue] || levelInputValue;
+    card.name = document.getElementById('world-edit-name').value.trim() || levelInputValue || '名前未設定';
     card.outlineLevel = document.getElementById('world-edit-outline-level')?.value || '1';
     card.level = levelValue || '未設定';
     card.termTags = document.getElementById('world-edit-termtags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('world-edit-description').value.trim();
 
-    // 関連する登場人物を取得
+    // 関連する登場人物を取得（タグクリック形式）
     const charContainer = document.getElementById('world-edit-characters');
     if (charContainer) {
-      const checkedChars = charContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedCharacters = Array.from(checkedChars).map(cb => parseInt(cb.value));
+      const selectedChars = charContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedCharacters = Array.from(selectedChars).map(el => parseInt(el.dataset.id));
     }
 
-    // 関連する世界観を取得
+    // 関連する世界観を取得（タグクリック形式）
     const worldContainer = document.getElementById('world-edit-worlds');
     if (worldContainer) {
-      const checkedWorlds = worldContainer.querySelectorAll('input[type="checkbox"]:checked');
-      card.linkedWorlds = Array.from(checkedWorlds).map(cb => parseInt(cb.value));
+      const selectedWorlds = worldContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedWorlds = Array.from(selectedWorlds).map(el => parseInt(el.dataset.id));
     }
 
     card.isNew = false;
@@ -14062,22 +14141,40 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('world-level-suggestions');
     if (!container) return;
     if (container.style.display === 'none') {
-      const presets = ['大カテゴリ', '中カテゴリ', '詳細項目'];
-      const existingLevels = getAllWorldLevels().filter(l => !presets.includes(l));
-      const allLevels = [...presets, ...existingLevels];
-      container.innerHTML = allLevels.map(l => {
-        const isPreset = presets.includes(l) ? ' style="background:#d1fae5; color:#065f46;"' : '';
-        return `<span class="tag-item"${isPreset} onclick="setWorldLevel('${l.replace(/'/g, "\\'")}')">${l}</span>`;
-      }).join('');
+      // プリセット: キー→日本語ラベルのマッピング
+      const LEVEL_PRESETS = [
+        { key: 'major', label: '大カテゴリ' },
+        { key: 'middle', label: '中カテゴリ' },
+        { key: 'detail', label: '詳細' }
+      ];
+      const presetKeys = LEVEL_PRESETS.map(p => p.key);
+      const presetLabels = LEVEL_PRESETS.map(p => p.label);
+      const existingLevels = getAllWorldLevels().filter(l => !presetKeys.includes(l) && !presetLabels.includes(l));
+
+      let html = LEVEL_PRESETS.map(p =>
+        `<span class="tag-item" style="background:#d1fae5; color:#065f46;" onclick="setWorldLevel('${p.key}')">${p.label}</span>`
+      ).join('');
+
+      if (existingLevels.length > 0) {
+        html += existingLevels.map(l =>
+          `<span class="tag-item" onclick="setWorldLevel('${l.replace(/'/g, "\\'")}')">${l}</span>`
+        ).join('');
+      }
+
+      container.innerHTML = html;
       container.style.display = 'flex';
     } else {
       container.style.display = 'none';
     }
   }
 
-  function setWorldLevel(level) {
+  function setWorldLevel(levelKeyOrLabel) {
     const input = document.getElementById('world-edit-level');
-    if (input) input.value = level;
+    if (input) {
+      // キーが渡された場合はラベルに変換して表示
+      const LEVEL_LABELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
+      input.value = LEVEL_LABELS[levelKeyOrLabel] || levelKeyOrLabel;
+    }
     const container = document.getElementById('world-level-suggestions');
     if (container) container.style.display = 'none';
   }

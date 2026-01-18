@@ -995,13 +995,13 @@
         flex: 0 0 auto; overflow: auto;
         min-width: 0; max-width: 45vw; width: 300px;
         border-right: 1px solid #a5b4fc; border-left: none;
-        order: 6; /* 検索(8)とメモ(-10)の間 */
+        order: -6; /* 左側に配置（メモ-10の右、入力ペイン1の左） */
     }
     .main-container.structure-docked #structure-panel.open { display: flex; }
     .main-container.structure-docked.structure-right #structure-panel { order: 7; border-right: none; border-left: 1px solid #a5b4fc; }
     .main-container.structure-docked #structure-panel.open ~ #resizer-structure { display: flex; }
     .main-container.structure-docked.structure-right #resizer-structure { order: 5; }
-    .main-container.structure-docked:not(.structure-right) #resizer-structure { order: 7; }
+    .main-container.structure-docked:not(.structure-right) #resizer-structure { order: -5; }
 
     body.focus-mode #structure-panel { display: none !important; }
 

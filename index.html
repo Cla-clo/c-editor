@@ -10304,14 +10304,12 @@ function setupMemoInteractionGuard() {
       renderStructureList();
     };
     picker.addEventListener('input', structureColorPickerHandler);
-    setTimeout(() => {
-      picker.focus();
-      if (typeof picker.showPicker === 'function') {
-        picker.showPicker();
-      } else {
-        picker.click();
-      }
-    }, 0);
+    picker.focus();
+    if (typeof picker.showPicker === 'function') {
+      picker.showPicker();
+    } else {
+      picker.click();
+    }
   }
 
   function resetStructureCardColor(cardId) {

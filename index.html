@@ -7328,6 +7328,8 @@ function setupMemoInteractionGuard() {
     memo: { bg: null, head: null },
     outline: { bg: null, head: null },
     structure: { bg: null, head: null },
+    character: { bg: null, head: null },
+    world: { bg: null, head: null },
   };
 
   function getDefaultComputedColors(){
@@ -7343,6 +7345,8 @@ function setupMemoInteractionGuard() {
       memo: { bg: panelBg, head: headerBg },
       outline: { bg: panelBg, head: headerBg },
       structure: { bg: panelBg, head: headerBg },
+      character: { bg: '#fce7f3', head: '#fce7f3' },
+      world: { bg: '#ecfdf5', head: '#d1fae5' },
     };
   }
 
@@ -7350,7 +7354,7 @@ function setupMemoInteractionGuard() {
     const saved = lsGet(PANE_COLOR_KEY, null);
     if (!saved) return null;
     const out = JSON.parse(JSON.stringify(DEFAULT_PANE_COLORS));
-    for (const k of ['input','preview','memo','outline','structure']){
+    for (const k of ['input','preview','memo','outline','structure','character','world']){
       if (saved[k]){
         out[k].bg = saved[k].bg || null;
         out[k].head = saved[k].head || null;
@@ -7368,6 +7372,8 @@ function setupMemoInteractionGuard() {
       memo: ['--pane-memo-bg','--pane-memo-head'],
       outline: ['--pane-outline-bg','--pane-outline-head'],
       structure: ['--pane-structure-bg','--pane-structure-head'],
+      character: ['--pane-character-bg','--pane-character-head'],
+      world: ['--pane-world-bg','--pane-world-head'],
     };
     for (const k of Object.keys(map)){
       const [bgVar, headVar] = map[k];
@@ -7400,6 +7406,12 @@ function setupMemoInteractionGuard() {
       #structure-panel { background: var(--pane-structure-bg, #f0f4ff); }
       #structure-panel .structure-header, #structure-panel .structure-toolbar { background: var(--pane-structure-head, #e0e7ff); }
 
+      #character-panel { background: var(--pane-character-bg, #fce7f3); }
+      #character-panel .character-header, #character-panel .character-toolbar, #character-panel .character-footer { background: var(--pane-character-head, #fce7f3); }
+
+      #world-panel { background: var(--pane-world-bg, #ecfdf5); }
+      #world-panel .world-header, #world-panel .world-toolbar, #world-panel .world-footer { background: var(--pane-world-head, #d1fae5); }
+
       /* Bookmark marker highlight in reader */
       .cc-reader-bm-mark { display:inline-block; margin-right:6px; font-size:0.9em; opacity:0.9; }
       .cc-reader-bm-hit { outline: 2px solid rgba(245, 158, 11, 0.65); outline-offset: 2px; border-radius: 6px; }
@@ -7429,8 +7441,8 @@ function setupMemoInteractionGuard() {
         <button class="btn" id="cc-pane-colors-reset">リセット</button>
       </div>
       <div class="setting-row" style="flex-direction:column; gap:10px; align-items:stretch;">
-        ${['input','preview','memo','outline','structure'].map(k=>{
-          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成'})[k];
+        ${['input','preview','memo','outline','structure','character','world'].map(k=>{
+          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成',character:'登場人物',world:'世界観'})[k];
           return `
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
             <div style="min-width:64px; font-weight:700;">${label}</div>
@@ -7466,14 +7478,14 @@ function setupMemoInteractionGuard() {
       });
     };
 
-    for (const k of ['input','preview','memo','outline','structure']){
+    for (const k of ['input','preview','memo','outline','structure','character','world']){
       syncPair(document.getElementById(`cc-pane-${k}-bg`), document.getElementById(`cc-pane-${k}-bg-t`));
       syncPair(document.getElementById(`cc-pane-${k}-head`), document.getElementById(`cc-pane-${k}-head-t`));
     }
 
     function fillUIFrom(colors){
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline','structure']){
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bg = (colors && colors[k] && colors[k].bg) ? colors[k].bg : defaults[k].bg;
         const head = (colors && colors[k] && colors[k].head) ? colors[k].head : defaults[k].head;
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
@@ -7504,8 +7516,8 @@ function setupMemoInteractionGuard() {
     if (!applyBtn || applyBtn.dataset.bound==='1') return;
     applyBtn.dataset.bound='1';
     applyBtn.addEventListener('click', ()=>{
-      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null}};
-      for (const k of ['input','preview','memo','outline','structure']){
+      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null},character:{bg:null,head:null},world:{bg:null,head:null}};
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bg = (document.getElementById(`cc-pane-${k}-bg-t`)?.value||'').trim();
         const head = (document.getElementById(`cc-pane-${k}-head-t`)?.value||'').trim();
         const norm = (v)=>{
@@ -7524,7 +7536,7 @@ function setupMemoInteractionGuard() {
       applyPaneColors(null);
       // refill UI
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline','structure']){
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
         const bgT = document.getElementById(`cc-pane-${k}-bg-t`);
         const hdEl = document.getElementById(`cc-pane-${k}-head`);

@@ -1036,6 +1036,9 @@
         transition: box-shadow 0.2s, transform 0.15s;
         position: relative;
     }
+    .structure-card.has-custom-color {
+        background: var(--structure-card-bg, var(--panel-bg));
+    }
     .structure-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .structure-card.dragging { opacity: 0.5; transform: scale(0.98); }
     .structure-card.drag-over { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
@@ -1045,15 +1048,26 @@
         border-left: 4px solid #6366f1;
         background: linear-gradient(to right, rgba(99,102,241,0.05), transparent);
     }
+    .structure-card.has-custom-color.level-chapter {
+        border-left-color: var(--structure-card-accent, #6366f1);
+        background: var(--structure-card-bg, var(--panel-bg));
+    }
     .structure-card.level-episode {
         margin-left: 16px;
         border-left: 3px solid #8b5cf6;
         background: linear-gradient(to right, rgba(139,92,246,0.03), transparent);
     }
+    .structure-card.has-custom-color.level-episode {
+        border-left-color: var(--structure-card-accent, #8b5cf6);
+        background: var(--structure-card-bg, var(--panel-bg));
+    }
     .structure-card.level-scene {
         margin-left: 32px;
         border-left: 2px solid #a78bfa;
         font-size: 0.9em;
+    }
+    .structure-card.has-custom-color.level-scene {
+        border-left-color: var(--structure-card-accent, #a78bfa);
     }
 
     .structure-card-header {
@@ -9613,7 +9627,8 @@ function setupMemoInteractionGuard() {
           ...card,
           selected: false,
           collapsed: !!card.collapsed,
-          expanded: !!card.expanded
+          expanded: !!card.expanded,
+          isNew: false
         }));
         structureNextId = parsed.nextId || 1;
       }
@@ -9626,7 +9641,7 @@ function setupMemoInteractionGuard() {
 
   function saveStructureData() {
     try {
-      const sanitized = structureData.map(({ selected, ...rest }) => rest);
+      const sanitized = structureData.map(({ selected, isNew, ...rest }) => rest);
       localStorage.setItem(STRUCTURE_STORAGE_KEY, JSON.stringify({
         data: sanitized,
         nextId: structureNextId
@@ -9649,7 +9664,9 @@ function setupMemoInteractionGuard() {
       tabId: null,
       collapsed: false,
       expanded: false,
-      selected: false
+      selected: false,
+      color: null,
+      isNew: true
     };
 
     // 適切な位置に挿入
@@ -9748,6 +9765,11 @@ function setupMemoInteractionGuard() {
     div.className = `structure-card level-${card.level}`;
     if (card.expanded) div.classList.add('expanded');
     if (card.collapsed) div.classList.add('collapsed');
+    if (card.color) {
+      div.classList.add('has-custom-color');
+      div.style.setProperty('--structure-card-accent', card.color);
+      div.style.setProperty('--structure-card-bg', toRgba(card.color, 0.12));
+    }
     div.dataset.id = card.id;
     div.draggable = true;
 
@@ -10162,6 +10184,7 @@ function setupMemoInteractionGuard() {
   }
 
   let structureMenuClickHandler = null;
+  let structureColorPickerHandler = null;
 
   function showStructureContextMenu(e, cardId) {
     if (typeof window.hideAllContextMenus === 'function') window.hideAllContextMenus();
@@ -10191,6 +10214,9 @@ function setupMemoInteractionGuard() {
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
       <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="color">🎨 カード色を変更</div>
+      <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="move-up">⬆ 上へ</div>
       <div class="context-menu-item" data-action="move-down">⬇ 下へ</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
@@ -10215,6 +10241,8 @@ function setupMemoInteractionGuard() {
         if (action === 'move-up') moveStructureCard(cardId, -1);
         if (action === 'move-down') moveStructureCard(cardId, 1);
         if (action === 'delete') deleteStructureCard(cardId);
+        if (action === 'color') openStructureCardColorPicker(cardId);
+        if (action === 'reset-color') resetStructureCardColor(cardId);
         if (action === 'move') {
           const type = item.dataset.targetType;
           const targetId = parseInt(item.dataset.targetId);
@@ -10249,6 +10277,64 @@ function setupMemoInteractionGuard() {
       document.removeEventListener('click', structureMenuClickHandler);
       structureMenuClickHandler = null;
     }
+  }
+
+  function openStructureCardColorPicker(cardId) {
+    const card = structureData.find(c => c.id === cardId);
+    if (!card) return;
+
+    let picker = document.getElementById('structure-color-picker');
+    if (!picker) {
+      picker = document.createElement('input');
+      picker.type = 'color';
+      picker.id = 'structure-color-picker';
+      picker.style.position = 'fixed';
+      picker.style.left = '-9999px';
+      picker.style.top = '-9999px';
+      document.body.appendChild(picker);
+    }
+
+    picker.value = card.color || '#6366f1';
+    if (structureColorPickerHandler) {
+      picker.removeEventListener('input', structureColorPickerHandler);
+    }
+    structureColorPickerHandler = () => {
+      card.color = picker.value;
+      saveStructureData();
+      renderStructureList();
+    };
+    picker.addEventListener('input', structureColorPickerHandler);
+    picker.click();
+  }
+
+  function resetStructureCardColor(cardId) {
+    const card = structureData.find(c => c.id === cardId);
+    if (!card) return;
+    card.color = null;
+    saveStructureData();
+    renderStructureList();
+  }
+
+  function toRgba(color, alpha = 1) {
+    if (!color) return `rgba(0,0,0,${alpha})`;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const size = hex.length === 3 ? 1 : 2;
+      const to255 = (idx) => {
+        const part = hex.substr(idx, size);
+        return parseInt(size === 1 ? part + part : part, 16);
+      };
+      const r = to255(0);
+      const g = to255(size);
+      const b = to255(size * 2);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (color.startsWith('rgb')) {
+      const nums = color.replace(/rgba?\(|\)/g, '').split(',').map(n => n.trim());
+      const [r, g, b] = nums;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return color;
   }
 
   // ========== ドラッグ＆ドロップ ==========
@@ -10360,7 +10446,17 @@ function setupMemoInteractionGuard() {
   }
 
   function closeStructureEditModal() {
-    document.getElementById('structure-edit-modal').classList.remove('show');
+    const modal = document.getElementById('structure-edit-modal');
+    if (modal) modal.classList.remove('show');
+    if (editingCardId !== null) {
+      const cardIndex = structureData.findIndex(c => c.id === editingCardId);
+      const card = structureData[cardIndex];
+      if (card && card.isNew) {
+        structureData.splice(cardIndex, 1);
+        saveStructureData();
+        renderStructureList();
+      }
+    }
     editingCardId = null;
   }
 
@@ -10380,6 +10476,7 @@ function setupMemoInteractionGuard() {
 
     const tabId = document.getElementById('structure-edit-tab').value;
     card.tabId = tabId ? parseInt(tabId) : null;
+    card.isNew = false;
 
     saveStructureData();
     renderStructureList();
@@ -10560,14 +10657,10 @@ function setupMemoInteractionGuard() {
   function toggleStructurePanel() {
     const panel = document.getElementById('structure-panel');
     const checkbox = document.getElementById('check-structure-dock');
-    const container = document.getElementById('main-container');
     if (!panel || !checkbox) return;
 
     const isOpen = panel.classList.contains('open');
     const isDocked = checkbox.checked;
-
-    // 常に左側に表示（右側への移動はしない）
-    if (container) container.classList.remove('structure-right');
 
     if (!isOpen) {
       // 閉じている → オーバーレイで開く
@@ -10608,7 +10701,6 @@ function setupMemoInteractionGuard() {
       if (pinBtn) pinBtn.classList.add('pinned');
     } else {
       container.classList.remove('structure-docked');
-      container.classList.remove('structure-right');
       if (swapBtn) swapBtn.classList.remove('is-active');
       if (pinBtn) pinBtn.classList.remove('pinned');
     }
@@ -10650,7 +10742,6 @@ function setupMemoInteractionGuard() {
       if (checkbox) checkbox.checked = false;
       if (container) {
         container.classList.remove('structure-docked');
-        container.classList.remove('structure-right');
       }
     } else {
       panel.classList.remove('open');

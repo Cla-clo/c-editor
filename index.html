@@ -2850,6 +2850,7 @@
         <div class="save-dialog-buttons">
             <button class="btn" onclick="saveAsText()">📄 テキスト</button>
             <button class="btn" onclick="saveAsHTML()">🌐 HTML</button>
+            <button class="btn" onclick="openProjectSaveDialog()">📦 プロジェクト</button>
             <button class="btn" onclick="closeSaveDialog()">キャンセル</button>
         </div>
     </div>
@@ -2869,6 +2870,31 @@
         <div class="save-dialog-buttons">
             <button class="btn" onclick="executeMemoSave()">💾 保存</button>
             <button class="btn" onclick="closeMemoSaveDialog()">キャンセル</button>
+        </div>
+    </div>
+</div>
+
+<div id="project-save-dialog" class="save-dialog-overlay" style="display:none;">
+    <div class="save-dialog" style="max-width:400px;">
+        <h3>📦 プロジェクト保存</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">保存する項目を選択してください</p>
+        <div style="margin-bottom: 15px; font-size: 0.85rem; max-height:200px; overflow-y:auto;">
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-text" checked> 入力テキスト（全タブ）</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-memo" checked> メモ（全タブ）</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-structure" checked> 構成</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-character" checked> 登場人物</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-world" checked> 世界観</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-bookmarks" checked> しおり</label>
+            <label style="display: block; margin-bottom: 5px;"><input type="checkbox" id="proj-save-settings"> 設定（ペイン幅・色など）</label>
+        </div>
+        <div class="save-dialog-buttons">
+            <button class="btn btn-save" onclick="executeProjectSave()">💾 保存</button>
+            <button class="btn" onclick="closeProjectSaveDialog()">キャンセル</button>
+        </div>
+        <hr style="margin:12px 0; border:none; border-top:1px solid var(--border-color);">
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">プロジェクトを読み込む</p>
+        <div class="save-dialog-buttons">
+            <button class="btn" onclick="loadProjectFile()">📂 開く</button>
         </div>
     </div>
 </div>
@@ -6027,6 +6053,123 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
     function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
+
+    // プロジェクト保存機能
+    function openProjectSaveDialog() {
+        closeSaveDialog();
+        document.getElementById('project-save-dialog').style.display = 'flex';
+    }
+    function closeProjectSaveDialog() { document.getElementById('project-save-dialog').style.display = 'none'; }
+
+    function executeProjectSave() {
+        const project = { version: 1, timestamp: Date.now() };
+
+        if (document.getElementById('proj-save-text').checked) {
+            project.tabs = JSON.parse(localStorage.getItem('cc_tabs') || '[]');
+            project.currentTabId = localStorage.getItem('cc_current_tab_id');
+        }
+        if (document.getElementById('proj-save-memo').checked) {
+            project.memoTabs = JSON.parse(localStorage.getItem('cc_memo_tabs') || '[]');
+            project.currentMemoTabId = localStorage.getItem('cc_memo_current_tab_id');
+        }
+        if (document.getElementById('proj-save-structure').checked) {
+            project.structure = JSON.parse(localStorage.getItem('cc_structure_data') || '{"data":[],"nextId":1}');
+        }
+        if (document.getElementById('proj-save-character').checked) {
+            project.character = JSON.parse(localStorage.getItem('cc_character_data') || '{"data":[],"nextId":1}');
+        }
+        if (document.getElementById('proj-save-world').checked) {
+            project.world = JSON.parse(localStorage.getItem('cc_world_data') || '{"data":[],"nextId":1}');
+        }
+        if (document.getElementById('proj-save-bookmarks').checked) {
+            project.bookmarks = JSON.parse(localStorage.getItem('cc_bookmarks') || '[]');
+        }
+        if (document.getElementById('proj-save-settings').checked) {
+            project.settings = {
+                paneWidths: {
+                    input: localStorage.getItem('cc_pane_input_width_px'),
+                    preview: localStorage.getItem('cc_pane_preview_width_px'),
+                    memo: localStorage.getItem('cc_memo_width_px'),
+                    outline: localStorage.getItem('cc_outline_width_px'),
+                    structure: localStorage.getItem('cc_structure_width_px'),
+                    search: localStorage.getItem('cc_search_width_px'),
+                    character: localStorage.getItem('cc_character_width_px'),
+                    world: localStorage.getItem('cc_world_width_px')
+                },
+                theme: localStorage.getItem('cc_theme'),
+                autoSave: localStorage.getItem('cc_autosave_enabled'),
+                autoSaveInterval: localStorage.getItem('cc_autosave_interval')
+            };
+        }
+
+        const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `project_${new Date().toISOString().slice(0,10)}.ccproj`;
+        a.click();
+        closeProjectSaveDialog();
+    }
+
+    function loadProjectFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.ccproj,.json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const project = JSON.parse(text);
+                if (!project.version) throw new Error('Invalid project file');
+
+                if (project.tabs) {
+                    localStorage.setItem('cc_tabs', JSON.stringify(project.tabs));
+                    if (project.currentTabId) localStorage.setItem('cc_current_tab_id', project.currentTabId);
+                    if (typeof loadTabsFromStorage === 'function') loadTabsFromStorage();
+                }
+                if (project.memoTabs) {
+                    localStorage.setItem('cc_memo_tabs', JSON.stringify(project.memoTabs));
+                    if (project.currentMemoTabId) localStorage.setItem('cc_memo_current_tab_id', project.currentMemoTabId);
+                    if (typeof loadMemoTabs === 'function') loadMemoTabs();
+                }
+                if (project.structure) {
+                    localStorage.setItem('cc_structure_data', JSON.stringify(project.structure));
+                    if (typeof window.initStructure === 'function') window.initStructure();
+                }
+                if (project.character) {
+                    localStorage.setItem('cc_character_data', JSON.stringify(project.character));
+                    location.reload();
+                }
+                if (project.world) {
+                    localStorage.setItem('cc_world_data', JSON.stringify(project.world));
+                    location.reload();
+                }
+                if (project.bookmarks) {
+                    localStorage.setItem('cc_bookmarks', JSON.stringify(project.bookmarks));
+                    if (typeof renderBookmarks === 'function') renderBookmarks();
+                }
+                if (project.settings) {
+                    const s = project.settings;
+                    if (s.paneWidths) {
+                        Object.entries(s.paneWidths).forEach(([k, v]) => {
+                            if (v) localStorage.setItem(`cc_${k === 'input' || k === 'preview' ? 'pane_' + k : k}_width_px`, v);
+                        });
+                    }
+                    if (s.theme) localStorage.setItem('cc_theme', s.theme);
+                    if (s.autoSave) localStorage.setItem('cc_autosave_enabled', s.autoSave);
+                    if (s.autoSaveInterval) localStorage.setItem('cc_autosave_interval', s.autoSaveInterval);
+                }
+
+                closeProjectSaveDialog();
+                alert('プロジェクトを読み込みました。ページを再読み込みして完全に反映します。');
+                location.reload();
+            } catch (err) {
+                alert('プロジェクトファイルの読み込みに失敗しました: ' + err.message);
+            }
+        };
+        input.click();
+    }
+
     async function saveWithHandle(handle, blob) {
         if (!handle) return false;
         try {

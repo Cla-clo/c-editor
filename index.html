@@ -1258,6 +1258,242 @@
         margin-left: 0;
     }
 
+    /* ========== 登場人物パネル ========== */
+    #character-panel {
+        position: fixed; top: var(--dock-top, 44px); left: 0; bottom: 0;
+        width: 300px; max-width: 45vw;
+        background: var(--pane-character-bg, #fdf2f8);
+        border-right: 1px solid #f9a8d4;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    .main-container.character-right #character-panel {
+        left: auto; right: 0;
+        border-right: none; border-left: 1px solid #f9a8d4;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        transform: translateX(100%);
+    }
+    .main-container.character-right #character-panel.open { transform: translateX(0); }
+    body.theme-dark #character-panel { background: var(--pane-character-bg, #4a044e); border-color: #a21caf; }
+    #character-panel.open { transform: translateX(0); }
+    .main-container.character-docked #character-panel {
+        position: relative; top: auto; left: auto; bottom: auto;
+        transform: none; box-shadow: none; z-index: 1; display: none;
+        flex: 0 0 auto; overflow: auto;
+        min-width: 0; max-width: 45vw; width: 300px;
+        border-right: 1px solid #f9a8d4; border-left: none;
+        order: -7;
+    }
+    .main-container.character-docked #character-panel.open { display: flex; }
+    .main-container.character-docked.character-right #character-panel { order: 8; border-right: none; border-left: 1px solid #f9a8d4; }
+    .main-container.character-docked #character-panel.open ~ #resizer-character { display: flex; }
+    .main-container.character-docked.character-right #resizer-character { order: 6; }
+    .main-container.character-docked:not(.character-right) #resizer-character { order: -6; }
+    body.focus-mode #character-panel { display: none !important; }
+
+    .character-header {
+        padding: 8px 10px; background: var(--pane-character-head, #fce7f3); border-bottom: 1px solid #f9a8d4;
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+        font-size: 0.85rem; flex-wrap: wrap; gap: 4px;
+    }
+    body.theme-dark .character-header { background: var(--pane-character-head, #701a75); border-color: #a21caf; }
+    .character-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .character-toolbar {
+        display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 10px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--pane-character-head, #fce7f3);
+    }
+    body.theme-dark .character-toolbar { background: var(--pane-character-head, #701a75); }
+    .character-toolbar .btn { padding: 2px 6px; font-size: 0.7rem; }
+    .character-content { flex: 1; overflow: auto; padding: 10px; }
+    .character-list { overflow: visible; }
+
+    .character-card {
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 8px; margin-bottom: 6px; cursor: grab;
+        transition: box-shadow 0.2s, transform 0.15s; position: relative;
+    }
+    .character-card.has-custom-color { background: var(--character-card-bg, var(--panel-bg)); }
+    .character-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .character-card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .character-card.drag-over { border-color: #ec4899; box-shadow: 0 0 0 2px rgba(236,72,153,0.3); }
+    .character-card.role-protagonist { border-left: 4px solid #ec4899; background: linear-gradient(to right, rgba(236,72,153,0.08), transparent); }
+    .character-card.has-custom-color.role-protagonist { border-left-color: var(--character-card-accent, #ec4899); background: var(--character-card-bg, var(--panel-bg)); }
+    .character-card.role-heroine { border-left: 4px solid #f472b6; background: linear-gradient(to right, rgba(244,114,182,0.06), transparent); }
+    .character-card.has-custom-color.role-heroine { border-left-color: var(--character-card-accent, #f472b6); background: var(--character-card-bg, var(--panel-bg)); }
+    .character-card.role-antagonist { border-left: 4px solid #be185d; background: linear-gradient(to right, rgba(190,24,93,0.06), transparent); }
+    .character-card.has-custom-color.role-antagonist { border-left-color: var(--character-card-accent, #be185d); background: var(--character-card-bg, var(--panel-bg)); }
+    .character-card.role-supporting { margin-left: 16px; border-left: 3px solid #f9a8d4; background: linear-gradient(to right, rgba(249,168,212,0.04), transparent); }
+    .character-card.has-custom-color.role-supporting { border-left-color: var(--character-card-accent, #f9a8d4); background: var(--character-card-bg, var(--panel-bg)); }
+    .character-card.role-mob { margin-left: 32px; border-left: 2px solid #fbcfe8; font-size: 0.9em; }
+    .character-card.has-custom-color.role-mob { border-left-color: var(--character-card-accent, #fbcfe8); }
+
+    .character-card-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid transparent; }
+    .character-select { width: 14px; height: 14px; accent-color: #ec4899; cursor: pointer; flex-shrink: 0; }
+    .character-toggle { font-size: 0.7rem; color: var(--text-muted); width: 14px; cursor: pointer; flex-shrink: 0; }
+    .character-toggle:hover { color: #ec4899; }
+    .character-name { flex: 1; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; }
+    .character-reading { font-size: 0.7rem; color: var(--text-muted); margin-left: 4px; }
+    .character-card.expanded .character-card-header { border-bottom-color: var(--border-color); }
+
+    .character-role-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+    .character-role-badge.role-protagonist { background: #fce7f3; color: #be185d; }
+    .character-role-badge.role-heroine { background: #fdf2f8; color: #db2777; }
+    .character-role-badge.role-antagonist { background: #fce7f3; color: #9d174d; }
+    .character-role-badge.role-supporting { background: #fdf4ff; color: #a855f7; }
+    .character-role-badge.role-mob { background: #f3f4f6; color: #6b7280; }
+    body.theme-dark .character-role-badge.role-protagonist { background: #831843; color: #f9a8d4; }
+    body.theme-dark .character-role-badge.role-heroine { background: #701a75; color: #f0abfc; }
+    body.theme-dark .character-role-badge.role-antagonist { background: #4a044e; color: #f9a8d4; }
+    body.theme-dark .character-role-badge.role-supporting { background: #4c1d95; color: #c4b5fd; }
+    body.theme-dark .character-role-badge.role-mob { background: #374151; color: #9ca3af; }
+
+    .character-card-body { display: none; padding: 8px 10px; font-size: 0.8rem; }
+    .character-card.expanded .character-card-body { display: block; }
+    .character-field { margin-bottom: 6px; }
+    .character-field:last-child { margin-bottom: 0; }
+    .character-field-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
+    .character-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .character-affiliation-tag { background: #fce7f3; color: #be185d; padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; }
+    body.theme-dark .character-affiliation-tag { background: #831843; color: #f9a8d4; }
+    .character-free-tag { background: #e0e7ff; color: #4338ca; padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; }
+    body.theme-dark .character-free-tag { background: #312e81; color: #a5b4fc; }
+    .character-card-actions { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); }
+    .character-card-actions button { padding: 3px 8px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-color); cursor: pointer; }
+    .character-card-actions button:hover { background: var(--pane-header-bg); }
+    .character-card-actions .btn-delete { color: #dc2626; }
+    .character-card-actions .btn-delete:hover { background: #fee2e2; }
+
+    #character-edit-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10002; background: rgba(0,0,0,0.45); }
+    #character-edit-modal.show { display: flex; }
+    .character-edit-box { width: min(480px, 92vw); max-height: 85vh; overflow-y: auto; background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.25); padding: 16px; }
+    .character-edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+    .character-edit-header h3 { margin: 0; font-size: 1rem; }
+    .character-edit-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border-color); background: transparent; cursor: pointer; font-size: 1rem; color: var(--text-muted); }
+    .character-edit-close:hover { background: #fee2e2; color: #dc2626; }
+    .character-edit-field { margin-bottom: 12px; }
+    .character-edit-field label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-color); }
+    .character-edit-field input, .character-edit-field textarea, .character-edit-field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--pane-header-bg); color: var(--text-color); font-size: 0.85rem; box-sizing: border-box; }
+    .character-edit-field textarea { min-height: 80px; resize: vertical; }
+    .character-edit-field input:focus, .character-edit-field textarea:focus, .character-edit-field select:focus { outline: none; border-color: #ec4899; }
+    .character-edit-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .character-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+    /* ========== 世界観パネル ========== */
+    #world-panel {
+        position: fixed; top: var(--dock-top, 44px); left: 0; bottom: 0;
+        width: 300px; max-width: 45vw;
+        background: var(--pane-world-bg, #ecfdf5);
+        border-right: 1px solid #6ee7b7;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+        display: flex; flex-direction: column;
+    }
+    .main-container.world-right #world-panel {
+        left: auto; right: 0;
+        border-right: none; border-left: 1px solid #6ee7b7;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        transform: translateX(100%);
+    }
+    .main-container.world-right #world-panel.open { transform: translateX(0); }
+    body.theme-dark #world-panel { background: var(--pane-world-bg, #064e3b); border-color: #059669; }
+    #world-panel.open { transform: translateX(0); }
+    .main-container.world-docked #world-panel {
+        position: relative; top: auto; left: auto; bottom: auto;
+        transform: none; box-shadow: none; z-index: 1; display: none;
+        flex: 0 0 auto; overflow: auto;
+        min-width: 0; max-width: 45vw; width: 300px;
+        border-right: 1px solid #6ee7b7; border-left: none;
+        order: -8;
+    }
+    .main-container.world-docked #world-panel.open { display: flex; }
+    .main-container.world-docked.world-right #world-panel { order: 9; border-right: none; border-left: 1px solid #6ee7b7; }
+    .main-container.world-docked #world-panel.open ~ #resizer-world { display: flex; }
+    .main-container.world-docked.world-right #resizer-world { order: 7; }
+    .main-container.world-docked:not(.world-right) #resizer-world { order: -7; }
+    body.focus-mode #world-panel { display: none !important; }
+
+    .world-header {
+        padding: 8px 10px; background: var(--pane-world-head, #d1fae5); border-bottom: 1px solid #6ee7b7;
+        font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+        font-size: 0.85rem; flex-wrap: wrap; gap: 4px;
+    }
+    body.theme-dark .world-header { background: var(--pane-world-head, #065f46); border-color: #059669; }
+    .world-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .world-toolbar {
+        display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 10px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--pane-world-head, #d1fae5);
+    }
+    body.theme-dark .world-toolbar { background: var(--pane-world-head, #065f46); }
+    .world-toolbar .btn { padding: 2px 6px; font-size: 0.7rem; }
+    .world-content { flex: 1; overflow: auto; padding: 10px; }
+    .world-list { overflow: visible; }
+
+    .world-card {
+        background: var(--panel-bg); border: 1px solid var(--border-color);
+        border-radius: 8px; margin-bottom: 6px; cursor: grab;
+        transition: box-shadow 0.2s, transform 0.15s; position: relative;
+    }
+    .world-card.has-custom-color { background: var(--world-card-bg, var(--panel-bg)); }
+    .world-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .world-card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .world-card.drag-over { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
+    .world-card.level-major { border-left: 4px solid #10b981; background: linear-gradient(to right, rgba(16,185,129,0.08), transparent); }
+    .world-card.has-custom-color.level-major { border-left-color: var(--world-card-accent, #10b981); background: var(--world-card-bg, var(--panel-bg)); }
+    .world-card.level-middle { margin-left: 16px; border-left: 3px solid #34d399; background: linear-gradient(to right, rgba(52,211,153,0.05), transparent); }
+    .world-card.has-custom-color.level-middle { border-left-color: var(--world-card-accent, #34d399); background: var(--world-card-bg, var(--panel-bg)); }
+    .world-card.level-detail { margin-left: 32px; border-left: 2px solid #6ee7b7; font-size: 0.9em; }
+    .world-card.has-custom-color.level-detail { border-left-color: var(--world-card-accent, #6ee7b7); }
+
+    .world-card-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid transparent; }
+    .world-select { width: 14px; height: 14px; accent-color: #10b981; cursor: pointer; flex-shrink: 0; }
+    .world-toggle { font-size: 0.7rem; color: var(--text-muted); width: 14px; cursor: pointer; flex-shrink: 0; }
+    .world-toggle:hover { color: #10b981; }
+    .world-name { flex: 1; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; }
+    .world-card.level-major .world-name { font-size: 0.95rem; }
+    .world-card.expanded .world-card-header { border-bottom-color: var(--border-color); }
+
+    .world-level-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+    .world-level-badge.level-major { background: #d1fae5; color: #065f46; }
+    .world-level-badge.level-middle { background: #ecfdf5; color: #047857; }
+    .world-level-badge.level-detail { background: #f0fdf4; color: #059669; }
+    body.theme-dark .world-level-badge.level-major { background: #064e3b; color: #6ee7b7; }
+    body.theme-dark .world-level-badge.level-middle { background: #065f46; color: #a7f3d0; }
+    body.theme-dark .world-level-badge.level-detail { background: #047857; color: #d1fae5; }
+
+    .world-card-body { display: none; padding: 8px 10px; font-size: 0.8rem; }
+    .world-card.expanded .world-card-body { display: block; }
+    .world-field { margin-bottom: 6px; }
+    .world-field:last-child { margin-bottom: 0; }
+    .world-field-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
+    .world-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .world-term-tag { background: #d1fae5; color: #065f46; padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; }
+    body.theme-dark .world-term-tag { background: #064e3b; color: #6ee7b7; }
+    .world-card-actions { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); }
+    .world-card-actions button { padding: 3px 8px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-color); cursor: pointer; }
+    .world-card-actions button:hover { background: var(--pane-header-bg); }
+    .world-card-actions .btn-delete { color: #dc2626; }
+    .world-card-actions .btn-delete:hover { background: #fee2e2; }
+    .world-card-actions .btn-add-child { color: #10b981; }
+    .world-card-actions .btn-add-child:hover { background: #d1fae5; }
+
+    #world-edit-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10002; background: rgba(0,0,0,0.45); }
+    #world-edit-modal.show { display: flex; }
+    .world-edit-box { width: min(480px, 92vw); max-height: 85vh; overflow-y: auto; background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.25); padding: 16px; }
+    .world-edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+    .world-edit-header h3 { margin: 0; font-size: 1rem; }
+    .world-edit-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border-color); background: transparent; cursor: pointer; font-size: 1rem; color: var(--text-muted); }
+    .world-edit-close:hover { background: #fee2e2; color: #dc2626; }
+    .world-edit-field { margin-bottom: 12px; }
+    .world-edit-field label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-color); }
+    .world-edit-field input, .world-edit-field textarea, .world-edit-field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--pane-header-bg); color: var(--text-color); font-size: 0.85rem; box-sizing: border-box; }
+    .world-edit-field textarea { min-height: 80px; resize: vertical; }
+    .world-edit-field input:focus, .world-edit-field textarea:focus, .world-edit-field select:focus { outline: none; border-color: #10b981; }
+    .world-edit-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .world-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
 </style>
 
 <!-- ===== v0.96 hotfix (reader/search/bookmark, active tab color, tab context menu, per-tab stats, focus shortcuts) ===== -->
@@ -1993,6 +2229,12 @@
         <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成">
             <span class="panel-label">📋 構成</span><span class="panel-state-icon">▾</span>
         </button>
+        <button class="btn panel-toggle" id="btn-toggle-character" onclick="toggleCharacterPanel()" data-label="👤 人物">
+            <span class="panel-label">👤 人物</span><span class="panel-state-icon">▾</span>
+        </button>
+        <button class="btn panel-toggle" id="btn-toggle-world" onclick="toggleWorldPanel()" data-label="🌍 世界観">
+            <span class="panel-label">🌍 世界観</span><span class="panel-state-icon">▾</span>
+        </button>
         <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
             <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
@@ -2431,6 +2673,64 @@
 </div>
 <div id="resizer-structure" class="dock-resizer" title="構成パネルの幅を調整します"></div>
 
+<!-- 登場人物パネル -->
+<div id="character-panel">
+    <div class="character-header panel-drag-handle" data-panel-id="character-panel" draggable="true">
+        <span>👤 登場人物</span>
+        <div class="character-controls">
+            <button id="btn-character-swap" class="btn panel-swap-btn" onclick="swapCharacterSide()">左右入替</button>
+            <button class="panel-pin-btn" id="btn-character-pin" onclick="toggleCharacterDockPin()" title="固定/浮動切り替え">📌</button>
+            <input type="checkbox" id="check-character-dock" class="dock-pin-checkbox" onchange="toggleCharacterDock()">
+            <button class="panel-close-btn" onclick="closeCharacterPanel(true)">✕</button>
+        </div>
+    </div>
+    <div class="character-toolbar">
+        <button class="btn" onclick="addCharacterCard('protagonist')">＋主人公</button>
+        <button class="btn" onclick="addCharacterCard('heroine')">＋ヒロイン</button>
+        <button class="btn" onclick="addCharacterCard('antagonist')">＋敵役</button>
+        <button class="btn" onclick="addCharacterCard('supporting')">＋サブ</button>
+        <button class="btn" onclick="addCharacterCard('mob')">＋モブ</button>
+        <button class="btn" onclick="deleteSelectedCharacterCards()">選択削除</button>
+        <button class="btn" onclick="deleteAllCharacterCards()">全削除</button>
+    </div>
+    <div class="character-content">
+        <div class="character-list" id="character-list"></div>
+    </div>
+    <div class="character-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-character-head, #fce7f3);">
+        <span id="character-count">0人</span>
+        <button onclick="exportCharacterText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+    </div>
+</div>
+<div id="resizer-character" class="dock-resizer" title="登場人物パネルの幅を調整します"></div>
+
+<!-- 世界観パネル -->
+<div id="world-panel">
+    <div class="world-header panel-drag-handle" data-panel-id="world-panel" draggable="true">
+        <span>🌍 世界観</span>
+        <div class="world-controls">
+            <button id="btn-world-swap" class="btn panel-swap-btn" onclick="swapWorldSide()">左右入替</button>
+            <button class="panel-pin-btn" id="btn-world-pin" onclick="toggleWorldDockPin()" title="固定/浮動切り替え">📌</button>
+            <input type="checkbox" id="check-world-dock" class="dock-pin-checkbox" onchange="toggleWorldDock()">
+            <button class="panel-close-btn" onclick="closeWorldPanel(true)">✕</button>
+        </div>
+    </div>
+    <div class="world-toolbar">
+        <button class="btn" onclick="addWorldCard('major')">＋大カテゴリ</button>
+        <button class="btn" onclick="addWorldCard('middle')">＋中カテゴリ</button>
+        <button class="btn" onclick="addWorldCard('detail')">＋詳細項目</button>
+        <button class="btn" onclick="deleteSelectedWorldCards()">選択削除</button>
+        <button class="btn" onclick="deleteAllWorldCards()">全削除</button>
+    </div>
+    <div class="world-content">
+        <div class="world-list" id="world-list"></div>
+    </div>
+    <div class="world-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-world-head, #d1fae5);">
+        <span id="world-count">0件</span>
+        <button onclick="exportWorldText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+    </div>
+</div>
+<div id="resizer-world" class="dock-resizer" title="世界観パネルの幅を調整します"></div>
+
     <div class="dock-resizer" id="resizer-memo-outline" title="(右境界) Alt+ドラッグでメモと目次の配分を調整します"></div>
     <div id="outline-panel">
         <div class="outline-header panel-drag-handle" data-panel-id="outline-panel" draggable="true">
@@ -2610,6 +2910,89 @@
         <div class="structure-edit-actions">
             <button class="btn" onclick="closeStructureEditModal()">キャンセル</button>
             <button class="btn btn-save" onclick="saveStructureCard()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 登場人物編集モーダル -->
+<div id="character-edit-modal">
+    <div class="character-edit-box">
+        <div class="character-edit-header">
+            <h3 id="character-edit-title">キャラクターを編集</h3>
+            <button class="character-edit-close" onclick="closeCharacterEditModal()">✕</button>
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-name">名前</label>
+            <input type="text" id="character-edit-name" placeholder="キャラクターの名前">
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-reading">読み仮名</label>
+            <input type="text" id="character-edit-reading" placeholder="ふりがな">
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-role">役割</label>
+            <select id="character-edit-role">
+                <option value="protagonist">主人公</option>
+                <option value="heroine">ヒロイン</option>
+                <option value="antagonist">敵役</option>
+                <option value="supporting">サブ</option>
+                <option value="mob">モブ</option>
+            </select>
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-affiliation">所属タグ（カンマ区切り）</label>
+            <input type="text" id="character-edit-affiliation" placeholder="例: 生徒会, A組, 剣道部">
+            <div class="character-edit-hint">所属する組織・グループなど</div>
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-freetags">自由タグ（カンマ区切り）</label>
+            <input type="text" id="character-edit-freetags" placeholder="例: 幼馴染, ツンデレ, 眼鏡">
+            <div class="character-edit-hint">属性・特徴など</div>
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-description">説明</label>
+            <textarea id="character-edit-description" placeholder="キャラクターの説明（300文字以内）" maxlength="300"></textarea>
+            <div class="character-edit-hint"><span id="character-description-count">0</span>/300文字</div>
+        </div>
+        <div class="character-edit-actions">
+            <button class="btn" onclick="closeCharacterEditModal()">キャンセル</button>
+            <button class="btn btn-save" onclick="saveCharacterCard()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 世界観編集モーダル -->
+<div id="world-edit-modal">
+    <div class="world-edit-box">
+        <div class="world-edit-header">
+            <h3 id="world-edit-title">項目を編集</h3>
+            <button class="world-edit-close" onclick="closeWorldEditModal()">✕</button>
+        </div>
+        <div class="world-edit-field">
+            <label for="world-edit-name">名前</label>
+            <input type="text" id="world-edit-name" placeholder="項目名">
+        </div>
+        <div class="world-edit-field">
+            <label for="world-edit-level">カテゴリレベル</label>
+            <select id="world-edit-level">
+                <option value="major">大カテゴリ</option>
+                <option value="middle">中カテゴリ</option>
+                <option value="detail">詳細項目</option>
+            </select>
+        </div>
+        <div class="world-edit-field">
+            <label for="world-edit-termtags">用語タグ（カンマ区切り）</label>
+            <input type="text" id="world-edit-termtags" placeholder="例: 魔法, 古代文明, 禁術">
+            <div class="world-edit-hint">関連する用語やキーワード</div>
+        </div>
+        <div class="world-edit-field">
+            <label for="world-edit-description">説明</label>
+            <textarea id="world-edit-description" placeholder="この項目の説明（500文字以内）" maxlength="500"></textarea>
+            <div class="world-edit-hint"><span id="world-description-count">0</span>/500文字</div>
+        </div>
+        <div class="world-edit-actions">
+            <button class="btn" onclick="closeWorldEditModal()">キャンセル</button>
+            <button class="btn btn-save" onclick="saveWorldCard()">保存</button>
         </div>
     </div>
 </div>
@@ -10856,6 +11239,1160 @@ function setupMemoInteractionGuard() {
     document.addEventListener('DOMContentLoaded', initStructure);
   } else {
     initStructure();
+  }
+})();
+
+// ========== 登場人物パネル ==========
+(function() {
+  'use strict';
+
+  const CHARACTER_STORAGE_KEY = 'cc_character_data';
+  let characterData = [];
+  let characterNextId = 1;
+  let editingCharacterId = null;
+  let draggingCharacterId = null;
+  let characterMenuClickHandler = null;
+
+  const CHARACTER_ROLES = {
+    protagonist: '主人公',
+    heroine: 'ヒロイン',
+    antagonist: '敵役',
+    supporting: 'サブ',
+    mob: 'モブ'
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function initCharacter() {
+    loadCharacterData();
+    renderCharacterList();
+  }
+
+  function loadCharacterData() {
+    try {
+      const saved = localStorage.getItem(CHARACTER_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        characterData = (parsed.data || []).map(card => ({
+          ...card,
+          selected: false,
+          expanded: !!card.expanded
+        }));
+        characterNextId = parsed.nextId || 1;
+      }
+    } catch (e) {
+      console.warn('登場人物データの読み込みに失敗:', e);
+      characterData = [];
+      characterNextId = 1;
+    }
+  }
+
+  function saveCharacterData() {
+    try {
+      const sanitized = characterData.map(({ selected, ...rest }) => rest);
+      localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify({
+        data: sanitized,
+        nextId: characterNextId
+      }));
+    } catch (e) {
+      console.warn('登場人物データの保存に失敗:', e);
+    }
+  }
+
+  function addCharacterCard(role) {
+    const count = characterData.filter(c => c.role === role).length;
+    const newCard = {
+      id: characterNextId++,
+      name: CHARACTER_ROLES[role] + (count + 1),
+      reading: '',
+      role: role,
+      affiliationTags: [],
+      freeTags: [],
+      description: '',
+      color: null,
+      expanded: false,
+      selected: false
+    };
+    characterData.push(newCard);
+    saveCharacterData();
+    renderCharacterList();
+    openCharacterEditModal(newCard.id);
+  }
+
+  function renderCharacterList() {
+    const container = document.getElementById('character-list');
+    if (!container) return;
+
+    if (characterData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; padding:20px; text-align:center;">登場人物がいません。<br>上のボタンから追加してください。</div>';
+      updateCharacterCount();
+      return;
+    }
+
+    container.innerHTML = '';
+    characterData.forEach((card, index) => {
+      const div = createCharacterCardElement(card, index);
+      container.appendChild(div);
+    });
+    updateCharacterCount();
+  }
+
+  function createCharacterCardElement(card, index) {
+    const div = document.createElement('div');
+    div.className = `character-card role-${card.role}`;
+    if (card.expanded) div.classList.add('expanded');
+    if (card.color) {
+      div.classList.add('has-custom-color');
+      div.style.setProperty('--character-card-accent', card.color);
+      div.style.setProperty('--character-card-bg', toRgba(card.color, 0.12));
+    }
+    div.dataset.id = card.id;
+    div.draggable = true;
+
+    const affiliationHtml = card.affiliationTags.length > 0
+      ? card.affiliationTags.map(t => `<span class="character-affiliation-tag">${escapeHtml(t)}</span>`).join('')
+      : '<span style="color:var(--text-muted);">なし</span>';
+    const freeTagsHtml = card.freeTags.length > 0
+      ? card.freeTags.map(t => `<span class="character-free-tag">${escapeHtml(t)}</span>`).join('')
+      : '<span style="color:var(--text-muted);">なし</span>';
+
+    div.innerHTML = `
+      <div class="character-card-header" onclick="toggleCharacterExpand(${card.id})">
+        <input type="checkbox" class="character-select" ${card.selected ? 'checked' : ''} onclick="event.stopPropagation(); toggleCharacterSelect(${card.id})">
+        <span class="character-toggle">${card.expanded ? '▼' : '▶'}</span>
+        <span class="character-name">${escapeHtml(card.name)}</span>
+        ${card.reading ? `<span class="character-reading">(${escapeHtml(card.reading)})</span>` : ''}
+        <span class="character-role-badge role-${card.role}">${CHARACTER_ROLES[card.role]}</span>
+      </div>
+      <div class="character-card-body">
+        <div class="character-field">
+          <div class="character-field-label">所属</div>
+          <div class="character-tags">${affiliationHtml}</div>
+        </div>
+        <div class="character-field">
+          <div class="character-field-label">タグ</div>
+          <div class="character-tags">${freeTagsHtml}</div>
+        </div>
+        ${card.description ? `<div class="character-field"><div class="character-field-label">説明</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        <div class="character-card-actions">
+          <button onclick="openCharacterEditModal(${card.id})">✏️ 編集</button>
+          <button onclick="duplicateCharacterCard(${card.id})">📋 複製</button>
+          <button class="btn-delete" onclick="deleteCharacterCard(${card.id})">🗑 削除</button>
+        </div>
+      </div>
+    `;
+
+    div.addEventListener('dragstart', handleCharacterDragStart);
+    div.addEventListener('dragend', handleCharacterDragEnd);
+    div.addEventListener('dragover', handleCharacterDragOver);
+    div.addEventListener('dragleave', handleCharacterDragLeave);
+    div.addEventListener('drop', handleCharacterDrop);
+    div.addEventListener('contextmenu', (e) => { e.preventDefault(); showCharacterContextMenu(e, card.id); });
+
+    return div;
+  }
+
+  function toRgba(color, alpha = 1) {
+    if (!color) return `rgba(0,0,0,${alpha})`;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const size = hex.length === 3 ? 1 : 2;
+      const to255 = (idx) => {
+        const part = hex.substr(idx, size);
+        return parseInt(size === 1 ? part + part : part, 16);
+      };
+      return `rgba(${to255(0)}, ${to255(size)}, ${to255(size * 2)}, ${alpha})`;
+    }
+    return color;
+  }
+
+  function updateCharacterCount() {
+    const el = document.getElementById('character-count');
+    if (el) el.textContent = characterData.length + '人';
+  }
+
+  function toggleCharacterExpand(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (card) {
+      card.expanded = !card.expanded;
+      saveCharacterData();
+      renderCharacterList();
+    }
+  }
+
+  function toggleCharacterSelect(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (card) {
+      card.selected = !card.selected;
+      renderCharacterList();
+    }
+  }
+
+  function openCharacterEditModal(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (!card) return;
+    editingCharacterId = cardId;
+
+    document.getElementById('character-edit-name').value = card.name || '';
+    document.getElementById('character-edit-reading').value = card.reading || '';
+    document.getElementById('character-edit-role').value = card.role;
+    document.getElementById('character-edit-affiliation').value = (card.affiliationTags || []).join(', ');
+    document.getElementById('character-edit-freetags').value = (card.freeTags || []).join(', ');
+    document.getElementById('character-edit-description').value = card.description || '';
+    updateCharacterDescriptionCount();
+
+    document.getElementById('character-edit-modal').classList.add('show');
+  }
+
+  function closeCharacterEditModal() {
+    document.getElementById('character-edit-modal').classList.remove('show');
+    editingCharacterId = null;
+  }
+
+  function saveCharacterCard() {
+    if (editingCharacterId === null) return;
+    const card = characterData.find(c => c.id === editingCharacterId);
+    if (!card) return;
+
+    card.name = document.getElementById('character-edit-name').value.trim() || CHARACTER_ROLES[card.role];
+    card.reading = document.getElementById('character-edit-reading').value.trim();
+    card.role = document.getElementById('character-edit-role').value;
+    card.affiliationTags = document.getElementById('character-edit-affiliation').value.split(',').map(t => t.trim()).filter(t => t);
+    card.freeTags = document.getElementById('character-edit-freetags').value.split(',').map(t => t.trim()).filter(t => t);
+    card.description = document.getElementById('character-edit-description').value.trim();
+
+    saveCharacterData();
+    renderCharacterList();
+    closeCharacterEditModal();
+  }
+
+  function updateCharacterDescriptionCount() {
+    const textarea = document.getElementById('character-edit-description');
+    const count = document.getElementById('character-description-count');
+    if (textarea && count) count.textContent = textarea.value.length;
+  }
+
+  function duplicateCharacterCard(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (!card) return;
+    const newCard = { ...card, id: characterNextId++, name: card.name + ' (コピー)', selected: false };
+    const idx = characterData.findIndex(c => c.id === cardId);
+    characterData.splice(idx + 1, 0, newCard);
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  function deleteCharacterCard(cardId) {
+    if (!confirm('このキャラクターを削除しますか？')) return;
+    characterData = characterData.filter(c => c.id !== cardId);
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  function deleteSelectedCharacterCards() {
+    const selected = characterData.filter(c => c.selected);
+    if (selected.length === 0) { alert('選択されているキャラクターがありません'); return; }
+    if (!confirm(`${selected.length}人のキャラクターを削除しますか？`)) return;
+    characterData = characterData.filter(c => !c.selected);
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  function deleteAllCharacterCards() {
+    if (characterData.length === 0) return;
+    if (!confirm('すべてのキャラクターを削除しますか？')) return;
+    characterData = [];
+    characterNextId = 1;
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  // ドラッグ&ドロップ
+  function handleCharacterDragStart(e) {
+    draggingCharacterId = parseInt(e.currentTarget.dataset.id);
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleCharacterDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.character-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    draggingCharacterId = null;
+  }
+
+  function handleCharacterDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function handleCharacterDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleCharacterDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const targetId = parseInt(e.currentTarget.dataset.id);
+    if (draggingCharacterId === null || draggingCharacterId === targetId) return;
+
+    const dragIdx = characterData.findIndex(c => c.id === draggingCharacterId);
+    const targetIdx = characterData.findIndex(c => c.id === targetId);
+    if (dragIdx < 0 || targetIdx < 0) return;
+
+    const [moved] = characterData.splice(dragIdx, 1);
+    characterData.splice(targetIdx, 0, moved);
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  // コンテキストメニュー
+  function showCharacterContextMenu(e, cardId) {
+    hideCharacterContextMenu();
+    let menu = document.getElementById('character-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'character-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:160px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="edit">✏️ 編集</div>
+      <div class="context-menu-item" data-action="duplicate">📋 複製</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="color">🎨 色を変更</div>
+      <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="delete" style="color:#dc2626;">🗑 削除</div>
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'edit') openCharacterEditModal(cardId);
+        if (action === 'duplicate') duplicateCharacterCard(cardId);
+        if (action === 'delete') deleteCharacterCard(cardId);
+        if (action === 'color') openCharacterColorPicker(cardId);
+        if (action === 'reset-color') resetCharacterColor(cardId);
+        hideCharacterContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    characterMenuClickHandler = () => hideCharacterContextMenu();
+    setTimeout(() => document.addEventListener('click', characterMenuClickHandler), 0);
+  }
+
+  function hideCharacterContextMenu() {
+    const menu = document.getElementById('character-context-menu');
+    if (menu) menu.style.display = 'none';
+    if (characterMenuClickHandler) {
+      document.removeEventListener('click', characterMenuClickHandler);
+      characterMenuClickHandler = null;
+    }
+  }
+
+  function openCharacterColorPicker(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (!card) return;
+
+    let picker = document.getElementById('character-color-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'character-color-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
+      document.body.appendChild(picker);
+    }
+
+    const currentColor = card.color || '#ec4899';
+    const presetColors = ['#ec4899', '#f472b6', '#be185d', '#a855f7', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#eab308', '#ef4444'];
+
+    picker.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">カードの色</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="char-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px; cursor:pointer;">
+        <input type="text" id="char-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetColors.map(c => `<button class="char-color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="char-picker-cancel">キャンセル</button>
+        <button class="btn btn-save" id="char-picker-apply">適用</button>
+      </div>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = picker.querySelector('#char-color-input');
+    const colorText = picker.querySelector('#char-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.char-color-preset').forEach(btn => {
+      btn.onclick = () => {
+        colorInput.value = btn.dataset.color;
+        colorText.value = btn.dataset.color;
+        picker.querySelectorAll('.char-color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => { picker.style.display = 'none'; };
+    picker.querySelector('#char-picker-cancel').onclick = () => { picker.style.display = 'none'; };
+    picker.querySelector('#char-picker-apply').onclick = () => {
+      card.color = colorInput.value;
+      saveCharacterData();
+      renderCharacterList();
+      picker.style.display = 'none';
+    };
+  }
+
+  function resetCharacterColor(cardId) {
+    const card = characterData.find(c => c.id === cardId);
+    if (!card) return;
+    card.color = null;
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  function exportCharacterText() {
+    if (characterData.length === 0) { alert('エクスポートするキャラクターがありません'); return; }
+    let text = '【登場人物一覧】\n\n';
+    characterData.forEach(c => {
+      text += `■ ${c.name}${c.reading ? ` (${c.reading})` : ''} [${CHARACTER_ROLES[c.role]}]\n`;
+      if (c.affiliationTags.length > 0) text += `  所属: ${c.affiliationTags.join(', ')}\n`;
+      if (c.freeTags.length > 0) text += `  タグ: ${c.freeTags.join(', ')}\n`;
+      if (c.description) text += `  説明: ${c.description}\n`;
+      text += '\n';
+    });
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '登場人物.txt';
+    a.click();
+  }
+
+  // パネル制御
+  function toggleCharacterPanel() {
+    const panel = document.getElementById('character-panel');
+    const checkbox = document.getElementById('check-character-dock');
+    const container = document.getElementById('main-container');
+    if (!panel || !checkbox) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
+
+    if (!isOpen) {
+      if (container) container.classList.remove('character-right');
+      panel.classList.add('open');
+      if (isDocked) {
+        checkbox.checked = false;
+        toggleCharacterDock();
+      }
+    } else if (!isDocked) {
+      checkbox.checked = true;
+      toggleCharacterDock();
+      panel.classList.add('open');
+    } else {
+      checkbox.checked = false;
+      toggleCharacterDock();
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateCharacterButtonState();
+  }
+
+  function toggleCharacterDock() {
+    const checkbox = document.getElementById('check-character-dock');
+    const container = document.getElementById('main-container');
+    const panel = document.getElementById('character-panel');
+    const swapBtn = document.getElementById('btn-character-swap');
+    const pinBtn = document.getElementById('btn-character-pin');
+    if (!checkbox || !container || !panel) return;
+
+    if (checkbox.checked) {
+      container.classList.add('character-docked');
+      container.classList.remove('character-right');
+      if (swapBtn) swapBtn.classList.add('is-active');
+      if (pinBtn) pinBtn.classList.add('pinned');
+    } else {
+      container.classList.remove('character-docked');
+      container.classList.remove('character-right');
+      if (swapBtn) swapBtn.classList.remove('is-active');
+      if (pinBtn) pinBtn.classList.remove('pinned');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateCharacterButtonState();
+  }
+
+  function toggleCharacterDockPin() {
+    const checkbox = document.getElementById('check-character-dock');
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      toggleCharacterDock();
+      const panel = document.getElementById('character-panel');
+      if (panel && checkbox.checked) panel.classList.add('open');
+    }
+  }
+
+  function swapCharacterSide() {
+    const container = document.getElementById('main-container');
+    if (container) container.classList.toggle('character-right');
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  }
+
+  function closeCharacterPanel(force) {
+    const panel = document.getElementById('character-panel');
+    const checkbox = document.getElementById('check-character-dock');
+    const container = document.getElementById('main-container');
+    if (!panel) return;
+
+    if (force || !checkbox || !checkbox.checked) {
+      panel.classList.remove('open');
+      if (checkbox) checkbox.checked = false;
+      if (container) container.classList.remove('character-docked');
+    } else {
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateCharacterButtonState();
+  }
+
+  function updateCharacterButtonState() {
+    const panel = document.getElementById('character-panel');
+    const checkbox = document.getElementById('check-character-dock');
+    const btn = document.getElementById('btn-toggle-character');
+    if (!btn || !panel) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox && checkbox.checked;
+    const icon = btn.querySelector('.panel-state-icon');
+
+    if (isDocked) {
+      if (icon) icon.textContent = '📌';
+    } else if (isOpen) {
+      if (icon) icon.textContent = '▾';
+    } else {
+      if (icon) icon.textContent = '▾';
+    }
+  }
+
+  // グローバル公開
+  window.addCharacterCard = addCharacterCard;
+  window.openCharacterEditModal = openCharacterEditModal;
+  window.closeCharacterEditModal = closeCharacterEditModal;
+  window.saveCharacterCard = saveCharacterCard;
+  window.duplicateCharacterCard = duplicateCharacterCard;
+  window.deleteCharacterCard = deleteCharacterCard;
+  window.deleteSelectedCharacterCards = deleteSelectedCharacterCards;
+  window.deleteAllCharacterCards = deleteAllCharacterCards;
+  window.toggleCharacterExpand = toggleCharacterExpand;
+  window.toggleCharacterSelect = toggleCharacterSelect;
+  window.exportCharacterText = exportCharacterText;
+  window.toggleCharacterPanel = toggleCharacterPanel;
+  window.toggleCharacterDock = toggleCharacterDock;
+  window.toggleCharacterDockPin = toggleCharacterDockPin;
+  window.swapCharacterSide = swapCharacterSide;
+  window.closeCharacterPanel = closeCharacterPanel;
+  window.updateCharacterButtonState = updateCharacterButtonState;
+
+  // 説明欄の文字数カウント
+  const descEl = document.getElementById('character-edit-description');
+  if (descEl) descEl.addEventListener('input', updateCharacterDescriptionCount);
+
+  // 初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCharacter);
+  } else {
+    initCharacter();
+  }
+})();
+
+// ========== 世界観パネル ==========
+(function() {
+  'use strict';
+
+  const WORLD_STORAGE_KEY = 'cc_world_data';
+  let worldData = [];
+  let worldNextId = 1;
+  let editingWorldId = null;
+  let draggingWorldId = null;
+  let worldMenuClickHandler = null;
+
+  const WORLD_LEVELS = {
+    major: '大カテゴリ',
+    middle: '中カテゴリ',
+    detail: '詳細項目'
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function initWorld() {
+    loadWorldData();
+    renderWorldList();
+  }
+
+  function loadWorldData() {
+    try {
+      const saved = localStorage.getItem(WORLD_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        worldData = (parsed.data || []).map(card => ({
+          ...card,
+          selected: false,
+          expanded: !!card.expanded
+        }));
+        worldNextId = parsed.nextId || 1;
+      }
+    } catch (e) {
+      console.warn('世界観データの読み込みに失敗:', e);
+      worldData = [];
+      worldNextId = 1;
+    }
+  }
+
+  function saveWorldData() {
+    try {
+      const sanitized = worldData.map(({ selected, ...rest }) => rest);
+      localStorage.setItem(WORLD_STORAGE_KEY, JSON.stringify({
+        data: sanitized,
+        nextId: worldNextId
+      }));
+    } catch (e) {
+      console.warn('世界観データの保存に失敗:', e);
+    }
+  }
+
+  function addWorldCard(level) {
+    const count = worldData.filter(c => c.level === level).length;
+    const newCard = {
+      id: worldNextId++,
+      name: WORLD_LEVELS[level] + (count + 1),
+      level: level,
+      termTags: [],
+      description: '',
+      color: null,
+      expanded: false,
+      selected: false
+    };
+    worldData.push(newCard);
+    saveWorldData();
+    renderWorldList();
+    openWorldEditModal(newCard.id);
+  }
+
+  function renderWorldList() {
+    const container = document.getElementById('world-list');
+    if (!container) return;
+
+    if (worldData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; padding:20px; text-align:center;">世界観設定がありません。<br>上のボタンから追加してください。</div>';
+      updateWorldCount();
+      return;
+    }
+
+    container.innerHTML = '';
+    worldData.forEach((card, index) => {
+      const div = createWorldCardElement(card, index);
+      container.appendChild(div);
+    });
+    updateWorldCount();
+  }
+
+  function createWorldCardElement(card, index) {
+    const div = document.createElement('div');
+    div.className = `world-card level-${card.level}`;
+    if (card.expanded) div.classList.add('expanded');
+    if (card.color) {
+      div.classList.add('has-custom-color');
+      div.style.setProperty('--world-card-accent', card.color);
+      div.style.setProperty('--world-card-bg', toRgba(card.color, 0.12));
+    }
+    div.dataset.id = card.id;
+    div.draggable = true;
+
+    const termTagsHtml = card.termTags.length > 0
+      ? card.termTags.map(t => `<span class="world-term-tag">${escapeHtml(t)}</span>`).join('')
+      : '<span style="color:var(--text-muted);">なし</span>';
+
+    div.innerHTML = `
+      <div class="world-card-header" onclick="toggleWorldExpand(${card.id})">
+        <input type="checkbox" class="world-select" ${card.selected ? 'checked' : ''} onclick="event.stopPropagation(); toggleWorldSelect(${card.id})">
+        <span class="world-toggle">${card.expanded ? '▼' : '▶'}</span>
+        <span class="world-name">${escapeHtml(card.name)}</span>
+        <span class="world-level-badge level-${card.level}">${WORLD_LEVELS[card.level]}</span>
+      </div>
+      <div class="world-card-body">
+        <div class="world-field">
+          <div class="world-field-label">用語タグ</div>
+          <div class="world-tags">${termTagsHtml}</div>
+        </div>
+        ${card.description ? `<div class="world-field"><div class="world-field-label">説明</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        <div class="world-card-actions">
+          <button onclick="openWorldEditModal(${card.id})">✏️ 編集</button>
+          <button onclick="duplicateWorldCard(${card.id})">📋 複製</button>
+          <button class="btn-delete" onclick="deleteWorldCard(${card.id})">🗑 削除</button>
+        </div>
+      </div>
+    `;
+
+    div.addEventListener('dragstart', handleWorldDragStart);
+    div.addEventListener('dragend', handleWorldDragEnd);
+    div.addEventListener('dragover', handleWorldDragOver);
+    div.addEventListener('dragleave', handleWorldDragLeave);
+    div.addEventListener('drop', handleWorldDrop);
+    div.addEventListener('contextmenu', (e) => { e.preventDefault(); showWorldContextMenu(e, card.id); });
+
+    return div;
+  }
+
+  function toRgba(color, alpha = 1) {
+    if (!color) return `rgba(0,0,0,${alpha})`;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const size = hex.length === 3 ? 1 : 2;
+      const to255 = (idx) => {
+        const part = hex.substr(idx, size);
+        return parseInt(size === 1 ? part + part : part, 16);
+      };
+      return `rgba(${to255(0)}, ${to255(size)}, ${to255(size * 2)}, ${alpha})`;
+    }
+    return color;
+  }
+
+  function updateWorldCount() {
+    const el = document.getElementById('world-count');
+    if (el) el.textContent = worldData.length + '件';
+  }
+
+  function toggleWorldExpand(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (card) {
+      card.expanded = !card.expanded;
+      saveWorldData();
+      renderWorldList();
+    }
+  }
+
+  function toggleWorldSelect(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (card) {
+      card.selected = !card.selected;
+      renderWorldList();
+    }
+  }
+
+  function openWorldEditModal(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (!card) return;
+    editingWorldId = cardId;
+
+    document.getElementById('world-edit-name').value = card.name || '';
+    document.getElementById('world-edit-level').value = card.level;
+    document.getElementById('world-edit-termtags').value = (card.termTags || []).join(', ');
+    document.getElementById('world-edit-description').value = card.description || '';
+    updateWorldDescriptionCount();
+
+    document.getElementById('world-edit-modal').classList.add('show');
+  }
+
+  function closeWorldEditModal() {
+    document.getElementById('world-edit-modal').classList.remove('show');
+    editingWorldId = null;
+  }
+
+  function saveWorldCard() {
+    if (editingWorldId === null) return;
+    const card = worldData.find(c => c.id === editingWorldId);
+    if (!card) return;
+
+    card.name = document.getElementById('world-edit-name').value.trim() || WORLD_LEVELS[card.level];
+    card.level = document.getElementById('world-edit-level').value;
+    card.termTags = document.getElementById('world-edit-termtags').value.split(',').map(t => t.trim()).filter(t => t);
+    card.description = document.getElementById('world-edit-description').value.trim();
+
+    saveWorldData();
+    renderWorldList();
+    closeWorldEditModal();
+  }
+
+  function updateWorldDescriptionCount() {
+    const textarea = document.getElementById('world-edit-description');
+    const count = document.getElementById('world-description-count');
+    if (textarea && count) count.textContent = textarea.value.length;
+  }
+
+  function duplicateWorldCard(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (!card) return;
+    const newCard = { ...card, id: worldNextId++, name: card.name + ' (コピー)', selected: false };
+    const idx = worldData.findIndex(c => c.id === cardId);
+    worldData.splice(idx + 1, 0, newCard);
+    saveWorldData();
+    renderWorldList();
+  }
+
+  function deleteWorldCard(cardId) {
+    if (!confirm('この項目を削除しますか？')) return;
+    worldData = worldData.filter(c => c.id !== cardId);
+    saveWorldData();
+    renderWorldList();
+  }
+
+  function deleteSelectedWorldCards() {
+    const selected = worldData.filter(c => c.selected);
+    if (selected.length === 0) { alert('選択されている項目がありません'); return; }
+    if (!confirm(`${selected.length}件の項目を削除しますか？`)) return;
+    worldData = worldData.filter(c => !c.selected);
+    saveWorldData();
+    renderWorldList();
+  }
+
+  function deleteAllWorldCards() {
+    if (worldData.length === 0) return;
+    if (!confirm('すべての世界観設定を削除しますか？')) return;
+    worldData = [];
+    worldNextId = 1;
+    saveWorldData();
+    renderWorldList();
+  }
+
+  // ドラッグ&ドロップ
+  function handleWorldDragStart(e) {
+    draggingWorldId = parseInt(e.currentTarget.dataset.id);
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleWorldDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.world-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    draggingWorldId = null;
+  }
+
+  function handleWorldDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function handleWorldDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleWorldDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const targetId = parseInt(e.currentTarget.dataset.id);
+    if (draggingWorldId === null || draggingWorldId === targetId) return;
+
+    const dragIdx = worldData.findIndex(c => c.id === draggingWorldId);
+    const targetIdx = worldData.findIndex(c => c.id === targetId);
+    if (dragIdx < 0 || targetIdx < 0) return;
+
+    const [moved] = worldData.splice(dragIdx, 1);
+    worldData.splice(targetIdx, 0, moved);
+    saveWorldData();
+    renderWorldList();
+  }
+
+  // コンテキストメニュー
+  function showWorldContextMenu(e, cardId) {
+    hideWorldContextMenu();
+    let menu = document.getElementById('world-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'world-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:160px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="edit">✏️ 編集</div>
+      <div class="context-menu-item" data-action="duplicate">📋 複製</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="color">🎨 色を変更</div>
+      <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="delete" style="color:#dc2626;">🗑 削除</div>
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'edit') openWorldEditModal(cardId);
+        if (action === 'duplicate') duplicateWorldCard(cardId);
+        if (action === 'delete') deleteWorldCard(cardId);
+        if (action === 'color') openWorldColorPicker(cardId);
+        if (action === 'reset-color') resetWorldColor(cardId);
+        hideWorldContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    worldMenuClickHandler = () => hideWorldContextMenu();
+    setTimeout(() => document.addEventListener('click', worldMenuClickHandler), 0);
+  }
+
+  function hideWorldContextMenu() {
+    const menu = document.getElementById('world-context-menu');
+    if (menu) menu.style.display = 'none';
+    if (worldMenuClickHandler) {
+      document.removeEventListener('click', worldMenuClickHandler);
+      worldMenuClickHandler = null;
+    }
+  }
+
+  function openWorldColorPicker(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (!card) return;
+
+    let picker = document.getElementById('world-color-popup');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'world-color-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
+      document.body.appendChild(picker);
+    }
+
+    const currentColor = card.color || '#10b981';
+    const presetColors = ['#10b981', '#34d399', '#6ee7b7', '#059669', '#047857', '#3b82f6', '#8b5cf6', '#ec4899', '#eab308', '#ef4444'];
+
+    picker.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">カードの色</span>
+        <button class="picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="world-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px; cursor:pointer;">
+        <input type="text" id="world-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetColors.map(c => `<button class="world-color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="world-picker-cancel">キャンセル</button>
+        <button class="btn btn-save" id="world-picker-apply">適用</button>
+      </div>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = picker.querySelector('#world-color-input');
+    const colorText = picker.querySelector('#world-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.world-color-preset').forEach(btn => {
+      btn.onclick = () => {
+        colorInput.value = btn.dataset.color;
+        colorText.value = btn.dataset.color;
+        picker.querySelectorAll('.world-color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    picker.querySelector('.picker-close').onclick = () => { picker.style.display = 'none'; };
+    picker.querySelector('#world-picker-cancel').onclick = () => { picker.style.display = 'none'; };
+    picker.querySelector('#world-picker-apply').onclick = () => {
+      card.color = colorInput.value;
+      saveWorldData();
+      renderWorldList();
+      picker.style.display = 'none';
+    };
+  }
+
+  function resetWorldColor(cardId) {
+    const card = worldData.find(c => c.id === cardId);
+    if (!card) return;
+    card.color = null;
+    saveWorldData();
+    renderWorldList();
+  }
+
+  function exportWorldText() {
+    if (worldData.length === 0) { alert('エクスポートする項目がありません'); return; }
+    let text = '【世界観設定】\n\n';
+    worldData.forEach(c => {
+      const indent = c.level === 'major' ? '' : (c.level === 'middle' ? '  ' : '    ');
+      text += `${indent}■ ${c.name} [${WORLD_LEVELS[c.level]}]\n`;
+      if (c.termTags.length > 0) text += `${indent}  用語: ${c.termTags.join(', ')}\n`;
+      if (c.description) text += `${indent}  説明: ${c.description}\n`;
+      text += '\n';
+    });
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '世界観設定.txt';
+    a.click();
+  }
+
+  // パネル制御
+  function toggleWorldPanel() {
+    const panel = document.getElementById('world-panel');
+    const checkbox = document.getElementById('check-world-dock');
+    const container = document.getElementById('main-container');
+    if (!panel || !checkbox) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
+
+    if (!isOpen) {
+      if (container) container.classList.remove('world-right');
+      panel.classList.add('open');
+      if (isDocked) {
+        checkbox.checked = false;
+        toggleWorldDock();
+      }
+    } else if (!isDocked) {
+      checkbox.checked = true;
+      toggleWorldDock();
+      panel.classList.add('open');
+    } else {
+      checkbox.checked = false;
+      toggleWorldDock();
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateWorldButtonState();
+  }
+
+  function toggleWorldDock() {
+    const checkbox = document.getElementById('check-world-dock');
+    const container = document.getElementById('main-container');
+    const panel = document.getElementById('world-panel');
+    const swapBtn = document.getElementById('btn-world-swap');
+    const pinBtn = document.getElementById('btn-world-pin');
+    if (!checkbox || !container || !panel) return;
+
+    if (checkbox.checked) {
+      container.classList.add('world-docked');
+      container.classList.remove('world-right');
+      if (swapBtn) swapBtn.classList.add('is-active');
+      if (pinBtn) pinBtn.classList.add('pinned');
+    } else {
+      container.classList.remove('world-docked');
+      container.classList.remove('world-right');
+      if (swapBtn) swapBtn.classList.remove('is-active');
+      if (pinBtn) pinBtn.classList.remove('pinned');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateWorldButtonState();
+  }
+
+  function toggleWorldDockPin() {
+    const checkbox = document.getElementById('check-world-dock');
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      toggleWorldDock();
+      const panel = document.getElementById('world-panel');
+      if (panel && checkbox.checked) panel.classList.add('open');
+    }
+  }
+
+  function swapWorldSide() {
+    const container = document.getElementById('main-container');
+    if (container) container.classList.toggle('world-right');
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+  }
+
+  function closeWorldPanel(force) {
+    const panel = document.getElementById('world-panel');
+    const checkbox = document.getElementById('check-world-dock');
+    const container = document.getElementById('main-container');
+    if (!panel) return;
+
+    if (force || !checkbox || !checkbox.checked) {
+      panel.classList.remove('open');
+      if (checkbox) checkbox.checked = false;
+      if (container) container.classList.remove('world-docked');
+    } else {
+      panel.classList.remove('open');
+    }
+
+    if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
+    updateWorldButtonState();
+  }
+
+  function updateWorldButtonState() {
+    const panel = document.getElementById('world-panel');
+    const checkbox = document.getElementById('check-world-dock');
+    const btn = document.getElementById('btn-toggle-world');
+    if (!btn || !panel) return;
+
+    const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox && checkbox.checked;
+    const icon = btn.querySelector('.panel-state-icon');
+
+    if (isDocked) {
+      if (icon) icon.textContent = '📌';
+    } else if (isOpen) {
+      if (icon) icon.textContent = '▾';
+    } else {
+      if (icon) icon.textContent = '▾';
+    }
+  }
+
+  // グローバル公開
+  window.addWorldCard = addWorldCard;
+  window.openWorldEditModal = openWorldEditModal;
+  window.closeWorldEditModal = closeWorldEditModal;
+  window.saveWorldCard = saveWorldCard;
+  window.duplicateWorldCard = duplicateWorldCard;
+  window.deleteWorldCard = deleteWorldCard;
+  window.deleteSelectedWorldCards = deleteSelectedWorldCards;
+  window.deleteAllWorldCards = deleteAllWorldCards;
+  window.toggleWorldExpand = toggleWorldExpand;
+  window.toggleWorldSelect = toggleWorldSelect;
+  window.exportWorldText = exportWorldText;
+  window.toggleWorldPanel = toggleWorldPanel;
+  window.toggleWorldDock = toggleWorldDock;
+  window.toggleWorldDockPin = toggleWorldDockPin;
+  window.swapWorldSide = swapWorldSide;
+  window.closeWorldPanel = closeWorldPanel;
+  window.updateWorldButtonState = updateWorldButtonState;
+
+  // 説明欄の文字数カウント
+  const descEl = document.getElementById('world-edit-description');
+  if (descEl) descEl.addEventListener('input', updateWorldDescriptionCount);
+
+  // 初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWorld);
+  } else {
+    initWorld();
   }
 })();
 </script>

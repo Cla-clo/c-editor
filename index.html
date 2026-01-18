@@ -136,6 +136,49 @@
     .btn-sync:hover { background: #fef08a; }
     .btn-save { background: #2563eb; color: white; border: 1px solid #1d4ed8; }
     .btn-save:hover { background: #1d4ed8; color: white; }
+    .btn-text-file { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .btn-text-file:hover { background: #bfdbfe; }
+    .btn-project-file { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .btn-project-file:hover { background: #fde68a; }
+    .header-file-group {
+        display: inline-flex;
+        gap: 2px;
+        background: var(--pane-header-bg);
+        border-radius: 6px;
+        padding: 2px;
+        margin-left: 4px;
+    }
+    .header-file-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    .header-file-dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        min-width: 140px;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        padding: 4px 0;
+    }
+    .header-file-dropdown.open .header-file-dropdown-content {
+        display: block;
+    }
+    .header-file-dropdown-content .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .header-file-dropdown-content .dropdown-item:hover {
+        background: var(--pane-header-bg);
+    }
     .btn-reset-input {
         background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
         font-weight: bold; padding: 4px 8px;
@@ -154,7 +197,7 @@
     .btn-analysis:hover { background: #bfdbfe; }
     .btn-export { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-size: 0.7rem; padding: 2px 6px; }
     .btn-import { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; font-size: 0.7rem; padding: 2px 6px; }
-    #file-input, #settings-file-input { display: none; }
+    #file-input, #settings-file-input, #project-file-input { display: none; }
 
     .dropdown { position: relative; display: inline-block; }
     .dropdown-btn { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
@@ -813,6 +856,35 @@
         background: rgba(0,0,0,0.5); z-index: 1000;
         display: flex; justify-content: center; align-items: center;
     }
+    .import-dialog-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 10001;
+        display: none; justify-content: center; align-items: center;
+    }
+    .import-dialog {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        min-width: 300px;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .import-dialog h3 { margin: 0 0 15px 0; color: var(--text-color); font-size: 1rem; }
+    .import-dialog-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
+    .import-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    .import-option {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px; border: 1px solid var(--border-color);
+        border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    }
+    .import-option:hover { background: var(--pane-header-bg); }
+    .import-option.selected { border-color: #3b82f6; background: #eff6ff; }
+    body.theme-dark .import-option.selected { background: #1e3a5f; }
+    .import-option input { display: none; }
+    .import-option-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .import-option-content strong { font-size: 0.9rem; }
+    .import-dialog-buttons { display: flex; gap: 10px; justify-content: flex-end; }
     .save-dialog {
         background: var(--panel-bg); border-radius: 8px; padding: 20px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 300px;
@@ -1172,6 +1244,239 @@
     .structure-card.collapsed .structure-children { display: none; }
     .structure-children { margin-top: 6px; }
 
+    /* リンクされた登場人物・世界観の表示 */
+    .structure-linked-section {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed var(--border-color);
+    }
+    .structure-linked-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+    .structure-linked-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .structure-linked-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .structure-linked-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .structure-linked-character {
+        background: #fce7f3;
+        color: #be185d;
+        border: 1px solid #fbcfe8;
+    }
+    body.theme-dark .structure-linked-character {
+        background: #831843;
+        color: #f9a8d4;
+        border-color: #9d174d;
+    }
+    .structure-linked-world {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+    body.theme-dark .structure-linked-world {
+        background: #064e3b;
+        color: #6ee7b7;
+        border-color: #047857;
+    }
+
+    /* リンク情報ポップアップ */
+    .structure-link-popup {
+        position: fixed;
+        z-index: 10003;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        padding: 12px;
+        max-width: 320px;
+        min-width: 200px;
+    }
+    .structure-link-popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .structure-link-popup-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .structure-link-popup-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+    .structure-link-popup-badge.character {
+        background: #fce7f3;
+        color: #be185d;
+    }
+    .structure-link-popup-badge.world {
+        background: #ecfdf5;
+        color: #047857;
+    }
+    .structure-link-popup-desc {
+        font-size: 0.8rem;
+        color: var(--text-color);
+        line-height: 1.5;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    .structure-link-popup-actions {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .structure-link-popup-actions button {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        cursor: pointer;
+    }
+    .structure-link-popup-actions button:hover {
+        background: var(--pane-header-bg);
+    }
+    .structure-link-popup-actions .btn-goto {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-color: #7dd3fc;
+    }
+    .structure-link-popup-actions .btn-goto:hover {
+        background: #bae6fd;
+    }
+
+    /* 構成編集モーダル内のリンク選択 */
+    .structure-link-select-container {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 8px;
+        background: var(--pane-header-bg);
+    }
+    .structure-link-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .structure-link-checkbox-item:hover {
+        background: rgba(0,0,0,0.05);
+    }
+    body.theme-dark .structure-link-checkbox-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .structure-link-checkbox-item input {
+        width: 16px;
+        height: 16px;
+        accent-color: #6366f1;
+    }
+    .structure-link-checkbox-item label {
+        flex: 1;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+    .structure-link-checkbox-item .link-item-badge {
+        font-size: 0.65rem;
+        padding: 1px 5px;
+        border-radius: 8px;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-main {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-sub {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-support {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-major {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-medium {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-minor {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    /* 舞台タグサジェスト */
+    .structure-tag-suggestions {
+        display: none;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+        padding: 8px;
+        background: var(--pane-header-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    .structure-tag-suggestions .tag-item {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        background: #e0f2fe;
+        color: #0369a1;
+        transition: all 0.15s;
+    }
+    .structure-tag-suggestions .tag-item:hover {
+        background: #7dd3fc;
+        color: #0c4a6e;
+    }
+    .structure-tag-suggestions .no-tags {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    .structure-suggest-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        font-size: 0.7rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        cursor: pointer;
+        margin-left: 8px;
+    }
+    .structure-suggest-btn:hover {
+        background: var(--pane-header-bg);
+    }
+
     /* 編集モーダル */
     #structure-edit-modal {
         position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
@@ -1354,6 +1659,27 @@
 
     .character-card-body { display: none; padding: 8px 10px; font-size: 0.8rem; }
     .character-card.expanded .character-card-body { display: block; }
+    /* 3段階展開システム */
+    .character-card.expand-1 .character-card-body { display: block; }
+    .character-card.expand-2 .character-card-body { display: block; }
+    .character-card.expand-1 .character-description { display: none; }
+    .character-card.expand-1 .character-card-actions { display: none; }
+    .character-card.expand-1 .character-description-preview { display: block; }
+    .character-card.expand-2 .character-description-preview { display: none; }
+    .character-description-preview {
+        display: none;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px dashed var(--border-color);
+    }
+    /* ラベル非表示設定 */
+    .character-card.hide-labels .character-field-label { display: none; }
+    .character-card.hide-labels .character-field { margin-bottom: 4px; }
     .character-field { margin-bottom: 6px; }
     .character-field:last-child { margin-bottom: 0; }
     .character-field-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
@@ -1477,6 +1803,27 @@
 
     .world-card-body { display: none; padding: 8px 10px; font-size: 0.8rem; }
     .world-card.expanded .world-card-body { display: block; }
+    /* 3段階展開システム */
+    .world-card.expand-1 .world-card-body { display: block; }
+    .world-card.expand-2 .world-card-body { display: block; }
+    .world-card.expand-1 .world-description { display: none; }
+    .world-card.expand-1 .world-card-actions { display: none; }
+    .world-card.expand-1 .world-description-preview { display: block; }
+    .world-card.expand-2 .world-description-preview { display: none; }
+    .world-description-preview {
+        display: none;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px dashed var(--border-color);
+    }
+    /* ラベル非表示設定 */
+    .world-card.hide-labels .world-field-label { display: none; }
+    .world-card.hide-labels .world-field { margin-bottom: 4px; }
     .world-field { margin-bottom: 6px; }
     .world-field:last-child { margin-bottom: 0; }
     .world-field-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
@@ -2251,9 +2598,24 @@
             <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
-        <button class="btn" onclick="openFileWithChoice()">📂 開く</button>
+        <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
+        <div class="header-file-group">
+            <div class="header-file-dropdown" id="text-file-dropdown">
+                <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
+                <div class="header-file-dropdown-content">
+                    <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
+                    <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
+                </div>
+            </div>
+            <div class="header-file-dropdown" id="project-file-dropdown">
+                <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
+                <div class="header-file-dropdown-content">
+                    <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
+                    <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
+                </div>
+            </div>
+        </div>
         <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
-        <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
     </div>
 </header>
 
@@ -2652,8 +3014,10 @@
     
     <div class="memo-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between;">
         <span id="memo-char-count">0字</span>
-        <div class="memo-file-btns">
-            <button onclick="showMemoSaveDialog()" style="font-size:0.7rem; cursor:pointer;">保存</button>
+        <div class="memo-file-btns" style="display:flex; gap:4px;">
+            <button onclick="openMemoImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportMemoData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+            <button onclick="showMemoSaveDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 TXT</button>
         </div>
     </div>
 </div>
@@ -2684,7 +3048,10 @@
     </div>
     <div class="structure-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-structure-head, #e0e7ff);">
         <span id="structure-count">0件</span>
-        <button onclick="exportStructureText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openStructureImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportStructureData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-structure" class="dock-resizer" title="構成パネルの幅を調整します"></div>
@@ -2716,7 +3083,10 @@
     </div>
     <div class="character-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-character-head, #fce7f3);">
         <span id="character-count">0人</span>
-        <button onclick="exportCharacterText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openCharacterImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportCharacterData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-character" class="dock-resizer" title="登場人物パネルの幅を調整します"></div>
@@ -2746,7 +3116,10 @@
     </div>
     <div class="world-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-world-head, #d1fae5);">
         <span id="world-count">0件</span>
-        <button onclick="exportWorldText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openWorldImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportWorldData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-world" class="dock-resizer" title="世界観パネルの幅を調整します"></div>
@@ -2899,6 +3272,34 @@
     </div>
 </div>
 
+<!-- パネル別インポートダイアログ -->
+<div id="panel-import-dialog" class="import-dialog-overlay">
+    <div class="import-dialog">
+        <h3 id="panel-import-title">📂 データを開く</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">既存データとの扱いを選択してください</p>
+        <div class="import-options">
+            <label class="import-option selected" data-value="overwrite">
+                <input type="radio" name="import-mode" value="overwrite" checked>
+                <div class="import-option-content">
+                    <strong>🔄 上書き</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">既存データを置き換える</span>
+                </div>
+            </label>
+            <label class="import-option" data-value="merge">
+                <input type="radio" name="import-mode" value="merge">
+                <div class="import-option-content">
+                    <strong>➕ 追加</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">既存データに追加する</span>
+                </div>
+            </label>
+        </div>
+        <div class="save-dialog-buttons" style="margin-top:16px;">
+            <button class="btn btn-save" onclick="executeImport()">📂 ファイルを選択</button>
+            <button class="btn" onclick="closePanelImportDialog()">キャンセル</button>
+        </div>
+    </div>
+</div>
+
 <div id="autosave-toast" class="autosave-toast">自動保存しました♪</div>
 <div id="autosave-error" class="autosave-error-overlay">
     <div class="autosave-error">
@@ -2934,8 +3335,23 @@
             <input type="text" id="structure-edit-viewpoint" placeholder="主人公名 or 一人称/三人称">
         </div>
         <div class="structure-edit-field">
-            <label for="structure-edit-tags">舞台タグ（カンマ区切り）</label>
+            <label for="structure-edit-tags">舞台タグ（カンマ区切り）<button type="button" class="structure-suggest-btn" onclick="toggleStructureTagSuggestions()">📋 既存タグ</button></label>
             <input type="text" id="structure-edit-tags" placeholder="例: 学校, 放課後, 屋上">
+            <div id="structure-tag-suggestions" class="structure-tag-suggestions"></div>
+        </div>
+        <div class="structure-edit-field">
+            <label>登場人物</label>
+            <div id="structure-edit-characters" class="structure-link-select-container">
+                <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">登場人物パネルにキャラクターを追加してください</div>
+            </div>
+            <div class="structure-edit-hint">この章/話/シーンに登場するキャラクターを選択</div>
+        </div>
+        <div class="structure-edit-field">
+            <label>世界観・アイテム</label>
+            <div id="structure-edit-worlds" class="structure-link-select-container">
+                <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">世界観パネルに設定を追加してください</div>
+            </div>
+            <div class="structure-edit-hint">この章/話/シーンに関連する世界観設定を選択</div>
         </div>
         <div class="structure-edit-field">
             <label for="structure-edit-status">進捗ステータス</label>
@@ -5696,6 +6112,47 @@ function toggleMemoDock() {
         saveMemoTabs();
     });
 
+    // メモデータ取得・設定関数（インポート/エクスポート用）
+    window.getMemoTabsData = function() {
+        const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
+        if (currentTab) currentTab.content = memoArea.value;
+        return memoTabs.slice();
+    };
+
+    window.setMemoTabsData = function(data) {
+        memoTabs.length = 0;
+        data.forEach(tab => memoTabs.push({
+            id: tab.id,
+            name: tab.name || tab.title || 'メモ',
+            content: tab.content || ''
+        }));
+        window.memoTabs = memoTabs;
+        if (memoTabs.length > 0) {
+            activeMemoTabId = memoTabs[0].id;
+            nextMemoTabId = Math.max(...memoTabs.map(t => typeof t.id === 'number' ? t.id : 0), 0) + 1;
+            memoArea.value = memoTabs[0].content || '';
+        }
+        renderMemoTabs();
+        updateMemoCharCount();
+        saveMemoTabs();
+    };
+
+    window.appendMemoTabsData = function(data) {
+        const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
+        if (currentTab) currentTab.content = memoArea.value;
+        data.forEach(tab => {
+            const newId = nextMemoTabId++;
+            memoTabs.push({
+                id: newId,
+                name: tab.name || tab.title || `メモ${newId}`,
+                content: tab.content || ''
+            });
+        });
+        window.memoTabs = memoTabs;
+        renderMemoTabs();
+        saveMemoTabs();
+    };
+
     let outlineData = [];
 function toggleOutlinePanel() {
     const panel = document.getElementById('outline-panel');
@@ -6053,6 +6510,91 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
     function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
+
+    // ヘッダーファイルドロップダウン
+    function toggleTextFileDropdown() {
+        const dropdown = document.getElementById('text-file-dropdown');
+        const projectDropdown = document.getElementById('project-file-dropdown');
+        projectDropdown.classList.remove('open');
+        dropdown.classList.toggle('open');
+    }
+
+    function toggleProjectFileDropdown() {
+        const dropdown = document.getElementById('project-file-dropdown');
+        const textDropdown = document.getElementById('text-file-dropdown');
+        textDropdown.classList.remove('open');
+        dropdown.classList.toggle('open');
+    }
+
+    function closeAllFileDropdowns() {
+        document.querySelectorAll('.header-file-dropdown').forEach(d => d.classList.remove('open'));
+    }
+
+    // ドロップダウン外クリックで閉じる
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.header-file-dropdown')) {
+            closeAllFileDropdowns();
+        }
+    });
+
+    function showTextSaveOptions() {
+        showSaveDialog();
+    }
+
+    function openProjectFile() {
+        document.getElementById('project-file-input').click();
+    }
+
+    function handleProjectFileLoad(input) {
+        const file = input.files[0];
+        if (!file) return;
+        loadProjectFromFile(file);
+        input.value = '';
+    }
+
+    async function loadProjectFromFile(file) {
+        try {
+            const text = await file.text();
+            const project = JSON.parse(text);
+            if (!project.version) throw new Error('Invalid project file');
+
+            if (project.tabs) {
+                localStorage.setItem('cc_tabs', JSON.stringify(project.tabs));
+                if (project.currentTabId) localStorage.setItem('cc_current_tab_id', project.currentTabId);
+            }
+            if (project.memoTabs) {
+                localStorage.setItem('cc_memo_tabs', JSON.stringify(project.memoTabs));
+                if (project.currentMemoTabId) localStorage.setItem('cc_memo_current_tab_id', project.currentMemoTabId);
+            }
+            if (project.structure) {
+                localStorage.setItem('cc_structure_data', JSON.stringify(project.structure));
+            }
+            if (project.character) {
+                localStorage.setItem('cc_character_data', JSON.stringify(project.character));
+            }
+            if (project.world) {
+                localStorage.setItem('cc_world_data', JSON.stringify(project.world));
+            }
+            if (project.bookmarks) {
+                localStorage.setItem('cc_bookmarks', JSON.stringify(project.bookmarks));
+            }
+            if (project.settings) {
+                const s = project.settings;
+                if (s.paneWidths) {
+                    Object.entries(s.paneWidths).forEach(([k, v]) => {
+                        if (v) localStorage.setItem(`cc_${k === 'input' ? 'pane_input' : k === 'preview' ? 'pane_preview' : k}_width_px`, v);
+                    });
+                }
+                if (s.theme) localStorage.setItem('cc_theme', s.theme);
+                if (s.autoSave !== undefined) localStorage.setItem('cc_autosave_enabled', s.autoSave);
+                if (s.autoSaveInterval) localStorage.setItem('cc_autosave_interval', s.autoSaveInterval);
+            }
+            alert('プロジェクトを読み込みました。ページを再読み込みします。');
+            location.reload();
+        } catch (e) {
+            alert('プロジェクトファイルの読み込みに失敗しました: ' + e.message);
+        }
+    }
 
     // プロジェクト保存機能
     function openProjectSaveDialog() {
@@ -7328,6 +7870,8 @@ function setupMemoInteractionGuard() {
     memo: { bg: null, head: null },
     outline: { bg: null, head: null },
     structure: { bg: null, head: null },
+    character: { bg: null, head: null },
+    world: { bg: null, head: null },
   };
 
   function getDefaultComputedColors(){
@@ -7343,6 +7887,8 @@ function setupMemoInteractionGuard() {
       memo: { bg: panelBg, head: headerBg },
       outline: { bg: panelBg, head: headerBg },
       structure: { bg: panelBg, head: headerBg },
+      character: { bg: '#fce7f3', head: '#fce7f3' },
+      world: { bg: '#ecfdf5', head: '#d1fae5' },
     };
   }
 
@@ -7350,7 +7896,7 @@ function setupMemoInteractionGuard() {
     const saved = lsGet(PANE_COLOR_KEY, null);
     if (!saved) return null;
     const out = JSON.parse(JSON.stringify(DEFAULT_PANE_COLORS));
-    for (const k of ['input','preview','memo','outline','structure']){
+    for (const k of ['input','preview','memo','outline','structure','character','world']){
       if (saved[k]){
         out[k].bg = saved[k].bg || null;
         out[k].head = saved[k].head || null;
@@ -7368,6 +7914,8 @@ function setupMemoInteractionGuard() {
       memo: ['--pane-memo-bg','--pane-memo-head'],
       outline: ['--pane-outline-bg','--pane-outline-head'],
       structure: ['--pane-structure-bg','--pane-structure-head'],
+      character: ['--pane-character-bg','--pane-character-head'],
+      world: ['--pane-world-bg','--pane-world-head'],
     };
     for (const k of Object.keys(map)){
       const [bgVar, headVar] = map[k];
@@ -7400,6 +7948,12 @@ function setupMemoInteractionGuard() {
       #structure-panel { background: var(--pane-structure-bg, #f0f4ff); }
       #structure-panel .structure-header, #structure-panel .structure-toolbar { background: var(--pane-structure-head, #e0e7ff); }
 
+      #character-panel { background: var(--pane-character-bg, #fce7f3); }
+      #character-panel .character-header, #character-panel .character-toolbar, #character-panel .character-footer { background: var(--pane-character-head, #fce7f3); }
+
+      #world-panel { background: var(--pane-world-bg, #ecfdf5); }
+      #world-panel .world-header, #world-panel .world-toolbar, #world-panel .world-footer { background: var(--pane-world-head, #d1fae5); }
+
       /* Bookmark marker highlight in reader */
       .cc-reader-bm-mark { display:inline-block; margin-right:6px; font-size:0.9em; opacity:0.9; }
       .cc-reader-bm-hit { outline: 2px solid rgba(245, 158, 11, 0.65); outline-offset: 2px; border-radius: 6px; }
@@ -7429,8 +7983,8 @@ function setupMemoInteractionGuard() {
         <button class="btn" id="cc-pane-colors-reset">リセット</button>
       </div>
       <div class="setting-row" style="flex-direction:column; gap:10px; align-items:stretch;">
-        ${['input','preview','memo','outline','structure'].map(k=>{
-          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成'})[k];
+        ${['input','preview','memo','outline','structure','character','world'].map(k=>{
+          const label = ({input:'入力',preview:'プレビュー',memo:'メモ',outline:'目次',structure:'構成',character:'登場人物',world:'世界観'})[k];
           return `
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
             <div style="min-width:64px; font-weight:700;">${label}</div>
@@ -7466,14 +8020,14 @@ function setupMemoInteractionGuard() {
       });
     };
 
-    for (const k of ['input','preview','memo','outline','structure']){
+    for (const k of ['input','preview','memo','outline','structure','character','world']){
       syncPair(document.getElementById(`cc-pane-${k}-bg`), document.getElementById(`cc-pane-${k}-bg-t`));
       syncPair(document.getElementById(`cc-pane-${k}-head`), document.getElementById(`cc-pane-${k}-head-t`));
     }
 
     function fillUIFrom(colors){
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline','structure']){
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bg = (colors && colors[k] && colors[k].bg) ? colors[k].bg : defaults[k].bg;
         const head = (colors && colors[k] && colors[k].head) ? colors[k].head : defaults[k].head;
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
@@ -7504,8 +8058,8 @@ function setupMemoInteractionGuard() {
     if (!applyBtn || applyBtn.dataset.bound==='1') return;
     applyBtn.dataset.bound='1';
     applyBtn.addEventListener('click', ()=>{
-      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null}};
-      for (const k of ['input','preview','memo','outline','structure']){
+      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null},character:{bg:null,head:null},world:{bg:null,head:null}};
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bg = (document.getElementById(`cc-pane-${k}-bg-t`)?.value||'').trim();
         const head = (document.getElementById(`cc-pane-${k}-head-t`)?.value||'').trim();
         const norm = (v)=>{
@@ -7524,7 +8078,7 @@ function setupMemoInteractionGuard() {
       applyPaneColors(null);
       // refill UI
       const defaults = getDefaultComputedColors();
-      for (const k of ['input','preview','memo','outline','structure']){
+      for (const k of ['input','preview','memo','outline','structure','character','world']){
         const bgEl = document.getElementById(`cc-pane-${k}-bg`);
         const bgT = document.getElementById(`cc-pane-${k}-bg-t`);
         const hdEl = document.getElementById(`cc-pane-${k}-head`);
@@ -10219,6 +10773,8 @@ function setupMemoInteractionGuard() {
           selected: false,
           collapsed: !!card.collapsed,
           expanded: !!card.expanded,
+          linkedCharacters: card.linkedCharacters || [],
+          linkedWorlds: card.linkedWorlds || [],
           isNew: false
         }));
         structureNextId = parsed.nextId || 1;
@@ -10251,6 +10807,8 @@ function setupMemoInteractionGuard() {
       summary: '',
       viewpoint: '',
       tags: [],
+      linkedCharacters: [],
+      linkedWorlds: [],
       status: 'none',
       tabId: null,
       collapsed: false,
@@ -10452,15 +11010,8 @@ function setupMemoInteractionGuard() {
 
     header.addEventListener('dblclick', (e) => {
       if (e.target.closest('button, input')) return;
-      // 章・話の場合は子要素の展開/折りたたみ（collapsed）を切り替え
-      // シーンの場合は詳細表示（expanded）を切り替え
-      if (card.level === 'scene') {
-        card.expanded = !card.expanded;
-      } else {
-        card.collapsed = !card.collapsed;
-      }
-      saveStructureData();
-      renderStructureList();
+      // ダブルクリックでコンテキストメニューを表示
+      showStructureContextMenu(e, card.id);
     });
 
     div.appendChild(header);
@@ -10498,6 +11049,40 @@ function setupMemoInteractionGuard() {
         tabField.innerHTML = `<div class="structure-field-label">紐づけタブ</div><span style="color:#2563eb; cursor:pointer;" onclick="if(window.switchTab) window.switchTab(${card.tabId})">📄 ${escapeHtml(tab.name)}</span>`;
         body.appendChild(tabField);
       }
+    }
+
+    // リンクされた登場人物・世界観を表示
+    const hasLinkedChars = card.linkedCharacters && card.linkedCharacters.length > 0;
+    const hasLinkedWorlds = card.linkedWorlds && card.linkedWorlds.length > 0;
+    if (hasLinkedChars || hasLinkedWorlds) {
+      const linkedSection = document.createElement('div');
+      linkedSection.className = 'structure-linked-section';
+
+      if (hasLinkedChars) {
+        const charData = window.getCharacterData ? window.getCharacterData() : [];
+        const linkedCharsHtml = card.linkedCharacters.map(cid => {
+          const char = charData.find(c => c.id === cid);
+          if (!char) return '';
+          return `<span class="structure-linked-item structure-linked-character" onclick="showStructureLinkedPopup(event, 'character', ${cid})">👤 ${escapeHtml(char.name)}</span>`;
+        }).filter(h => h).join('');
+        if (linkedCharsHtml) {
+          linkedSection.innerHTML += `<div class="structure-linked-label">登場人物</div><div class="structure-linked-items">${linkedCharsHtml}</div>`;
+        }
+      }
+
+      if (hasLinkedWorlds) {
+        const worldData = window.getWorldData ? window.getWorldData() : [];
+        const linkedWorldsHtml = card.linkedWorlds.map(wid => {
+          const world = worldData.find(w => w.id === wid);
+          if (!world) return '';
+          return `<span class="structure-linked-item structure-linked-world" onclick="showStructureLinkedPopup(event, 'world', ${wid})">🌍 ${escapeHtml(world.name)}</span>`;
+        }).filter(h => h).join('');
+        if (linkedWorldsHtml) {
+          linkedSection.innerHTML += `<div class="structure-linked-label" style="margin-top:6px;">世界観</div><div class="structure-linked-items">${linkedWorldsHtml}</div>`;
+        }
+      }
+
+      body.appendChild(linkedSection);
     }
 
     // アクションボタン
@@ -11073,11 +11658,63 @@ function setupMemoInteractionGuard() {
       });
     }
 
+    // 登場人物チェックボックスを生成
+    populateCharacterCheckboxes(card.linkedCharacters || []);
+
+    // 世界観チェックボックスを生成
+    populateWorldCheckboxes(card.linkedWorlds || []);
+
+    // タグサジェストを閉じる
+    const tagSuggest = document.getElementById('structure-tag-suggestions');
+    if (tagSuggest) tagSuggest.style.display = 'none';
+
     // タイトル更新
     document.getElementById('structure-edit-title').textContent = LEVEL_LABELS[card.level] + 'を編集';
 
     // モーダル表示
     document.getElementById('structure-edit-modal').classList.add('show');
+  }
+
+  function populateCharacterCheckboxes(selectedIds) {
+    const container = document.getElementById('structure-edit-characters');
+    if (!container) return;
+
+    const characterData = window.getCharacterData ? window.getCharacterData() : [];
+    if (characterData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">登場人物パネルにキャラクターを追加してください</div>';
+      return;
+    }
+
+    const CHARACTER_ROLES = { main: '主人公', sub: 'サブ', support: 'モブ' };
+    container.innerHTML = characterData.map(c => {
+      const checked = selectedIds.includes(c.id) ? 'checked' : '';
+      return `<div class="structure-link-checkbox-item">
+        <input type="checkbox" id="struct-char-${c.id}" value="${c.id}" ${checked}>
+        <label for="struct-char-${c.id}">${escapeHtml(c.name)}</label>
+        <span class="link-item-badge role-${c.role}">${CHARACTER_ROLES[c.role] || c.role}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function populateWorldCheckboxes(selectedIds) {
+    const container = document.getElementById('structure-edit-worlds');
+    if (!container) return;
+
+    const worldData = window.getWorldData ? window.getWorldData() : [];
+    if (worldData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">世界観パネルに設定を追加してください</div>';
+      return;
+    }
+
+    const WORLD_LEVELS = { major: '大カテゴリ', medium: '中カテゴリ', minor: '小カテゴリ' };
+    container.innerHTML = worldData.map(w => {
+      const checked = selectedIds.includes(w.id) ? 'checked' : '';
+      return `<div class="structure-link-checkbox-item">
+        <input type="checkbox" id="struct-world-${w.id}" value="${w.id}" ${checked}>
+        <label for="struct-world-${w.id}">${escapeHtml(w.name)}</label>
+        <span class="link-item-badge level-${w.level}">${WORLD_LEVELS[w.level] || w.level}</span>
+      </div>`;
+    }).join('');
   }
 
   function closeStructureEditModal() {
@@ -11111,6 +11748,21 @@ function setupMemoInteractionGuard() {
 
     const tabId = document.getElementById('structure-edit-tab').value;
     card.tabId = tabId ? parseInt(tabId) : null;
+
+    // リンクされた登場人物を取得
+    const charContainer = document.getElementById('structure-edit-characters');
+    if (charContainer) {
+      const checkedChars = charContainer.querySelectorAll('input[type="checkbox"]:checked');
+      card.linkedCharacters = Array.from(checkedChars).map(cb => parseInt(cb.value));
+    }
+
+    // リンクされた世界観を取得
+    const worldContainer = document.getElementById('structure-edit-worlds');
+    if (worldContainer) {
+      const checkedWorlds = worldContainer.querySelectorAll('input[type="checkbox"]:checked');
+      card.linkedWorlds = Array.from(checkedWorlds).map(cb => parseInt(cb.value));
+    }
+
     card.isNew = false;
 
     saveStructureData();
@@ -11273,6 +11925,159 @@ function setupMemoInteractionGuard() {
     });
   }
 
+  // ========== 舞台タグサジェスト ==========
+  function getAllStructureTags() {
+    const tags = new Set();
+    structureData.forEach(c => {
+      if (c.tags) c.tags.forEach(t => tags.add(t));
+    });
+    return Array.from(tags);
+  }
+
+  function toggleStructureTagSuggestions() {
+    const container = document.getElementById('structure-tag-suggestions');
+    if (!container) return;
+    if (container.style.display === 'none' || !container.style.display) {
+      const tags = getAllStructureTags();
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="no-tags">まだ舞台タグがありません</span>';
+      } else {
+        container.innerHTML = tags.map(t => `<span class="tag-item" onclick="addStructureTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+      }
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function addStructureTag(tag) {
+    const input = document.getElementById('structure-edit-tags');
+    if (!input) return;
+    const current = input.value.split(/[,、]/).map(t => t.trim()).filter(t => t);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
+  // ========== リンクポップアップ ==========
+  let currentLinkPopup = null;
+
+  function showStructureLinkedPopup(event, type, itemId) {
+    event.stopPropagation();
+    closeLinkPopup();
+
+    let item = null;
+    let badgeText = '';
+    let badgeClass = '';
+
+    if (type === 'character') {
+      const charData = window.getCharacterData ? window.getCharacterData() : [];
+      item = charData.find(c => c.id === itemId);
+      if (!item) return;
+      const roles = { main: '主人公', sub: 'サブ', support: 'モブ' };
+      badgeText = roles[item.role] || item.role;
+      badgeClass = 'character';
+    } else {
+      const worldData = window.getWorldData ? window.getWorldData() : [];
+      item = worldData.find(w => w.id === itemId);
+      if (!item) return;
+      const levels = { major: '大カテゴリ', medium: '中カテゴリ', minor: '小カテゴリ' };
+      badgeText = levels[item.level] || item.level;
+      badgeClass = 'world';
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'structure-link-popup';
+    popup.innerHTML = `
+      <div class="structure-link-popup-header">
+        <span class="structure-link-popup-title">${escapeHtml(item.name)}</span>
+        <span class="structure-link-popup-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="structure-link-popup-desc">${escapeHtml(item.description || '（説明なし）')}</div>
+      <div class="structure-link-popup-actions">
+        <button onclick="closeLinkPopup()">閉じる</button>
+        <button class="btn-goto" onclick="goToLinkedPanel('${type}', ${itemId})">パネルへ移動</button>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+    currentLinkPopup = popup;
+
+    // ポップアップ位置を調整
+    const rect = event.target.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 5;
+
+    // 画面外に出る場合の調整
+    const popupRect = popup.getBoundingClientRect();
+    if (left + popupRect.width > window.innerWidth) {
+      left = window.innerWidth - popupRect.width - 10;
+    }
+    if (top + popupRect.height > window.innerHeight) {
+      top = rect.top - popupRect.height - 5;
+    }
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+
+    // 外部クリックで閉じる
+    setTimeout(() => {
+      document.addEventListener('click', handleLinkPopupOutsideClick);
+    }, 0);
+  }
+
+  function handleLinkPopupOutsideClick(e) {
+    if (currentLinkPopup && !currentLinkPopup.contains(e.target)) {
+      closeLinkPopup();
+    }
+  }
+
+  function closeLinkPopup() {
+    if (currentLinkPopup) {
+      currentLinkPopup.remove();
+      currentLinkPopup = null;
+      document.removeEventListener('click', handleLinkPopupOutsideClick);
+    }
+  }
+
+  function goToLinkedPanel(type, itemId) {
+    closeLinkPopup();
+    if (type === 'character') {
+      if (typeof window.toggleCharacterPanel === 'function') {
+        const panel = document.getElementById('character-panel');
+        if (!panel || !panel.classList.contains('open')) {
+          window.toggleCharacterPanel();
+        }
+        // 対象のカードをハイライトしてスクロール
+        setTimeout(() => {
+          const card = document.querySelector(`#character-list .character-card[data-id="${itemId}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px #f472b6';
+            setTimeout(() => card.style.boxShadow = '', 2000);
+          }
+        }, 300);
+      }
+    } else {
+      if (typeof window.toggleWorldPanel === 'function') {
+        const panel = document.getElementById('world-panel');
+        if (!panel || !panel.classList.contains('open')) {
+          window.toggleWorldPanel();
+        }
+        // 対象のカードをハイライトしてスクロール
+        setTimeout(() => {
+          const card = document.querySelector(`#world-list .world-card[data-id="${itemId}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px #34d399';
+            setTimeout(() => card.style.boxShadow = '', 2000);
+          }
+        }, 300);
+      }
+    }
+  }
+
   // ========== グローバル公開 ==========
   window.addStructureCard = addStructureCard;
   window.openEditModal = openEditModal;
@@ -11285,6 +12090,11 @@ function setupMemoInteractionGuard() {
   window.collapseAllStructure = collapseAllStructure;
   window.toggleStructureFullscreen = toggleStructureFullscreen;
   window.exportStructureText = exportStructureText;
+  window.toggleStructureTagSuggestions = toggleStructureTagSuggestions;
+  window.addStructureTag = addStructureTag;
+  window.showStructureLinkedPopup = showStructureLinkedPopup;
+  window.closeLinkPopup = closeLinkPopup;
+  window.goToLinkedPanel = goToLinkedPanel;
 
   // ========== パネル制御関数 ==========
 
@@ -11433,6 +12243,76 @@ function setupMemoInteractionGuard() {
     renderStructureList();
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportStructureData() {
+    if (structureData.length === 0) {
+      alert('エクスポートする構成データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_structure',
+      version: 1,
+      data: structureData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: structureNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `構成_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importStructureData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_structure' || !Array.isArray(imported.data)) {
+          alert('有効な構成データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          structureData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || []
+          }));
+          structureNextId = imported.nextId || (Math.max(...structureData.map(c => c.id), 0) + 1);
+        } else {
+          // 追加モード: IDを振り直して追加
+          const maxId = Math.max(structureNextId, ...structureData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || []
+          }));
+          structureData = [...structureData, ...newCards];
+          structureNextId = newId;
+        }
+        saveStructureData();
+        renderStructureList();
+        alert(mode === 'overwrite' ? '構成データを読み込みました' : '構成データを追加しました');
+      } catch (err) {
+        console.error('構成インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function getStructureDataForExport() {
+    return structureData;
+  }
+
   // パネル制御関数をグローバルに公開
   window.toggleStructurePanel = toggleStructurePanel;
   window.toggleStructureDock = toggleStructureDock;
@@ -11441,6 +12321,8 @@ function setupMemoInteractionGuard() {
   window.swapStructureSide = swapStructureSide;
   window.closeStructurePanel = closeStructurePanel;
   window.updateStructureButtonState = updateStructureButtonState;
+  window.exportStructureData = exportStructureData;
+  window.importStructureData = importStructureData;
 
   // ========== 初期化実行 ==========
   if (document.readyState === 'loading') {
@@ -11487,7 +12369,8 @@ function setupMemoInteractionGuard() {
         characterData = (parsed.data || []).map(card => ({
           ...card,
           selected: false,
-          expanded: !!card.expanded
+          // expanded (boolean) から expandLevel (0,1,2) への移行対応
+          expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
         characterNextId = parsed.nextId || 1;
       }
@@ -11521,7 +12404,7 @@ function setupMemoInteractionGuard() {
       freeTags: [],
       description: '',
       color: null,
-      expanded: false,
+      expandLevel: 0,
       selected: false,
       isNew: true
     };
@@ -11551,8 +12434,10 @@ function setupMemoInteractionGuard() {
 
   function createCharacterCardElement(card, index) {
     const div = document.createElement('div');
-    div.className = `character-card role-${card.role}`;
-    if (card.expanded) div.classList.add('expanded');
+    div.className = `character-card role-${card.role} hide-labels`;
+    const level = card.expandLevel || 0;
+    if (level === 1) div.classList.add('expand-1');
+    else if (level >= 2) div.classList.add('expand-2');
     if (card.color) {
       div.classList.add('has-custom-color');
       div.style.setProperty('--character-card-accent', card.color);
@@ -11563,10 +12448,17 @@ function setupMemoInteractionGuard() {
 
     const affiliationHtml = card.affiliationTags.length > 0
       ? card.affiliationTags.map(t => `<span class="character-affiliation-tag">${escapeHtml(t)}</span>`).join('')
-      : '<span style="color:var(--text-muted);">なし</span>';
+      : '';
     const freeTagsHtml = card.freeTags.length > 0
       ? card.freeTags.map(t => `<span class="character-free-tag">${escapeHtml(t)}</span>`).join('')
-      : '<span style="color:var(--text-muted);">なし</span>';
+      : '';
+
+    // 展開レベルに応じたトグルアイコン
+    const toggleSymbols = ['▶', '▽', '▼'];
+    const toggleSymbol = toggleSymbols[Math.min(level, 2)];
+
+    // 説明の1行目プレビュー
+    const descPreview = card.description ? card.description.split('\n')[0].substring(0, 50) + (card.description.length > 50 ? '...' : '') : '';
 
     div.innerHTML = `
       <div class="character-card-header" onclick="toggleCharacterExpand(${card.id})">
@@ -11575,21 +12467,16 @@ function setupMemoInteractionGuard() {
           <button class="character-move-btn" title="上へ移動" onclick="moveCharacterCard(${card.id}, -1)">↑</button>
           <button class="character-move-btn" title="下へ移動" onclick="moveCharacterCard(${card.id}, 1)">↓</button>
         </div>
-        <span class="character-toggle">${card.expanded ? '▼' : '▶'}</span>
+        <span class="character-toggle">${toggleSymbol}</span>
         <span class="character-name">${escapeHtml(card.name)}</span>
         ${card.reading ? `<span class="character-reading">(${escapeHtml(card.reading)})</span>` : ''}
         <span class="character-role-badge role-${card.role}">${CHARACTER_ROLES[card.role]}</span>
       </div>
       <div class="character-card-body">
-        <div class="character-field">
-          <div class="character-field-label">所属</div>
-          <div class="character-tags">${affiliationHtml}</div>
-        </div>
-        <div class="character-field">
-          <div class="character-field-label">タグ</div>
-          <div class="character-tags">${freeTagsHtml}</div>
-        </div>
-        ${card.description ? `<div class="character-field"><div class="character-field-label">説明</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${affiliationHtml ? `<div class="character-field"><div class="character-field-label">🏷</div><div class="character-tags">${affiliationHtml}</div></div>` : ''}
+        ${freeTagsHtml ? `<div class="character-field"><div class="character-field-label">🔖</div><div class="character-tags">${freeTagsHtml}</div></div>` : ''}
+        ${descPreview ? `<div class="character-description-preview">${escapeHtml(descPreview)}</div>` : ''}
+        ${card.description ? `<div class="character-field character-description"><div class="character-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
         <div class="character-card-actions">
           <button onclick="openCharacterEditModal(${card.id})">✏️ 編集</button>
           <button onclick="duplicateCharacterCard(${card.id})">📋 複製</button>
@@ -11604,6 +12491,7 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleCharacterDragLeave);
     div.addEventListener('drop', handleCharacterDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showCharacterContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) showCharacterContextMenu(e, card.id); });
 
     return div;
   }
@@ -11630,7 +12518,8 @@ function setupMemoInteractionGuard() {
   function toggleCharacterExpand(cardId) {
     const card = characterData.find(c => c.id === cardId);
     if (card) {
-      card.expanded = !card.expanded;
+      // 3段階展開: 0 → 1 → 2 → 0
+      card.expandLevel = ((card.expandLevel || 0) + 1) % 3;
       saveCharacterData();
       renderCharacterList();
     }
@@ -11816,7 +12705,7 @@ function setupMemoInteractionGuard() {
         if (action === 'duplicate') duplicateCharacterCard(cardId);
         if (action === 'toggle') {
           const target = characterData.find(c => c.id === cardId);
-          if (target) { target.expanded = !target.expanded; saveCharacterData(); renderCharacterList(); }
+          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 3; saveCharacterData(); renderCharacterList(); }
         }
         if (action === 'move-up') moveCharacterCard(cardId, -1);
         if (action === 'move-down') moveCharacterCard(cardId, 1);
@@ -11960,13 +12849,13 @@ function setupMemoInteractionGuard() {
 
   // 全展開・全折畳
   function expandAllCharacter() {
-    characterData.forEach(c => { c.expanded = true; });
+    characterData.forEach(c => { c.expandLevel = 2; });
     saveCharacterData();
     renderCharacterList();
   }
 
   function collapseAllCharacter() {
-    characterData.forEach(c => { c.expanded = false; });
+    characterData.forEach(c => { c.expandLevel = 0; });
     saveCharacterData();
     renderCharacterList();
   }
@@ -12153,6 +13042,73 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportCharacterData() {
+    if (characterData.length === 0) {
+      alert('エクスポートする登場人物データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_character',
+      version: 1,
+      data: characterData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: characterNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `登場人物_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCharacterData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_character' || !Array.isArray(imported.data)) {
+          alert('有効な登場人物データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          characterData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            affiliationTags: card.affiliationTags || [],
+            freeTags: card.freeTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          characterNextId = imported.nextId || (Math.max(...characterData.map(c => c.id), 0) + 1);
+        } else {
+          const maxId = Math.max(characterNextId, ...characterData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            affiliationTags: card.affiliationTags || [],
+            freeTags: card.freeTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          characterData = [...characterData, ...newCards];
+          characterNextId = newId;
+        }
+        saveCharacterData();
+        renderCharacterList();
+        alert(mode === 'overwrite' ? '登場人物データを読み込みました' : '登場人物データを追加しました');
+      } catch (err) {
+        console.error('登場人物インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // グローバル公開
   window.addCharacterCard = addCharacterCard;
   window.openCharacterEditModal = openCharacterEditModal;
@@ -12172,6 +13128,7 @@ function setupMemoInteractionGuard() {
   window.initCharacterFromReset = initCharacterFromReset;
   window.getAllCharacterAffiliationTags = getAllCharacterAffiliationTags;
   window.getAllCharacterFreeTags = getAllCharacterFreeTags;
+  window.getCharacterData = function() { return characterData; };
   window.toggleCharacterAffiliationSuggestions = toggleCharacterAffiliationSuggestions;
   window.toggleCharacterFreetagSuggestions = toggleCharacterFreetagSuggestions;
   window.addCharacterAffiliationTag = addCharacterAffiliationTag;
@@ -12182,6 +13139,8 @@ function setupMemoInteractionGuard() {
   window.swapCharacterSide = swapCharacterSide;
   window.closeCharacterPanel = closeCharacterPanel;
   window.updateCharacterButtonState = updateCharacterButtonState;
+  window.exportCharacterData = exportCharacterData;
+  window.importCharacterData = importCharacterData;
 
   // 説明欄の文字数カウント
   const descEl = document.getElementById('character-edit-description');
@@ -12230,7 +13189,8 @@ function setupMemoInteractionGuard() {
         worldData = (parsed.data || []).map(card => ({
           ...card,
           selected: false,
-          expanded: !!card.expanded
+          // expanded (boolean) から expandLevel (0,1,2) への移行対応
+          expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
         worldNextId = parsed.nextId || 1;
       }
@@ -12262,7 +13222,7 @@ function setupMemoInteractionGuard() {
       termTags: [],
       description: '',
       color: null,
-      expanded: false,
+      expandLevel: 0,
       selected: false,
       isNew: true
     };
@@ -12292,8 +13252,10 @@ function setupMemoInteractionGuard() {
 
   function createWorldCardElement(card, index) {
     const div = document.createElement('div');
-    div.className = `world-card level-${card.level}`;
-    if (card.expanded) div.classList.add('expanded');
+    div.className = `world-card level-${card.level} hide-labels`;
+    const expandLevel = card.expandLevel || 0;
+    if (expandLevel === 1) div.classList.add('expand-1');
+    else if (expandLevel >= 2) div.classList.add('expand-2');
     if (card.color) {
       div.classList.add('has-custom-color');
       div.style.setProperty('--world-card-accent', card.color);
@@ -12304,7 +13266,14 @@ function setupMemoInteractionGuard() {
 
     const termTagsHtml = card.termTags.length > 0
       ? card.termTags.map(t => `<span class="world-term-tag">${escapeHtml(t)}</span>`).join('')
-      : '<span style="color:var(--text-muted);">なし</span>';
+      : '';
+
+    // 展開レベルに応じたトグルアイコン
+    const toggleSymbols = ['▶', '▽', '▼'];
+    const toggleSymbol = toggleSymbols[Math.min(expandLevel, 2)];
+
+    // 説明の1行目プレビュー
+    const descPreview = card.description ? card.description.split('\n')[0].substring(0, 50) + (card.description.length > 50 ? '...' : '') : '';
 
     div.innerHTML = `
       <div class="world-card-header" onclick="toggleWorldExpand(${card.id})">
@@ -12313,16 +13282,14 @@ function setupMemoInteractionGuard() {
           <button class="world-move-btn" title="上へ移動" onclick="moveWorldCard(${card.id}, -1)">↑</button>
           <button class="world-move-btn" title="下へ移動" onclick="moveWorldCard(${card.id}, 1)">↓</button>
         </div>
-        <span class="world-toggle">${card.expanded ? '▼' : '▶'}</span>
+        <span class="world-toggle">${toggleSymbol}</span>
         <span class="world-name">${escapeHtml(card.name)}</span>
         <span class="world-level-badge level-${card.level}">${WORLD_LEVELS[card.level]}</span>
       </div>
       <div class="world-card-body">
-        <div class="world-field">
-          <div class="world-field-label">用語タグ</div>
-          <div class="world-tags">${termTagsHtml}</div>
-        </div>
-        ${card.description ? `<div class="world-field"><div class="world-field-label">説明</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${termTagsHtml ? `<div class="world-field"><div class="world-field-label">🏷</div><div class="world-tags">${termTagsHtml}</div></div>` : ''}
+        ${descPreview ? `<div class="world-description-preview">${escapeHtml(descPreview)}</div>` : ''}
+        ${card.description ? `<div class="world-field world-description"><div class="world-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
         <div class="world-card-actions">
           <button onclick="openWorldEditModal(${card.id})">✏️ 編集</button>
           <button onclick="duplicateWorldCard(${card.id})">📋 複製</button>
@@ -12337,6 +13304,7 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleWorldDragLeave);
     div.addEventListener('drop', handleWorldDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showWorldContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) showWorldContextMenu(e, card.id); });
 
     return div;
   }
@@ -12363,7 +13331,8 @@ function setupMemoInteractionGuard() {
   function toggleWorldExpand(cardId) {
     const card = worldData.find(c => c.id === cardId);
     if (card) {
-      card.expanded = !card.expanded;
+      // 3段階展開: 0 → 1 → 2 → 0
+      card.expandLevel = ((card.expandLevel || 0) + 1) % 3;
       saveWorldData();
       renderWorldList();
     }
@@ -12545,7 +13514,7 @@ function setupMemoInteractionGuard() {
         if (action === 'duplicate') duplicateWorldCard(cardId);
         if (action === 'toggle') {
           const target = worldData.find(c => c.id === cardId);
-          if (target) { target.expanded = !target.expanded; saveWorldData(); renderWorldList(); }
+          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 3; saveWorldData(); renderWorldList(); }
         }
         if (action === 'move-up') moveWorldCard(cardId, -1);
         if (action === 'move-down') moveWorldCard(cardId, 1);
@@ -12728,13 +13697,13 @@ function setupMemoInteractionGuard() {
 
   // 全展開・全折畳
   function expandAllWorld() {
-    worldData.forEach(c => { c.expanded = true; });
+    worldData.forEach(c => { c.expandLevel = 2; });
     saveWorldData();
     renderWorldList();
   }
 
   function collapseAllWorld() {
-    worldData.forEach(c => { c.expanded = false; });
+    worldData.forEach(c => { c.expandLevel = 0; });
     saveWorldData();
     renderWorldList();
   }
@@ -12889,6 +13858,71 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportWorldData() {
+    if (worldData.length === 0) {
+      alert('エクスポートする世界観データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_world',
+      version: 1,
+      data: worldData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: worldNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `世界観_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importWorldData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_world' || !Array.isArray(imported.data)) {
+          alert('有効な世界観データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          worldData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            termTags: card.termTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          worldNextId = imported.nextId || (Math.max(...worldData.map(c => c.id), 0) + 1);
+        } else {
+          const maxId = Math.max(worldNextId, ...worldData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            termTags: card.termTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          worldData = [...worldData, ...newCards];
+          worldNextId = newId;
+        }
+        saveWorldData();
+        renderWorldList();
+        alert(mode === 'overwrite' ? '世界観データを読み込みました' : '世界観データを追加しました');
+      } catch (err) {
+        console.error('世界観インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // グローバル公開
   window.addWorldCard = addWorldCard;
   window.openWorldEditModal = openWorldEditModal;
@@ -12907,6 +13941,7 @@ function setupMemoInteractionGuard() {
   window.collapseAllWorld = collapseAllWorld;
   window.initWorldFromReset = initWorldFromReset;
   window.getAllWorldTermTags = getAllWorldTermTags;
+  window.getWorldData = function() { return worldData; };
   window.toggleWorldTermtagSuggestions = toggleWorldTermtagSuggestions;
   window.addWorldTermTag = addWorldTermTag;
   window.toggleWorldPanel = toggleWorldPanel;
@@ -12915,6 +13950,8 @@ function setupMemoInteractionGuard() {
   window.swapWorldSide = swapWorldSide;
   window.closeWorldPanel = closeWorldPanel;
   window.updateWorldButtonState = updateWorldButtonState;
+  window.exportWorldData = exportWorldData;
+  window.importWorldData = importWorldData;
 
   // 説明欄の文字数カウント
   const descEl = document.getElementById('world-edit-description');
@@ -12926,6 +13963,146 @@ function setupMemoInteractionGuard() {
   } else {
     initWorld();
   }
+})();
+
+// ========== パネルインポートダイアログ ==========
+(function() {
+  'use strict';
+
+  let currentImportTarget = null; // 'structure', 'character', 'world', 'memo'
+  let fileInput = null;
+
+  function showImportDialog(target, title) {
+    currentImportTarget = target;
+    const dialog = document.getElementById('panel-import-dialog');
+    const titleEl = document.getElementById('panel-import-title');
+    if (!dialog) return;
+    if (titleEl) titleEl.textContent = title;
+    dialog.style.display = 'flex';
+    // デフォルトで上書きを選択
+    const overwriteOption = dialog.querySelector('.import-option[data-value="overwrite"]');
+    const mergeOption = dialog.querySelector('.import-option[data-value="merge"]');
+    if (overwriteOption) overwriteOption.classList.add('selected');
+    if (mergeOption) mergeOption.classList.remove('selected');
+    const radioOverwrite = dialog.querySelector('input[value="overwrite"]');
+    if (radioOverwrite) radioOverwrite.checked = true;
+  }
+
+  function closePanelImportDialog() {
+    const dialog = document.getElementById('panel-import-dialog');
+    if (dialog) dialog.style.display = 'none';
+    currentImportTarget = null;
+  }
+
+  function executeImport() {
+    if (!currentImportTarget) return;
+    const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'overwrite';
+
+    if (!fileInput) {
+      fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json';
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+    }
+
+    fileInput.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      switch (currentImportTarget) {
+        case 'structure':
+          if (window.importStructureData) window.importStructureData(file, mode);
+          break;
+        case 'character':
+          if (window.importCharacterData) window.importCharacterData(file, mode);
+          break;
+        case 'world':
+          if (window.importWorldData) window.importWorldData(file, mode);
+          break;
+        case 'memo':
+          importMemoData(file, mode);
+          break;
+      }
+      closePanelImportDialog();
+      fileInput.value = '';
+    };
+    fileInput.click();
+  }
+
+  // メモのインポート
+  function importMemoData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_memo' || !Array.isArray(imported.data)) {
+          alert('有効なメモデータファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          // メモパネルのデータを上書き
+          const memoTabsData = imported.data;
+          if (typeof window.setMemoTabsData === 'function') {
+            window.setMemoTabsData(memoTabsData);
+            alert('メモデータを読み込みました');
+          }
+        } else {
+          // 追加モード
+          if (typeof window.appendMemoTabsData === 'function') {
+            window.appendMemoTabsData(imported.data);
+            alert('メモデータを追加しました');
+          }
+        }
+      } catch (err) {
+        console.error('メモインポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // メモのエクスポート
+  function exportMemoData() {
+    const memoData = typeof window.getMemoTabsData === 'function' ? window.getMemoTabsData() : [];
+    if (memoData.length === 0) {
+      alert('エクスポートするメモデータがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_memo',
+      version: 1,
+      data: memoData,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `メモ_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // インポートダイアログの選択肢をクリックで切り替え
+  document.addEventListener('click', function(e) {
+    const option = e.target.closest('.import-option');
+    if (option && option.closest('#panel-import-dialog')) {
+      const dialog = document.getElementById('panel-import-dialog');
+      dialog.querySelectorAll('.import-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    }
+  });
+
+  // グローバル公開
+  window.openStructureImportDialog = function() { showImportDialog('structure', '📂 構成データを開く'); };
+  window.openCharacterImportDialog = function() { showImportDialog('character', '📂 登場人物データを開く'); };
+  window.openWorldImportDialog = function() { showImportDialog('world', '📂 世界観データを開く'); };
+  window.openMemoImportDialog = function() { showImportDialog('memo', '📂 メモデータを開く'); };
+  window.closePanelImportDialog = closePanelImportDialog;
+  window.executeImport = executeImport;
+  window.exportMemoData = exportMemoData;
 })();
 </script>
 </body>

@@ -856,6 +856,35 @@
         background: rgba(0,0,0,0.5); z-index: 1000;
         display: flex; justify-content: center; align-items: center;
     }
+    .import-dialog-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 10001;
+        display: none; justify-content: center; align-items: center;
+    }
+    .import-dialog {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        min-width: 300px;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .import-dialog h3 { margin: 0 0 15px 0; color: var(--text-color); font-size: 1rem; }
+    .import-dialog-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
+    .import-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    .import-option {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px; border: 1px solid var(--border-color);
+        border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    }
+    .import-option:hover { background: var(--pane-header-bg); }
+    .import-option.selected { border-color: #3b82f6; background: #eff6ff; }
+    body.theme-dark .import-option.selected { background: #1e3a5f; }
+    .import-option input { display: none; }
+    .import-option-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .import-option-content strong { font-size: 0.9rem; }
+    .import-dialog-buttons { display: flex; gap: 10px; justify-content: flex-end; }
     .save-dialog {
         background: var(--panel-bg); border-radius: 8px; padding: 20px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 300px;
@@ -2985,8 +3014,10 @@
     
     <div class="memo-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between;">
         <span id="memo-char-count">0字</span>
-        <div class="memo-file-btns">
-            <button onclick="showMemoSaveDialog()" style="font-size:0.7rem; cursor:pointer;">保存</button>
+        <div class="memo-file-btns" style="display:flex; gap:4px;">
+            <button onclick="openMemoImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportMemoData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+            <button onclick="showMemoSaveDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 TXT</button>
         </div>
     </div>
 </div>
@@ -3017,7 +3048,10 @@
     </div>
     <div class="structure-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-structure-head, #e0e7ff);">
         <span id="structure-count">0件</span>
-        <button onclick="exportStructureText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openStructureImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportStructureData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-structure" class="dock-resizer" title="構成パネルの幅を調整します"></div>
@@ -3049,7 +3083,10 @@
     </div>
     <div class="character-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-character-head, #fce7f3);">
         <span id="character-count">0人</span>
-        <button onclick="exportCharacterText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openCharacterImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportCharacterData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-character" class="dock-resizer" title="登場人物パネルの幅を調整します"></div>
@@ -3079,7 +3116,10 @@
     </div>
     <div class="world-footer" style="padding: 2px 8px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: var(--pane-world-head, #d1fae5);">
         <span id="world-count">0件</span>
-        <button onclick="exportWorldText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 保存</button>
+        <div style="display:flex; gap:4px;">
+            <button onclick="openWorldImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
+            <button onclick="exportWorldData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+        </div>
     </div>
 </div>
 <div id="resizer-world" class="dock-resizer" title="世界観パネルの幅を調整します"></div>
@@ -3228,6 +3268,34 @@
         <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">プロジェクトを読み込む</p>
         <div class="save-dialog-buttons">
             <button class="btn" onclick="loadProjectFile()">📂 開く</button>
+        </div>
+    </div>
+</div>
+
+<!-- パネル別インポートダイアログ -->
+<div id="panel-import-dialog" class="import-dialog-overlay">
+    <div class="import-dialog">
+        <h3 id="panel-import-title">📂 データを開く</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">既存データとの扱いを選択してください</p>
+        <div class="import-options">
+            <label class="import-option selected" data-value="overwrite">
+                <input type="radio" name="import-mode" value="overwrite" checked>
+                <div class="import-option-content">
+                    <strong>🔄 上書き</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">既存データを置き換える</span>
+                </div>
+            </label>
+            <label class="import-option" data-value="merge">
+                <input type="radio" name="import-mode" value="merge">
+                <div class="import-option-content">
+                    <strong>➕ 追加</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">既存データに追加する</span>
+                </div>
+            </label>
+        </div>
+        <div class="save-dialog-buttons" style="margin-top:16px;">
+            <button class="btn btn-save" onclick="executeImport()">📂 ファイルを選択</button>
+            <button class="btn" onclick="closePanelImportDialog()">キャンセル</button>
         </div>
     </div>
 </div>
@@ -6043,6 +6111,47 @@ function toggleMemoDock() {
         updateMemoCharCount();
         saveMemoTabs();
     });
+
+    // メモデータ取得・設定関数（インポート/エクスポート用）
+    window.getMemoTabsData = function() {
+        const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
+        if (currentTab) currentTab.content = memoArea.value;
+        return memoTabs.slice();
+    };
+
+    window.setMemoTabsData = function(data) {
+        memoTabs.length = 0;
+        data.forEach(tab => memoTabs.push({
+            id: tab.id,
+            name: tab.name || tab.title || 'メモ',
+            content: tab.content || ''
+        }));
+        window.memoTabs = memoTabs;
+        if (memoTabs.length > 0) {
+            activeMemoTabId = memoTabs[0].id;
+            nextMemoTabId = Math.max(...memoTabs.map(t => typeof t.id === 'number' ? t.id : 0), 0) + 1;
+            memoArea.value = memoTabs[0].content || '';
+        }
+        renderMemoTabs();
+        updateMemoCharCount();
+        saveMemoTabs();
+    };
+
+    window.appendMemoTabsData = function(data) {
+        const currentTab = memoTabs.find(t => t.id === activeMemoTabId);
+        if (currentTab) currentTab.content = memoArea.value;
+        data.forEach(tab => {
+            const newId = nextMemoTabId++;
+            memoTabs.push({
+                id: newId,
+                name: tab.name || tab.title || `メモ${newId}`,
+                content: tab.content || ''
+            });
+        });
+        window.memoTabs = memoTabs;
+        renderMemoTabs();
+        saveMemoTabs();
+    };
 
     let outlineData = [];
 function toggleOutlinePanel() {
@@ -12134,6 +12243,76 @@ function setupMemoInteractionGuard() {
     renderStructureList();
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportStructureData() {
+    if (structureData.length === 0) {
+      alert('エクスポートする構成データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_structure',
+      version: 1,
+      data: structureData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: structureNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `構成_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importStructureData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_structure' || !Array.isArray(imported.data)) {
+          alert('有効な構成データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          structureData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || []
+          }));
+          structureNextId = imported.nextId || (Math.max(...structureData.map(c => c.id), 0) + 1);
+        } else {
+          // 追加モード: IDを振り直して追加
+          const maxId = Math.max(structureNextId, ...structureData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || []
+          }));
+          structureData = [...structureData, ...newCards];
+          structureNextId = newId;
+        }
+        saveStructureData();
+        renderStructureList();
+        alert(mode === 'overwrite' ? '構成データを読み込みました' : '構成データを追加しました');
+      } catch (err) {
+        console.error('構成インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function getStructureDataForExport() {
+    return structureData;
+  }
+
   // パネル制御関数をグローバルに公開
   window.toggleStructurePanel = toggleStructurePanel;
   window.toggleStructureDock = toggleStructureDock;
@@ -12142,6 +12321,8 @@ function setupMemoInteractionGuard() {
   window.swapStructureSide = swapStructureSide;
   window.closeStructurePanel = closeStructurePanel;
   window.updateStructureButtonState = updateStructureButtonState;
+  window.exportStructureData = exportStructureData;
+  window.importStructureData = importStructureData;
 
   // ========== 初期化実行 ==========
   if (document.readyState === 'loading') {
@@ -12861,6 +13042,73 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportCharacterData() {
+    if (characterData.length === 0) {
+      alert('エクスポートする登場人物データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_character',
+      version: 1,
+      data: characterData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: characterNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `登場人物_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCharacterData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_character' || !Array.isArray(imported.data)) {
+          alert('有効な登場人物データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          characterData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            affiliationTags: card.affiliationTags || [],
+            freeTags: card.freeTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          characterNextId = imported.nextId || (Math.max(...characterData.map(c => c.id), 0) + 1);
+        } else {
+          const maxId = Math.max(characterNextId, ...characterData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            affiliationTags: card.affiliationTags || [],
+            freeTags: card.freeTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          characterData = [...characterData, ...newCards];
+          characterNextId = newId;
+        }
+        saveCharacterData();
+        renderCharacterList();
+        alert(mode === 'overwrite' ? '登場人物データを読み込みました' : '登場人物データを追加しました');
+      } catch (err) {
+        console.error('登場人物インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // グローバル公開
   window.addCharacterCard = addCharacterCard;
   window.openCharacterEditModal = openCharacterEditModal;
@@ -12891,6 +13139,8 @@ function setupMemoInteractionGuard() {
   window.swapCharacterSide = swapCharacterSide;
   window.closeCharacterPanel = closeCharacterPanel;
   window.updateCharacterButtonState = updateCharacterButtonState;
+  window.exportCharacterData = exportCharacterData;
+  window.importCharacterData = importCharacterData;
 
   // 説明欄の文字数カウント
   const descEl = document.getElementById('character-edit-description');
@@ -13608,6 +13858,71 @@ function setupMemoInteractionGuard() {
     }
   }
 
+  // ========== エクスポート/インポート ==========
+  function exportWorldData() {
+    if (worldData.length === 0) {
+      alert('エクスポートする世界観データがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_world',
+      version: 1,
+      data: worldData.map(({ selected, isNew, ...rest }) => rest),
+      nextId: worldNextId,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `世界観_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importWorldData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_world' || !Array.isArray(imported.data)) {
+          alert('有効な世界観データファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          worldData = imported.data.map(card => ({
+            ...card,
+            selected: false,
+            isNew: false,
+            termTags: card.termTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          worldNextId = imported.nextId || (Math.max(...worldData.map(c => c.id), 0) + 1);
+        } else {
+          const maxId = Math.max(worldNextId, ...worldData.map(c => c.id), 0);
+          let newId = maxId + 1;
+          const newCards = imported.data.map(card => ({
+            ...card,
+            id: newId++,
+            selected: false,
+            isNew: false,
+            termTags: card.termTags || [],
+            expandLevel: card.expandLevel || 0
+          }));
+          worldData = [...worldData, ...newCards];
+          worldNextId = newId;
+        }
+        saveWorldData();
+        renderWorldList();
+        alert(mode === 'overwrite' ? '世界観データを読み込みました' : '世界観データを追加しました');
+      } catch (err) {
+        console.error('世界観インポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // グローバル公開
   window.addWorldCard = addWorldCard;
   window.openWorldEditModal = openWorldEditModal;
@@ -13635,6 +13950,8 @@ function setupMemoInteractionGuard() {
   window.swapWorldSide = swapWorldSide;
   window.closeWorldPanel = closeWorldPanel;
   window.updateWorldButtonState = updateWorldButtonState;
+  window.exportWorldData = exportWorldData;
+  window.importWorldData = importWorldData;
 
   // 説明欄の文字数カウント
   const descEl = document.getElementById('world-edit-description');
@@ -13646,6 +13963,146 @@ function setupMemoInteractionGuard() {
   } else {
     initWorld();
   }
+})();
+
+// ========== パネルインポートダイアログ ==========
+(function() {
+  'use strict';
+
+  let currentImportTarget = null; // 'structure', 'character', 'world', 'memo'
+  let fileInput = null;
+
+  function showImportDialog(target, title) {
+    currentImportTarget = target;
+    const dialog = document.getElementById('panel-import-dialog');
+    const titleEl = document.getElementById('panel-import-title');
+    if (!dialog) return;
+    if (titleEl) titleEl.textContent = title;
+    dialog.style.display = 'flex';
+    // デフォルトで上書きを選択
+    const overwriteOption = dialog.querySelector('.import-option[data-value="overwrite"]');
+    const mergeOption = dialog.querySelector('.import-option[data-value="merge"]');
+    if (overwriteOption) overwriteOption.classList.add('selected');
+    if (mergeOption) mergeOption.classList.remove('selected');
+    const radioOverwrite = dialog.querySelector('input[value="overwrite"]');
+    if (radioOverwrite) radioOverwrite.checked = true;
+  }
+
+  function closePanelImportDialog() {
+    const dialog = document.getElementById('panel-import-dialog');
+    if (dialog) dialog.style.display = 'none';
+    currentImportTarget = null;
+  }
+
+  function executeImport() {
+    if (!currentImportTarget) return;
+    const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'overwrite';
+
+    if (!fileInput) {
+      fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json';
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+    }
+
+    fileInput.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      switch (currentImportTarget) {
+        case 'structure':
+          if (window.importStructureData) window.importStructureData(file, mode);
+          break;
+        case 'character':
+          if (window.importCharacterData) window.importCharacterData(file, mode);
+          break;
+        case 'world':
+          if (window.importWorldData) window.importWorldData(file, mode);
+          break;
+        case 'memo':
+          importMemoData(file, mode);
+          break;
+      }
+      closePanelImportDialog();
+      fileInput.value = '';
+    };
+    fileInput.click();
+  }
+
+  // メモのインポート
+  function importMemoData(file, mode) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.type !== 'cc_memo' || !Array.isArray(imported.data)) {
+          alert('有効なメモデータファイルではありません');
+          return;
+        }
+        if (mode === 'overwrite') {
+          // メモパネルのデータを上書き
+          const memoTabsData = imported.data;
+          if (typeof window.setMemoTabsData === 'function') {
+            window.setMemoTabsData(memoTabsData);
+            alert('メモデータを読み込みました');
+          }
+        } else {
+          // 追加モード
+          if (typeof window.appendMemoTabsData === 'function') {
+            window.appendMemoTabsData(imported.data);
+            alert('メモデータを追加しました');
+          }
+        }
+      } catch (err) {
+        console.error('メモインポートエラー:', err);
+        alert('ファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // メモのエクスポート
+  function exportMemoData() {
+    const memoData = typeof window.getMemoTabsData === 'function' ? window.getMemoTabsData() : [];
+    if (memoData.length === 0) {
+      alert('エクスポートするメモデータがありません');
+      return;
+    }
+    const exportData = {
+      type: 'cc_memo',
+      version: 1,
+      data: memoData,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `メモ_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // インポートダイアログの選択肢をクリックで切り替え
+  document.addEventListener('click', function(e) {
+    const option = e.target.closest('.import-option');
+    if (option && option.closest('#panel-import-dialog')) {
+      const dialog = document.getElementById('panel-import-dialog');
+      dialog.querySelectorAll('.import-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    }
+  });
+
+  // グローバル公開
+  window.openStructureImportDialog = function() { showImportDialog('structure', '📂 構成データを開く'); };
+  window.openCharacterImportDialog = function() { showImportDialog('character', '📂 登場人物データを開く'); };
+  window.openWorldImportDialog = function() { showImportDialog('world', '📂 世界観データを開く'); };
+  window.openMemoImportDialog = function() { showImportDialog('memo', '📂 メモデータを開く'); };
+  window.closePanelImportDialog = closePanelImportDialog;
+  window.executeImport = executeImport;
+  window.exportMemoData = exportMemoData;
 })();
 </script>
 </body>

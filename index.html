@@ -1172,6 +1172,239 @@
     .structure-card.collapsed .structure-children { display: none; }
     .structure-children { margin-top: 6px; }
 
+    /* リンクされた登場人物・世界観の表示 */
+    .structure-linked-section {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed var(--border-color);
+    }
+    .structure-linked-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+    .structure-linked-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .structure-linked-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .structure-linked-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .structure-linked-character {
+        background: #fce7f3;
+        color: #be185d;
+        border: 1px solid #fbcfe8;
+    }
+    body.theme-dark .structure-linked-character {
+        background: #831843;
+        color: #f9a8d4;
+        border-color: #9d174d;
+    }
+    .structure-linked-world {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+    body.theme-dark .structure-linked-world {
+        background: #064e3b;
+        color: #6ee7b7;
+        border-color: #047857;
+    }
+
+    /* リンク情報ポップアップ */
+    .structure-link-popup {
+        position: fixed;
+        z-index: 10003;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        padding: 12px;
+        max-width: 320px;
+        min-width: 200px;
+    }
+    .structure-link-popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .structure-link-popup-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .structure-link-popup-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+    .structure-link-popup-badge.character {
+        background: #fce7f3;
+        color: #be185d;
+    }
+    .structure-link-popup-badge.world {
+        background: #ecfdf5;
+        color: #047857;
+    }
+    .structure-link-popup-desc {
+        font-size: 0.8rem;
+        color: var(--text-color);
+        line-height: 1.5;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    .structure-link-popup-actions {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .structure-link-popup-actions button {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        cursor: pointer;
+    }
+    .structure-link-popup-actions button:hover {
+        background: var(--pane-header-bg);
+    }
+    .structure-link-popup-actions .btn-goto {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-color: #7dd3fc;
+    }
+    .structure-link-popup-actions .btn-goto:hover {
+        background: #bae6fd;
+    }
+
+    /* 構成編集モーダル内のリンク選択 */
+    .structure-link-select-container {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 8px;
+        background: var(--pane-header-bg);
+    }
+    .structure-link-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .structure-link-checkbox-item:hover {
+        background: rgba(0,0,0,0.05);
+    }
+    body.theme-dark .structure-link-checkbox-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .structure-link-checkbox-item input {
+        width: 16px;
+        height: 16px;
+        accent-color: #6366f1;
+    }
+    .structure-link-checkbox-item label {
+        flex: 1;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+    .structure-link-checkbox-item .link-item-badge {
+        font-size: 0.65rem;
+        padding: 1px 5px;
+        border-radius: 8px;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-main {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-sub {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    .structure-link-checkbox-item .link-item-badge.role-support {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-major {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-medium {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    .structure-link-checkbox-item .link-item-badge.level-minor {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    /* 舞台タグサジェスト */
+    .structure-tag-suggestions {
+        display: none;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+        padding: 8px;
+        background: var(--pane-header-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    .structure-tag-suggestions .tag-item {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        background: #e0f2fe;
+        color: #0369a1;
+        transition: all 0.15s;
+    }
+    .structure-tag-suggestions .tag-item:hover {
+        background: #7dd3fc;
+        color: #0c4a6e;
+    }
+    .structure-tag-suggestions .no-tags {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    .structure-suggest-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        font-size: 0.7rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        cursor: pointer;
+        margin-left: 8px;
+    }
+    .structure-suggest-btn:hover {
+        background: var(--pane-header-bg);
+    }
+
     /* 編集モーダル */
     #structure-edit-modal {
         position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
@@ -2934,8 +3167,23 @@
             <input type="text" id="structure-edit-viewpoint" placeholder="主人公名 or 一人称/三人称">
         </div>
         <div class="structure-edit-field">
-            <label for="structure-edit-tags">舞台タグ（カンマ区切り）</label>
+            <label for="structure-edit-tags">舞台タグ（カンマ区切り）<button type="button" class="structure-suggest-btn" onclick="toggleStructureTagSuggestions()">📋 既存タグ</button></label>
             <input type="text" id="structure-edit-tags" placeholder="例: 学校, 放課後, 屋上">
+            <div id="structure-tag-suggestions" class="structure-tag-suggestions"></div>
+        </div>
+        <div class="structure-edit-field">
+            <label>登場人物</label>
+            <div id="structure-edit-characters" class="structure-link-select-container">
+                <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">登場人物パネルにキャラクターを追加してください</div>
+            </div>
+            <div class="structure-edit-hint">この章/話/シーンに登場するキャラクターを選択</div>
+        </div>
+        <div class="structure-edit-field">
+            <label>世界観・アイテム</label>
+            <div id="structure-edit-worlds" class="structure-link-select-container">
+                <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">世界観パネルに設定を追加してください</div>
+            </div>
+            <div class="structure-edit-hint">この章/話/シーンに関連する世界観設定を選択</div>
         </div>
         <div class="structure-edit-field">
             <label for="structure-edit-status">進捗ステータス</label>
@@ -10231,6 +10479,8 @@ function setupMemoInteractionGuard() {
           selected: false,
           collapsed: !!card.collapsed,
           expanded: !!card.expanded,
+          linkedCharacters: card.linkedCharacters || [],
+          linkedWorlds: card.linkedWorlds || [],
           isNew: false
         }));
         structureNextId = parsed.nextId || 1;
@@ -10263,6 +10513,8 @@ function setupMemoInteractionGuard() {
       summary: '',
       viewpoint: '',
       tags: [],
+      linkedCharacters: [],
+      linkedWorlds: [],
       status: 'none',
       tabId: null,
       collapsed: false,
@@ -10510,6 +10762,40 @@ function setupMemoInteractionGuard() {
         tabField.innerHTML = `<div class="structure-field-label">紐づけタブ</div><span style="color:#2563eb; cursor:pointer;" onclick="if(window.switchTab) window.switchTab(${card.tabId})">📄 ${escapeHtml(tab.name)}</span>`;
         body.appendChild(tabField);
       }
+    }
+
+    // リンクされた登場人物・世界観を表示
+    const hasLinkedChars = card.linkedCharacters && card.linkedCharacters.length > 0;
+    const hasLinkedWorlds = card.linkedWorlds && card.linkedWorlds.length > 0;
+    if (hasLinkedChars || hasLinkedWorlds) {
+      const linkedSection = document.createElement('div');
+      linkedSection.className = 'structure-linked-section';
+
+      if (hasLinkedChars) {
+        const charData = window.getCharacterData ? window.getCharacterData() : [];
+        const linkedCharsHtml = card.linkedCharacters.map(cid => {
+          const char = charData.find(c => c.id === cid);
+          if (!char) return '';
+          return `<span class="structure-linked-item structure-linked-character" onclick="showStructureLinkedPopup(event, 'character', ${cid})">👤 ${escapeHtml(char.name)}</span>`;
+        }).filter(h => h).join('');
+        if (linkedCharsHtml) {
+          linkedSection.innerHTML += `<div class="structure-linked-label">登場人物</div><div class="structure-linked-items">${linkedCharsHtml}</div>`;
+        }
+      }
+
+      if (hasLinkedWorlds) {
+        const worldData = window.getWorldData ? window.getWorldData() : [];
+        const linkedWorldsHtml = card.linkedWorlds.map(wid => {
+          const world = worldData.find(w => w.id === wid);
+          if (!world) return '';
+          return `<span class="structure-linked-item structure-linked-world" onclick="showStructureLinkedPopup(event, 'world', ${wid})">🌍 ${escapeHtml(world.name)}</span>`;
+        }).filter(h => h).join('');
+        if (linkedWorldsHtml) {
+          linkedSection.innerHTML += `<div class="structure-linked-label" style="margin-top:6px;">世界観</div><div class="structure-linked-items">${linkedWorldsHtml}</div>`;
+        }
+      }
+
+      body.appendChild(linkedSection);
     }
 
     // アクションボタン
@@ -11085,11 +11371,63 @@ function setupMemoInteractionGuard() {
       });
     }
 
+    // 登場人物チェックボックスを生成
+    populateCharacterCheckboxes(card.linkedCharacters || []);
+
+    // 世界観チェックボックスを生成
+    populateWorldCheckboxes(card.linkedWorlds || []);
+
+    // タグサジェストを閉じる
+    const tagSuggest = document.getElementById('structure-tag-suggestions');
+    if (tagSuggest) tagSuggest.style.display = 'none';
+
     // タイトル更新
     document.getElementById('structure-edit-title').textContent = LEVEL_LABELS[card.level] + 'を編集';
 
     // モーダル表示
     document.getElementById('structure-edit-modal').classList.add('show');
+  }
+
+  function populateCharacterCheckboxes(selectedIds) {
+    const container = document.getElementById('structure-edit-characters');
+    if (!container) return;
+
+    const characterData = window.getCharacterData ? window.getCharacterData() : [];
+    if (characterData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">登場人物パネルにキャラクターを追加してください</div>';
+      return;
+    }
+
+    const CHARACTER_ROLES = { main: '主人公', sub: 'サブ', support: 'モブ' };
+    container.innerHTML = characterData.map(c => {
+      const checked = selectedIds.includes(c.id) ? 'checked' : '';
+      return `<div class="structure-link-checkbox-item">
+        <input type="checkbox" id="struct-char-${c.id}" value="${c.id}" ${checked}>
+        <label for="struct-char-${c.id}">${escapeHtml(c.name)}</label>
+        <span class="link-item-badge role-${c.role}">${CHARACTER_ROLES[c.role] || c.role}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function populateWorldCheckboxes(selectedIds) {
+    const container = document.getElementById('structure-edit-worlds');
+    if (!container) return;
+
+    const worldData = window.getWorldData ? window.getWorldData() : [];
+    if (worldData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">世界観パネルに設定を追加してください</div>';
+      return;
+    }
+
+    const WORLD_LEVELS = { major: '大カテゴリ', medium: '中カテゴリ', minor: '小カテゴリ' };
+    container.innerHTML = worldData.map(w => {
+      const checked = selectedIds.includes(w.id) ? 'checked' : '';
+      return `<div class="structure-link-checkbox-item">
+        <input type="checkbox" id="struct-world-${w.id}" value="${w.id}" ${checked}>
+        <label for="struct-world-${w.id}">${escapeHtml(w.name)}</label>
+        <span class="link-item-badge level-${w.level}">${WORLD_LEVELS[w.level] || w.level}</span>
+      </div>`;
+    }).join('');
   }
 
   function closeStructureEditModal() {
@@ -11123,6 +11461,21 @@ function setupMemoInteractionGuard() {
 
     const tabId = document.getElementById('structure-edit-tab').value;
     card.tabId = tabId ? parseInt(tabId) : null;
+
+    // リンクされた登場人物を取得
+    const charContainer = document.getElementById('structure-edit-characters');
+    if (charContainer) {
+      const checkedChars = charContainer.querySelectorAll('input[type="checkbox"]:checked');
+      card.linkedCharacters = Array.from(checkedChars).map(cb => parseInt(cb.value));
+    }
+
+    // リンクされた世界観を取得
+    const worldContainer = document.getElementById('structure-edit-worlds');
+    if (worldContainer) {
+      const checkedWorlds = worldContainer.querySelectorAll('input[type="checkbox"]:checked');
+      card.linkedWorlds = Array.from(checkedWorlds).map(cb => parseInt(cb.value));
+    }
+
     card.isNew = false;
 
     saveStructureData();
@@ -11285,6 +11638,159 @@ function setupMemoInteractionGuard() {
     });
   }
 
+  // ========== 舞台タグサジェスト ==========
+  function getAllStructureTags() {
+    const tags = new Set();
+    structureData.forEach(c => {
+      if (c.tags) c.tags.forEach(t => tags.add(t));
+    });
+    return Array.from(tags);
+  }
+
+  function toggleStructureTagSuggestions() {
+    const container = document.getElementById('structure-tag-suggestions');
+    if (!container) return;
+    if (container.style.display === 'none' || !container.style.display) {
+      const tags = getAllStructureTags();
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="no-tags">まだ舞台タグがありません</span>';
+      } else {
+        container.innerHTML = tags.map(t => `<span class="tag-item" onclick="addStructureTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+      }
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function addStructureTag(tag) {
+    const input = document.getElementById('structure-edit-tags');
+    if (!input) return;
+    const current = input.value.split(/[,、]/).map(t => t.trim()).filter(t => t);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
+  // ========== リンクポップアップ ==========
+  let currentLinkPopup = null;
+
+  function showStructureLinkedPopup(event, type, itemId) {
+    event.stopPropagation();
+    closeLinkPopup();
+
+    let item = null;
+    let badgeText = '';
+    let badgeClass = '';
+
+    if (type === 'character') {
+      const charData = window.getCharacterData ? window.getCharacterData() : [];
+      item = charData.find(c => c.id === itemId);
+      if (!item) return;
+      const roles = { main: '主人公', sub: 'サブ', support: 'モブ' };
+      badgeText = roles[item.role] || item.role;
+      badgeClass = 'character';
+    } else {
+      const worldData = window.getWorldData ? window.getWorldData() : [];
+      item = worldData.find(w => w.id === itemId);
+      if (!item) return;
+      const levels = { major: '大カテゴリ', medium: '中カテゴリ', minor: '小カテゴリ' };
+      badgeText = levels[item.level] || item.level;
+      badgeClass = 'world';
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'structure-link-popup';
+    popup.innerHTML = `
+      <div class="structure-link-popup-header">
+        <span class="structure-link-popup-title">${escapeHtml(item.name)}</span>
+        <span class="structure-link-popup-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="structure-link-popup-desc">${escapeHtml(item.description || '（説明なし）')}</div>
+      <div class="structure-link-popup-actions">
+        <button onclick="closeLinkPopup()">閉じる</button>
+        <button class="btn-goto" onclick="goToLinkedPanel('${type}', ${itemId})">パネルへ移動</button>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+    currentLinkPopup = popup;
+
+    // ポップアップ位置を調整
+    const rect = event.target.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 5;
+
+    // 画面外に出る場合の調整
+    const popupRect = popup.getBoundingClientRect();
+    if (left + popupRect.width > window.innerWidth) {
+      left = window.innerWidth - popupRect.width - 10;
+    }
+    if (top + popupRect.height > window.innerHeight) {
+      top = rect.top - popupRect.height - 5;
+    }
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+
+    // 外部クリックで閉じる
+    setTimeout(() => {
+      document.addEventListener('click', handleLinkPopupOutsideClick);
+    }, 0);
+  }
+
+  function handleLinkPopupOutsideClick(e) {
+    if (currentLinkPopup && !currentLinkPopup.contains(e.target)) {
+      closeLinkPopup();
+    }
+  }
+
+  function closeLinkPopup() {
+    if (currentLinkPopup) {
+      currentLinkPopup.remove();
+      currentLinkPopup = null;
+      document.removeEventListener('click', handleLinkPopupOutsideClick);
+    }
+  }
+
+  function goToLinkedPanel(type, itemId) {
+    closeLinkPopup();
+    if (type === 'character') {
+      if (typeof window.toggleCharacterPanel === 'function') {
+        const panel = document.getElementById('character-panel');
+        if (!panel || !panel.classList.contains('open')) {
+          window.toggleCharacterPanel();
+        }
+        // 対象のカードをハイライトしてスクロール
+        setTimeout(() => {
+          const card = document.querySelector(`#character-list .character-card[data-id="${itemId}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px #f472b6';
+            setTimeout(() => card.style.boxShadow = '', 2000);
+          }
+        }, 300);
+      }
+    } else {
+      if (typeof window.toggleWorldPanel === 'function') {
+        const panel = document.getElementById('world-panel');
+        if (!panel || !panel.classList.contains('open')) {
+          window.toggleWorldPanel();
+        }
+        // 対象のカードをハイライトしてスクロール
+        setTimeout(() => {
+          const card = document.querySelector(`#world-list .world-card[data-id="${itemId}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px #34d399';
+            setTimeout(() => card.style.boxShadow = '', 2000);
+          }
+        }, 300);
+      }
+    }
+  }
+
   // ========== グローバル公開 ==========
   window.addStructureCard = addStructureCard;
   window.openEditModal = openEditModal;
@@ -11297,6 +11803,11 @@ function setupMemoInteractionGuard() {
   window.collapseAllStructure = collapseAllStructure;
   window.toggleStructureFullscreen = toggleStructureFullscreen;
   window.exportStructureText = exportStructureText;
+  window.toggleStructureTagSuggestions = toggleStructureTagSuggestions;
+  window.addStructureTag = addStructureTag;
+  window.showStructureLinkedPopup = showStructureLinkedPopup;
+  window.closeLinkPopup = closeLinkPopup;
+  window.goToLinkedPanel = goToLinkedPanel;
 
   // ========== パネル制御関数 ==========
 
@@ -12184,6 +12695,7 @@ function setupMemoInteractionGuard() {
   window.initCharacterFromReset = initCharacterFromReset;
   window.getAllCharacterAffiliationTags = getAllCharacterAffiliationTags;
   window.getAllCharacterFreeTags = getAllCharacterFreeTags;
+  window.getCharacterData = function() { return characterData; };
   window.toggleCharacterAffiliationSuggestions = toggleCharacterAffiliationSuggestions;
   window.toggleCharacterFreetagSuggestions = toggleCharacterFreetagSuggestions;
   window.addCharacterAffiliationTag = addCharacterAffiliationTag;
@@ -12919,6 +13431,7 @@ function setupMemoInteractionGuard() {
   window.collapseAllWorld = collapseAllWorld;
   window.initWorldFromReset = initWorldFromReset;
   window.getAllWorldTermTags = getAllWorldTermTags;
+  window.getWorldData = function() { return worldData; };
   window.toggleWorldTermtagSuggestions = toggleWorldTermtagSuggestions;
   window.addWorldTermTag = addWorldTermTag;
   window.toggleWorldPanel = toggleWorldPanel;

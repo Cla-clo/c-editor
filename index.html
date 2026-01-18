@@ -10716,15 +10716,8 @@ function setupMemoInteractionGuard() {
 
     header.addEventListener('dblclick', (e) => {
       if (e.target.closest('button, input')) return;
-      // 章・話の場合は子要素の展開/折りたたみ（collapsed）を切り替え
-      // シーンの場合は詳細表示（expanded）を切り替え
-      if (card.level === 'scene') {
-        card.expanded = !card.expanded;
-      } else {
-        card.collapsed = !card.collapsed;
-      }
-      saveStructureData();
-      renderStructureList();
+      // ダブルクリックでコンテキストメニューを表示
+      showStructureContextMenu(e, card.id);
     });
 
     div.appendChild(header);
@@ -12127,6 +12120,7 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleCharacterDragLeave);
     div.addEventListener('drop', handleCharacterDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showCharacterContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) showCharacterContextMenu(e, card.id); });
 
     return div;
   }
@@ -12861,6 +12855,7 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleWorldDragLeave);
     div.addEventListener('drop', handleWorldDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showWorldContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) showWorldContextMenu(e, card.id); });
 
     return div;
   }

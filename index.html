@@ -1331,6 +1331,9 @@
 
     .character-card-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid transparent; }
     .character-select { width: 14px; height: 14px; accent-color: #ec4899; cursor: pointer; flex-shrink: 0; }
+    .character-move-group { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+    .character-move-btn { width: 16px; height: 12px; font-size: 8px; padding: 0; border: 1px solid var(--border-color); border-radius: 2px; background: var(--panel-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+    .character-move-btn:hover { background: #fce7f3; color: #ec4899; }
     .character-toggle { font-size: 0.7rem; color: var(--text-muted); width: 14px; cursor: pointer; flex-shrink: 0; }
     .character-toggle:hover { color: #ec4899; }
     .character-name { flex: 1; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; }
@@ -1449,6 +1452,9 @@
 
     .world-card-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid transparent; }
     .world-select { width: 14px; height: 14px; accent-color: #10b981; cursor: pointer; flex-shrink: 0; }
+    .world-move-group { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+    .world-move-btn { width: 16px; height: 12px; font-size: 8px; padding: 0; border: 1px solid var(--border-color); border-radius: 2px; background: var(--panel-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+    .world-move-btn:hover { background: #d1fae5; color: #10b981; }
     .world-toggle { font-size: 0.7rem; color: var(--text-muted); width: 14px; cursor: pointer; flex-shrink: 0; }
     .world-toggle:hover { color: #10b981; }
     .world-name { flex: 1; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; }
@@ -2452,11 +2458,15 @@
                 <label>目次: <input type="number" id="st-pane-outline-width" value="260" min="160" max="1200" style="width:70px;">px</label>
                 <label>構成: <input type="number" id="st-pane-structure-width" value="300" min="160" max="1200" style="width:70px;">px</label>
                 <label>検索: <input type="number" id="st-pane-search-width" value="320" min="160" max="1200" style="width:70px;">px</label>
+                <label>登場人物: <input type="number" id="st-pane-character-width" value="300" min="160" max="1200" style="width:70px;">px</label>
+                <label>世界観: <input type="number" id="st-pane-world-width" value="300" min="160" max="1200" style="width:70px;">px</label>
                 <label>仕切り幅: <input type="number" id="st-divider-width" value="2" min="1" max="12" style="width:70px;" onchange="applyDividerSettings()">px</label>
             </div>
             <div class="setting-row">
-                <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">幅をリセット</button>
-                <button class="btn btn-apply" onclick="resetDividerWidth()" style="font-size:0.65rem;">2pxに戻す仕切り初期化</button>
+                <button class="btn btn-apply" onclick="resetPaneWidths()" style="font-size:0.65rem;">全幅リセット</button>
+                <button class="btn btn-apply" onclick="resetDividerWidth()" style="font-size:0.65rem;">仕切り初期化</button>
+                <button class="btn btn-apply" onclick="resetIndividualPaneWidth('character')" style="font-size:0.65rem;">登場人物幅</button>
+                <button class="btn btn-apply" onclick="resetIndividualPaneWidth('world')" style="font-size:0.65rem;">世界観幅</button>
             </div>
         </div>
 
@@ -2690,6 +2700,8 @@
         <button class="btn" onclick="addCharacterCard('antagonist')">＋敵役</button>
         <button class="btn" onclick="addCharacterCard('supporting')">＋サブ</button>
         <button class="btn" onclick="addCharacterCard('mob')">＋モブ</button>
+        <button class="btn" onclick="expandAllCharacter()">全展開</button>
+        <button class="btn" onclick="collapseAllCharacter()">全折畳</button>
         <button class="btn" onclick="deleteSelectedCharacterCards()">選択削除</button>
         <button class="btn" onclick="deleteAllCharacterCards()">全削除</button>
     </div>
@@ -2718,6 +2730,8 @@
         <button class="btn" onclick="addWorldCard('major')">＋大カテゴリ</button>
         <button class="btn" onclick="addWorldCard('middle')">＋中カテゴリ</button>
         <button class="btn" onclick="addWorldCard('detail')">＋詳細項目</button>
+        <button class="btn" onclick="expandAllWorld()">全展開</button>
+        <button class="btn" onclick="collapseAllWorld()">全折畳</button>
         <button class="btn" onclick="deleteSelectedWorldCards()">選択削除</button>
         <button class="btn" onclick="deleteAllWorldCards()">全削除</button>
     </div>
@@ -3260,6 +3274,8 @@ initTabScrollers();
         outline: 'cc_outline_width_px',
         structure: 'cc_structure_width_px',
         search: 'cc_search_width_px',
+        character: 'cc_character_width_px',
+        world: 'cc_world_width_px',
         legacyInput: 'cc_pane_input_width',
         legacyPreview: 'cc_pane_preview_width'
     };
@@ -3943,6 +3959,10 @@ function addNewTab() {
         if (typeof closeSearchPanel === 'function') closeSearchPanel();
         if (typeof closeStructurePanel === 'function') closeStructurePanel(true);
         if (typeof window.initStructureFromReset === 'function') window.initStructureFromReset();
+        if (typeof closeCharacterPanel === 'function') closeCharacterPanel(true);
+        if (typeof window.initCharacterFromReset === 'function') window.initCharacterFromReset();
+        if (typeof closeWorldPanel === 'function') closeWorldPanel(true);
+        if (typeof window.initWorldFromReset === 'function') window.initWorldFromReset();
         applyDefaultStartupLayoutAfterReset();
         requestAnimationFrame(() => {
             if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -4777,19 +4797,29 @@ function applyDisplaySettings() {
         const outlineWidthRaw = parseInt(document.getElementById('st-pane-outline-width').value);
         const structureWidthRaw = parseInt(document.getElementById('st-pane-structure-width').value);
         const searchWidthRaw = parseInt(document.getElementById('st-pane-search-width').value);
+        const characterWidthEl = document.getElementById('st-pane-character-width');
+        const worldWidthEl = document.getElementById('st-pane-world-width');
+        const characterWidthRaw = characterWidthEl ? parseInt(characterWidthEl.value) : 300;
+        const worldWidthRaw = worldWidthEl ? parseInt(worldWidthEl.value) : 300;
         const memoWidth = clampValue(memoWidthRaw || 260, 160, 2000);
         const outlineWidth = clampValue(outlineWidthRaw || 260, 160, 2000);
         const structureWidth = clampValue(structureWidthRaw || 300, 160, 2000);
         const searchWidth = clampValue(searchWidthRaw || 320, 160, 2000);
+        const characterWidth = clampValue(characterWidthRaw || 300, 160, 2000);
+        const worldWidth = clampValue(worldWidthRaw || 300, 160, 2000);
         const memoPanel = document.getElementById('memo-panel');
         const outlinePanel = document.getElementById('outline-panel');
         const structurePanel = document.getElementById('structure-panel');
         const searchPanel = document.getElementById('search-panel');
+        const characterPanel = document.getElementById('character-panel');
+        const worldPanel = document.getElementById('world-panel');
 
         document.getElementById('st-pane-memo-width').value = memoWidth;
         document.getElementById('st-pane-outline-width').value = outlineWidth;
         document.getElementById('st-pane-structure-width').value = structureWidth;
         document.getElementById('st-pane-search-width').value = searchWidth;
+        if (characterWidthEl) characterWidthEl.value = characterWidth;
+        if (worldWidthEl) worldWidthEl.value = worldWidth;
 
         memoPanel.style.width = `${memoWidth}px`;
         memoPanel.style.flexBasis = `${memoWidth}px`;
@@ -4803,11 +4833,21 @@ function applyDisplaySettings() {
             searchPanel.style.width = `${searchWidth}px`;
             searchPanel.style.flexBasis = `${searchWidth}px`;
         }
+        if (characterPanel) {
+            characterPanel.style.width = `${characterWidth}px`;
+            characterPanel.style.flexBasis = `${characterWidth}px`;
+        }
+        if (worldPanel) {
+            worldPanel.style.width = `${worldWidth}px`;
+            worldPanel.style.flexBasis = `${worldWidth}px`;
+        }
 
         localStorage.setItem(PANE_WIDTH_KEYS.memo, memoWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.outline, outlineWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.structure, structureWidth);
         localStorage.setItem(PANE_WIDTH_KEYS.search, searchWidth);
+        localStorage.setItem(PANE_WIDTH_KEYS.character, characterWidth);
+        localStorage.setItem(PANE_WIDTH_KEYS.world, worldWidth);
     }
 
     function applyPaneWidthSettings() {
@@ -4871,6 +4911,10 @@ function resetPaneWidths() {
     document.getElementById('st-pane-outline-width').value = 260;
     document.getElementById('st-pane-structure-width').value = 300;
     document.getElementById('st-pane-search-width').value = 320;
+    const charEl = document.getElementById('st-pane-character-width');
+    const worldEl = document.getElementById('st-pane-world-width');
+    if (charEl) charEl.value = 300;
+    if (worldEl) worldEl.value = 300;
 
     localStorage.removeItem(PANE_WIDTH_KEYS.input);
     localStorage.removeItem(PANE_WIDTH_KEYS.preview);
@@ -4878,11 +4922,23 @@ function resetPaneWidths() {
     localStorage.removeItem(PANE_WIDTH_KEYS.outline);
     localStorage.removeItem(PANE_WIDTH_KEYS.structure);
     localStorage.removeItem(PANE_WIDTH_KEYS.search);
+    localStorage.removeItem(PANE_WIDTH_KEYS.character);
+    localStorage.removeItem(PANE_WIDTH_KEYS.world);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyInput);
     localStorage.removeItem(PANE_WIDTH_KEYS.legacyPreview);
 
     applyPaneWidthSettings();
     try { updateDockSplitState(); } catch (e) {}
+}
+
+function resetIndividualPaneWidth(paneName) {
+    const defaults = { input: 520, preview: 520, memo: 260, outline: 260, structure: 300, search: 320, character: 300, world: 300 };
+    const el = document.getElementById(`st-pane-${paneName}-width`);
+    if (el && defaults[paneName]) {
+        el.value = defaults[paneName];
+        localStorage.removeItem(PANE_WIDTH_KEYS[paneName]);
+        applyPaneWidthSettings();
+    }
 }
 
 function resetPaneHeights() {
@@ -11314,7 +11370,8 @@ function setupMemoInteractionGuard() {
       description: '',
       color: null,
       expanded: false,
-      selected: false
+      selected: false,
+      isNew: true
     };
     characterData.push(newCard);
     saveCharacterData();
@@ -11362,6 +11419,10 @@ function setupMemoInteractionGuard() {
     div.innerHTML = `
       <div class="character-card-header" onclick="toggleCharacterExpand(${card.id})">
         <input type="checkbox" class="character-select" ${card.selected ? 'checked' : ''} onclick="event.stopPropagation(); toggleCharacterSelect(${card.id})">
+        <div class="character-move-group" onclick="event.stopPropagation();">
+          <button class="character-move-btn" title="上へ移動" onclick="moveCharacterCard(${card.id}, -1)">↑</button>
+          <button class="character-move-btn" title="下へ移動" onclick="moveCharacterCard(${card.id}, 1)">↓</button>
+        </div>
         <span class="character-toggle">${card.expanded ? '▼' : '▶'}</span>
         <span class="character-name">${escapeHtml(card.name)}</span>
         ${card.reading ? `<span class="character-reading">(${escapeHtml(card.reading)})</span>` : ''}
@@ -11448,7 +11509,17 @@ function setupMemoInteractionGuard() {
   }
 
   function closeCharacterEditModal() {
-    document.getElementById('character-edit-modal').classList.remove('show');
+    const modal = document.getElementById('character-edit-modal');
+    if (modal) modal.classList.remove('show');
+    if (editingCharacterId !== null) {
+      const cardIndex = characterData.findIndex(c => c.id === editingCharacterId);
+      const card = characterData[cardIndex];
+      if (card && card.isNew) {
+        characterData.splice(cardIndex, 1);
+        saveCharacterData();
+        renderCharacterList();
+      }
+    }
     editingCharacterId = null;
   }
 
@@ -11463,10 +11534,17 @@ function setupMemoInteractionGuard() {
     card.affiliationTags = document.getElementById('character-edit-affiliation').value.split(',').map(t => t.trim()).filter(t => t);
     card.freeTags = document.getElementById('character-edit-freetags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('character-edit-description').value.trim();
+    card.isNew = false;
 
     saveCharacterData();
     renderCharacterList();
-    closeCharacterEditModal();
+    closeCharacterEditModalWithoutDelete();
+  }
+
+  function closeCharacterEditModalWithoutDelete() {
+    const modal = document.getElementById('character-edit-modal');
+    if (modal) modal.classList.remove('show');
+    editingCharacterId = null;
   }
 
   function updateCharacterDescriptionCount() {
@@ -11564,9 +11642,16 @@ function setupMemoInteractionGuard() {
     menu.innerHTML = `
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
+      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="color">🎨 色を変更</div>
       <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="move-up">⬆ 上へ</div>
+      <div class="context-menu-item" data-action="move-down">⬇ 下へ</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="role-up">⬆ 役割を上げる</div>
+      <div class="context-menu-item" data-action="role-down">⬇ 役割を下げる</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="delete" style="color:#dc2626;">🗑 削除</div>
     `;
@@ -11577,6 +11662,14 @@ function setupMemoInteractionGuard() {
         const action = item.dataset.action;
         if (action === 'edit') openCharacterEditModal(cardId);
         if (action === 'duplicate') duplicateCharacterCard(cardId);
+        if (action === 'toggle') {
+          const target = characterData.find(c => c.id === cardId);
+          if (target) { target.expanded = !target.expanded; saveCharacterData(); renderCharacterList(); }
+        }
+        if (action === 'move-up') moveCharacterCard(cardId, -1);
+        if (action === 'move-down') moveCharacterCard(cardId, 1);
+        if (action === 'role-up') changeCharacterRole(cardId, -1);
+        if (action === 'role-down') changeCharacterRole(cardId, 1);
         if (action === 'delete') deleteCharacterCard(cardId);
         if (action === 'color') openCharacterColorPicker(cardId);
         if (action === 'reset-color') resetCharacterColor(cardId);
@@ -11686,6 +11779,65 @@ function setupMemoInteractionGuard() {
     a.href = URL.createObjectURL(blob);
     a.download = '登場人物.txt';
     a.click();
+  }
+
+  // 上下移動
+  function moveCharacterCard(cardId, direction) {
+    const idx = characterData.findIndex(c => c.id === cardId);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= characterData.length) return;
+    const [card] = characterData.splice(idx, 1);
+    characterData.splice(newIdx, 0, card);
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  // 役割の階層変更
+  const ROLE_ORDER = ['protagonist', 'heroine', 'antagonist', 'supporting', 'mob'];
+  function changeCharacterRole(cardId, direction) {
+    const card = characterData.find(c => c.id === cardId);
+    if (!card) return;
+    const currentIdx = ROLE_ORDER.indexOf(card.role);
+    const newIdx = currentIdx + direction;
+    if (newIdx < 0 || newIdx >= ROLE_ORDER.length) return;
+    card.role = ROLE_ORDER[newIdx];
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  // 全展開・全折畳
+  function expandAllCharacter() {
+    characterData.forEach(c => { c.expanded = true; });
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  function collapseAllCharacter() {
+    characterData.forEach(c => { c.expanded = false; });
+    saveCharacterData();
+    renderCharacterList();
+  }
+
+  // リセット時初期化
+  function initCharacterFromReset() {
+    characterData = [];
+    characterNextId = 1;
+    localStorage.removeItem(CHARACTER_STORAGE_KEY);
+    renderCharacterList();
+  }
+
+  // 既存タグを取得（サジェスト用）
+  function getAllCharacterAffiliationTags() {
+    const tags = new Set();
+    characterData.forEach(c => c.affiliationTags.forEach(t => tags.add(t)));
+    return Array.from(tags);
+  }
+
+  function getAllCharacterFreeTags() {
+    const tags = new Set();
+    characterData.forEach(c => c.freeTags.forEach(t => tags.add(t)));
+    return Array.from(tags);
   }
 
   // パネル制御
@@ -11808,6 +11960,13 @@ function setupMemoInteractionGuard() {
   window.toggleCharacterExpand = toggleCharacterExpand;
   window.toggleCharacterSelect = toggleCharacterSelect;
   window.exportCharacterText = exportCharacterText;
+  window.moveCharacterCard = moveCharacterCard;
+  window.changeCharacterRole = changeCharacterRole;
+  window.expandAllCharacter = expandAllCharacter;
+  window.collapseAllCharacter = collapseAllCharacter;
+  window.initCharacterFromReset = initCharacterFromReset;
+  window.getAllCharacterAffiliationTags = getAllCharacterAffiliationTags;
+  window.getAllCharacterFreeTags = getAllCharacterFreeTags;
   window.toggleCharacterPanel = toggleCharacterPanel;
   window.toggleCharacterDock = toggleCharacterDock;
   window.toggleCharacterDockPin = toggleCharacterDockPin;
@@ -11895,7 +12054,8 @@ function setupMemoInteractionGuard() {
       description: '',
       color: null,
       expanded: false,
-      selected: false
+      selected: false,
+      isNew: true
     };
     worldData.push(newCard);
     saveWorldData();
@@ -11940,6 +12100,10 @@ function setupMemoInteractionGuard() {
     div.innerHTML = `
       <div class="world-card-header" onclick="toggleWorldExpand(${card.id})">
         <input type="checkbox" class="world-select" ${card.selected ? 'checked' : ''} onclick="event.stopPropagation(); toggleWorldSelect(${card.id})">
+        <div class="world-move-group" onclick="event.stopPropagation();">
+          <button class="world-move-btn" title="上へ移動" onclick="moveWorldCard(${card.id}, -1)">↑</button>
+          <button class="world-move-btn" title="下へ移動" onclick="moveWorldCard(${card.id}, 1)">↓</button>
+        </div>
         <span class="world-toggle">${card.expanded ? '▼' : '▶'}</span>
         <span class="world-name">${escapeHtml(card.name)}</span>
         <span class="world-level-badge level-${card.level}">${WORLD_LEVELS[card.level]}</span>
@@ -12019,7 +12183,17 @@ function setupMemoInteractionGuard() {
   }
 
   function closeWorldEditModal() {
-    document.getElementById('world-edit-modal').classList.remove('show');
+    const modal = document.getElementById('world-edit-modal');
+    if (modal) modal.classList.remove('show');
+    if (editingWorldId !== null) {
+      const cardIndex = worldData.findIndex(c => c.id === editingWorldId);
+      const card = worldData[cardIndex];
+      if (card && card.isNew) {
+        worldData.splice(cardIndex, 1);
+        saveWorldData();
+        renderWorldList();
+      }
+    }
     editingWorldId = null;
   }
 
@@ -12032,10 +12206,17 @@ function setupMemoInteractionGuard() {
     card.level = document.getElementById('world-edit-level').value;
     card.termTags = document.getElementById('world-edit-termtags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('world-edit-description').value.trim();
+    card.isNew = false;
 
     saveWorldData();
     renderWorldList();
-    closeWorldEditModal();
+    closeWorldEditModalWithoutDelete();
+  }
+
+  function closeWorldEditModalWithoutDelete() {
+    const modal = document.getElementById('world-edit-modal');
+    if (modal) modal.classList.remove('show');
+    editingWorldId = null;
   }
 
   function updateWorldDescriptionCount() {
@@ -12133,9 +12314,16 @@ function setupMemoInteractionGuard() {
     menu.innerHTML = `
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
+      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="color">🎨 色を変更</div>
       <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="move-up">⬆ 上へ</div>
+      <div class="context-menu-item" data-action="move-down">⬇ 下へ</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="level-up">⬆ レベルを上げる</div>
+      <div class="context-menu-item" data-action="level-down">⬇ レベルを下げる</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="delete" style="color:#dc2626;">🗑 削除</div>
     `;
@@ -12146,6 +12334,14 @@ function setupMemoInteractionGuard() {
         const action = item.dataset.action;
         if (action === 'edit') openWorldEditModal(cardId);
         if (action === 'duplicate') duplicateWorldCard(cardId);
+        if (action === 'toggle') {
+          const target = worldData.find(c => c.id === cardId);
+          if (target) { target.expanded = !target.expanded; saveWorldData(); renderWorldList(); }
+        }
+        if (action === 'move-up') moveWorldCard(cardId, -1);
+        if (action === 'move-down') moveWorldCard(cardId, 1);
+        if (action === 'level-up') changeWorldLevel(cardId, -1);
+        if (action === 'level-down') changeWorldLevel(cardId, 1);
         if (action === 'delete') deleteWorldCard(cardId);
         if (action === 'color') openWorldColorPicker(cardId);
         if (action === 'reset-color') resetWorldColor(cardId);
@@ -12255,6 +12451,98 @@ function setupMemoInteractionGuard() {
     a.href = URL.createObjectURL(blob);
     a.download = '世界観設定.txt';
     a.click();
+  }
+
+  // カード範囲取得（子要素を含む）
+  function getWorldCardRangeWithChildren(cardIdx) {
+    const card = worldData[cardIdx];
+    if (!card) return { start: cardIdx, end: cardIdx };
+    let endIdx = cardIdx;
+    if (card.level === 'major') {
+      for (let i = cardIdx + 1; i < worldData.length; i++) {
+        if (worldData[i].level === 'major') break;
+        endIdx = i;
+      }
+    } else if (card.level === 'middle') {
+      for (let i = cardIdx + 1; i < worldData.length; i++) {
+        if (worldData[i].level === 'major' || worldData[i].level === 'middle') break;
+        endIdx = i;
+      }
+    }
+    return { start: cardIdx, end: endIdx };
+  }
+
+  // 上下移動（子要素と一緒に移動）
+  function moveWorldCard(cardId, direction) {
+    const idx = worldData.findIndex(c => c.id === cardId);
+    if (idx < 0) return;
+    const card = worldData[idx];
+    const range = getWorldCardRangeWithChildren(idx);
+    const count = range.end - range.start + 1;
+
+    if (direction === -1) {
+      if (idx <= 0) return;
+      let targetIdx = idx - 1;
+      while (targetIdx > 0) {
+        const prevCard = worldData[targetIdx - 1];
+        if (prevCard.level === 'major') break;
+        if (prevCard.level === 'middle' && card.level === 'major') break;
+        if (prevCard.level === card.level) break;
+        targetIdx--;
+      }
+      const cardsToMove = worldData.splice(range.start, count);
+      worldData.splice(targetIdx, 0, ...cardsToMove);
+    } else if (direction === 1) {
+      const nextIdx = range.end + 1;
+      if (nextIdx >= worldData.length) return;
+      const nextRange = getWorldCardRangeWithChildren(nextIdx);
+      const cardsToMove = worldData.splice(range.start, count);
+      const insertPos = nextRange.end - count + 1;
+      worldData.splice(insertPos, 0, ...cardsToMove);
+    }
+    saveWorldData();
+    renderWorldList();
+  }
+
+  // レベル変更
+  const LEVEL_ORDER = ['major', 'middle', 'detail'];
+  function changeWorldLevel(cardId, direction) {
+    const card = worldData.find(c => c.id === cardId);
+    if (!card) return;
+    const currentIdx = LEVEL_ORDER.indexOf(card.level);
+    const newIdx = currentIdx + direction;
+    if (newIdx < 0 || newIdx >= LEVEL_ORDER.length) return;
+    card.level = LEVEL_ORDER[newIdx];
+    saveWorldData();
+    renderWorldList();
+  }
+
+  // 全展開・全折畳
+  function expandAllWorld() {
+    worldData.forEach(c => { c.expanded = true; });
+    saveWorldData();
+    renderWorldList();
+  }
+
+  function collapseAllWorld() {
+    worldData.forEach(c => { c.expanded = false; });
+    saveWorldData();
+    renderWorldList();
+  }
+
+  // リセット時初期化
+  function initWorldFromReset() {
+    worldData = [];
+    worldNextId = 1;
+    localStorage.removeItem(WORLD_STORAGE_KEY);
+    renderWorldList();
+  }
+
+  // 既存タグを取得（サジェスト用）
+  function getAllWorldTermTags() {
+    const tags = new Set();
+    worldData.forEach(c => c.termTags.forEach(t => tags.add(t)));
+    return Array.from(tags);
   }
 
   // パネル制御
@@ -12377,6 +12665,12 @@ function setupMemoInteractionGuard() {
   window.toggleWorldExpand = toggleWorldExpand;
   window.toggleWorldSelect = toggleWorldSelect;
   window.exportWorldText = exportWorldText;
+  window.moveWorldCard = moveWorldCard;
+  window.changeWorldLevel = changeWorldLevel;
+  window.expandAllWorld = expandAllWorld;
+  window.collapseAllWorld = collapseAllWorld;
+  window.initWorldFromReset = initWorldFromReset;
+  window.getAllWorldTermTags = getAllWorldTermTags;
   window.toggleWorldPanel = toggleWorldPanel;
   window.toggleWorldDock = toggleWorldDock;
   window.toggleWorldDockPin = toggleWorldDockPin;

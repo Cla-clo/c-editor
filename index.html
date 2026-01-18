@@ -1382,6 +1382,12 @@
     .character-edit-field input:focus, .character-edit-field textarea:focus, .character-edit-field select:focus { outline: none; border-color: #ec4899; }
     .character-edit-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
     .character-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .tag-suggest-btn { font-size: 0.65rem; padding: 2px 6px; margin-left: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--panel-bg); cursor: pointer; color: var(--text-muted); }
+    .tag-suggest-btn:hover { background: #fce7f3; color: #ec4899; }
+    .tag-suggestions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; padding: 6px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; max-height: 120px; overflow-y: auto; }
+    .tag-suggestions .tag-item { font-size: 0.7rem; padding: 3px 8px; background: #fce7f3; color: #be185d; border-radius: 12px; cursor: pointer; border: 1px solid #f9a8d4; transition: all 0.15s; }
+    .tag-suggestions .tag-item:hover { background: #ec4899; color: white; }
+    .tag-suggestions .no-tags { font-size: 0.7rem; color: var(--text-muted); font-style: italic; }
 
     /* ========== 世界観パネル ========== */
     #world-panel {
@@ -2954,13 +2960,15 @@
             </select>
         </div>
         <div class="character-edit-field">
-            <label for="character-edit-affiliation">所属タグ（カンマ区切り）</label>
+            <label for="character-edit-affiliation">所属タグ（カンマ区切り）<button type="button" class="tag-suggest-btn" onclick="toggleCharacterAffiliationSuggestions()">既存タグ▼</button></label>
             <input type="text" id="character-edit-affiliation" placeholder="例: 生徒会, A組, 剣道部">
+            <div id="character-affiliation-suggestions" class="tag-suggestions" style="display:none;"></div>
             <div class="character-edit-hint">所属する組織・グループなど</div>
         </div>
         <div class="character-edit-field">
-            <label for="character-edit-freetags">自由タグ（カンマ区切り）</label>
+            <label for="character-edit-freetags">自由タグ（カンマ区切り）<button type="button" class="tag-suggest-btn" onclick="toggleCharacterFreetagSuggestions()">既存タグ▼</button></label>
             <input type="text" id="character-edit-freetags" placeholder="例: 幼馴染, ツンデレ, 眼鏡">
+            <div id="character-freetag-suggestions" class="tag-suggestions" style="display:none;"></div>
             <div class="character-edit-hint">属性・特徴など</div>
         </div>
         <div class="character-edit-field">
@@ -2995,8 +3003,9 @@
             </select>
         </div>
         <div class="world-edit-field">
-            <label for="world-edit-termtags">用語タグ（カンマ区切り）</label>
+            <label for="world-edit-termtags">用語タグ（カンマ区切り）<button type="button" class="tag-suggest-btn" onclick="toggleWorldTermtagSuggestions()">既存タグ▼</button></label>
             <input type="text" id="world-edit-termtags" placeholder="例: 魔法, 古代文明, 禁術">
+            <div id="world-termtag-suggestions" class="tag-suggestions" style="display:none;"></div>
             <div class="world-edit-hint">関連する用語やキーワード</div>
         </div>
         <div class="world-edit-field">
@@ -11840,6 +11849,59 @@ function setupMemoInteractionGuard() {
     return Array.from(tags);
   }
 
+  // タグサジェスト表示切替
+  function toggleCharacterAffiliationSuggestions() {
+    const container = document.getElementById('character-affiliation-suggestions');
+    if (!container) return;
+    if (container.style.display === 'none') {
+      const tags = getAllCharacterAffiliationTags();
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
+      } else {
+        container.innerHTML = tags.map(t => `<span class="tag-item" onclick="addCharacterAffiliationTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+      }
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function toggleCharacterFreetagSuggestions() {
+    const container = document.getElementById('character-freetag-suggestions');
+    if (!container) return;
+    if (container.style.display === 'none') {
+      const tags = getAllCharacterFreeTags();
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
+      } else {
+        container.innerHTML = tags.map(t => `<span class="tag-item" onclick="addCharacterFreeTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+      }
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function addCharacterAffiliationTag(tag) {
+    const input = document.getElementById('character-edit-affiliation');
+    if (!input) return;
+    const current = input.value.split(',').map(t => t.trim()).filter(t => t);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
+  function addCharacterFreeTag(tag) {
+    const input = document.getElementById('character-edit-freetags');
+    if (!input) return;
+    const current = input.value.split(',').map(t => t.trim()).filter(t => t);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
   // パネル制御
   function toggleCharacterPanel() {
     const panel = document.getElementById('character-panel');
@@ -11967,6 +12029,10 @@ function setupMemoInteractionGuard() {
   window.initCharacterFromReset = initCharacterFromReset;
   window.getAllCharacterAffiliationTags = getAllCharacterAffiliationTags;
   window.getAllCharacterFreeTags = getAllCharacterFreeTags;
+  window.toggleCharacterAffiliationSuggestions = toggleCharacterAffiliationSuggestions;
+  window.toggleCharacterFreetagSuggestions = toggleCharacterFreetagSuggestions;
+  window.addCharacterAffiliationTag = addCharacterAffiliationTag;
+  window.addCharacterFreeTag = addCharacterFreeTag;
   window.toggleCharacterPanel = toggleCharacterPanel;
   window.toggleCharacterDock = toggleCharacterDock;
   window.toggleCharacterDockPin = toggleCharacterDockPin;
@@ -12545,6 +12611,33 @@ function setupMemoInteractionGuard() {
     return Array.from(tags);
   }
 
+  // タグサジェスト表示切替
+  function toggleWorldTermtagSuggestions() {
+    const container = document.getElementById('world-termtag-suggestions');
+    if (!container) return;
+    if (container.style.display === 'none') {
+      const tags = getAllWorldTermTags();
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
+      } else {
+        container.innerHTML = tags.map(t => `<span class="tag-item" style="background:#d1fae5; color:#065f46; border-color:#6ee7b7;" onclick="addWorldTermTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+      }
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function addWorldTermTag(tag) {
+    const input = document.getElementById('world-edit-termtags');
+    if (!input) return;
+    const current = input.value.split(',').map(t => t.trim()).filter(t => t);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
   // パネル制御
   function toggleWorldPanel() {
     const panel = document.getElementById('world-panel');
@@ -12671,6 +12764,8 @@ function setupMemoInteractionGuard() {
   window.collapseAllWorld = collapseAllWorld;
   window.initWorldFromReset = initWorldFromReset;
   window.getAllWorldTermTags = getAllWorldTermTags;
+  window.toggleWorldTermtagSuggestions = toggleWorldTermtagSuggestions;
+  window.addWorldTermTag = addWorldTermTag;
   window.toggleWorldPanel = toggleWorldPanel;
   window.toggleWorldDock = toggleWorldDock;
   window.toggleWorldDockPin = toggleWorldDockPin;

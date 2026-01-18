@@ -10304,7 +10304,14 @@ function setupMemoInteractionGuard() {
       renderStructureList();
     };
     picker.addEventListener('input', structureColorPickerHandler);
-    picker.click();
+    setTimeout(() => {
+      picker.focus();
+      if (typeof picker.showPicker === 'function') {
+        picker.showPicker();
+      } else {
+        picker.click();
+      }
+    }, 0);
   }
 
   function resetStructureCardColor(cardId) {
@@ -10664,6 +10671,7 @@ function setupMemoInteractionGuard() {
 
     if (!isOpen) {
       // 閉じている → オーバーレイで開く
+      if (container) container.classList.remove('structure-right');
       panel.classList.add('open');
       if (isDocked) {
         checkbox.checked = false;

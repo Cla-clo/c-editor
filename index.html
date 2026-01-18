@@ -1000,8 +1000,8 @@
     .main-container.structure-docked #structure-panel.open { display: flex; }
     .main-container.structure-docked.structure-right #structure-panel { order: 7; border-right: none; border-left: 1px solid #a5b4fc; }
     .main-container.structure-docked #structure-panel.open ~ #resizer-structure { display: flex; }
-    .main-container.structure-docked.structure-right #resizer-structure { order: 8; }
-    .main-container.structure-docked:not(.structure-right) #resizer-structure { order: 5; }
+    .main-container.structure-docked.structure-right #resizer-structure { order: 5; }
+    .main-container.structure-docked:not(.structure-right) #resizer-structure { order: 7; }
 
     body.focus-mode #structure-panel { display: none !important; }
 
@@ -9716,7 +9716,28 @@ function setupMemoInteractionGuard() {
     }
 
     container.innerHTML = '';
+
+    // 折りたたみ状態を追跡
+    let parentCollapsed = { chapter: false, episode: false };
+    let lastChapterCollapsed = false;
+    let lastEpisodeCollapsed = false;
+
     structureData.forEach((card, index) => {
+      // 章の場合：折りたたみ状態をリセット
+      if (card.level === 'chapter') {
+        lastChapterCollapsed = card.collapsed;
+        lastEpisodeCollapsed = false;
+      }
+      // 話の場合：章が折りたたまれていれば非表示
+      else if (card.level === 'episode') {
+        if (lastChapterCollapsed) return; // 章が折りたたまれていれば話を非表示
+        lastEpisodeCollapsed = card.collapsed;
+      }
+      // シーンの場合：章または話が折りたたまれていれば非表示
+      else if (card.level === 'scene') {
+        if (lastChapterCollapsed || lastEpisodeCollapsed) return;
+      }
+
       const cardEl = createCardElement(card, index);
       container.appendChild(cardEl);
     });
@@ -9818,7 +9839,13 @@ function setupMemoInteractionGuard() {
 
     header.addEventListener('dblclick', (e) => {
       if (e.target.closest('button, input')) return;
-      card.expanded = !card.expanded;
+      // 章・話の場合は子要素の展開/折りたたみ（collapsed）を切り替え
+      // シーンの場合は詳細表示（expanded）を切り替え
+      if (card.level === 'scene') {
+        card.expanded = !card.expanded;
+      } else {
+        card.collapsed = !card.collapsed;
+      }
       saveStructureData();
       renderStructureList();
     });
@@ -9922,6 +9949,30 @@ function setupMemoInteractionGuard() {
     return i;
   }
 
+  // カードとその子要素のインデックス範囲を取得
+  function getCardRangeWithChildren(cardIdx) {
+    const card = structureData[cardIdx];
+    if (!card) return { start: cardIdx, end: cardIdx };
+
+    let endIdx = cardIdx;
+    if (card.level === 'chapter') {
+      // 次の章まで、または配列の終わりまで
+      for (let i = cardIdx + 1; i < structureData.length; i++) {
+        if (structureData[i].level === 'chapter') break;
+        endIdx = i;
+      }
+    } else if (card.level === 'episode') {
+      // 次の章または話まで、または配列の終わりまで
+      for (let i = cardIdx + 1; i < structureData.length; i++) {
+        if (structureData[i].level === 'chapter' || structureData[i].level === 'episode') break;
+        endIdx = i;
+      }
+    }
+    // シーンは自身のみ
+
+    return { start: cardIdx, end: endIdx };
+  }
+
   function moveCardToIndex(dragIdx, insertIdx) {
     if (dragIdx === insertIdx) return;
     const [card] = structureData.splice(dragIdx, 1);
@@ -9930,25 +9981,78 @@ function setupMemoInteractionGuard() {
     structureData.splice(targetIdx, 0, card);
   }
 
+  // カードと子要素を一緒に移動
+  function moveCardWithChildrenToIndex(dragIdx, insertIdx) {
+    const range = getCardRangeWithChildren(dragIdx);
+    const count = range.end - range.start + 1;
+
+    if (dragIdx === insertIdx) return;
+
+    // 移動するカードを抽出
+    const cardsToMove = structureData.splice(range.start, count);
+
+    // 挿入位置を調整
+    let targetIdx = insertIdx;
+    if (range.start < insertIdx) {
+      targetIdx -= count;
+    }
+
+    // カードを挿入
+    structureData.splice(targetIdx, 0, ...cardsToMove);
+  }
+
   function moveCardToChapter(dragIdx, chapterIdx) {
     if (chapterIdx < 0) return;
     const insertIdx = findChapterEndIndex(chapterIdx);
-    moveCardToIndex(dragIdx, insertIdx);
+    moveCardWithChildrenToIndex(dragIdx, insertIdx);
   }
 
   function moveCardToEpisode(dragIdx, episodeIdx) {
     if (episodeIdx < 0) return;
     const insertIdx = findEpisodeEndIndex(episodeIdx);
-    moveCardToIndex(dragIdx, insertIdx);
+    moveCardWithChildrenToIndex(dragIdx, insertIdx);
   }
 
   function moveStructureCard(cardId, direction) {
     const idx = structureData.findIndex(c => c.id === cardId);
-    const targetIdx = idx + direction;
-    if (idx < 0 || targetIdx < 0 || targetIdx >= structureData.length) return;
-    const temp = structureData[targetIdx];
-    structureData[targetIdx] = structureData[idx];
-    structureData[idx] = temp;
+    if (idx < 0) return;
+
+    const card = structureData[idx];
+    const range = getCardRangeWithChildren(idx);
+    const count = range.end - range.start + 1;
+
+    if (direction === -1) {
+      // 上に移動
+      if (idx <= 0) return;
+      // 上のカードの位置を探す
+      let targetIdx = idx - 1;
+      // 上のカードとその子要素をスキップ
+      if (targetIdx >= 0) {
+        // 前のカードの先頭を見つける
+        while (targetIdx > 0) {
+          const prevCard = structureData[targetIdx - 1];
+          if (prevCard.level === 'chapter') break;
+          if (prevCard.level === 'episode' && card.level === 'chapter') break;
+          if (prevCard.level === card.level) break;
+          targetIdx--;
+        }
+        // 移動するカードを抽出して挿入
+        const cardsToMove = structureData.splice(range.start, count);
+        structureData.splice(targetIdx, 0, ...cardsToMove);
+      }
+    } else if (direction === 1) {
+      // 下に移動
+      const nextIdx = range.end + 1;
+      if (nextIdx >= structureData.length) return;
+      // 次のカードとその子要素を取得
+      const nextRange = getCardRangeWithChildren(nextIdx);
+      // 移動するカードを抽出
+      const cardsToMove = structureData.splice(range.start, count);
+      // 次のカード(とその子要素)の後に挿入
+      const insertPos = nextRange.end - count + 1;
+      structureData.splice(insertPos, 0, ...cardsToMove);
+    }
+
     saveStructureData();
     renderStructureList();
   }
@@ -10189,18 +10293,29 @@ function setupMemoInteractionGuard() {
     const targetCard = structureData[targetIdx];
 
     if (dragCard.level === targetCard.level) {
-      moveCardToIndex(dragIdx, targetIdx);
+      // 同じレベル間の移動: 子要素も一緒に移動
+      moveCardWithChildrenToIndex(dragIdx, targetIdx);
     } else if (dragCard.level === 'scene' && targetCard.level === 'episode') {
+      // シーンを話にドロップ: その話の下に移動
       moveCardToEpisode(dragIdx, targetIdx);
     } else if (dragCard.level === 'scene' && targetCard.level === 'chapter') {
+      // シーンを章にドロップ: その章の下に移動
       moveCardToChapter(dragIdx, targetIdx);
     } else if (dragCard.level === 'episode' && targetCard.level === 'chapter') {
+      // 話を章にドロップ: その章の下に移動（配下のシーンも一緒に）
       moveCardToChapter(dragIdx, targetIdx);
     } else if (dragCard.level === 'episode' && targetCard.level === 'scene') {
+      // 話をシーンにドロップ: そのシーンの章に移動
       const chapterIdx = findChapterIndexForIndex(targetIdx);
       if (chapterIdx >= 0) moveCardToChapter(dragIdx, chapterIdx);
+    } else if (dragCard.level === 'chapter' && targetCard.level !== 'chapter') {
+      // 章を話/シーンにドロップ: 直近の章の位置に移動
+      const targetChapterIdx = findChapterIndexForIndex(targetIdx);
+      if (targetChapterIdx >= 0) {
+        moveCardWithChildrenToIndex(dragIdx, targetChapterIdx);
+      }
     } else {
-      moveCardToIndex(dragIdx, targetIdx);
+      moveCardWithChildrenToIndex(dragIdx, targetIdx);
     }
 
     saveStructureData();
@@ -10280,15 +10395,50 @@ function setupMemoInteractionGuard() {
   }
 
   // ========== カード削除 ==========
-  function deleteStructureCard(cardId) {
-    if (!confirm('この構成カードを削除しますか？')) return;
-
+  // カードとその配下の子カードを取得（章→話・シーン、話→シーン）
+  function getCardWithChildren(cardId) {
     const idx = structureData.findIndex(c => c.id === cardId);
-    if (idx >= 0) {
-      structureData.splice(idx, 1);
-      saveStructureData();
-      renderStructureList();
+    if (idx < 0) return [];
+
+    const card = structureData[idx];
+    const result = [cardId];
+
+    if (card.level === 'chapter') {
+      // 章の場合: 次の章まで、または配列の終わりまでの話とシーンを取得
+      for (let i = idx + 1; i < structureData.length; i++) {
+        if (structureData[i].level === 'chapter') break;
+        result.push(structureData[i].id);
+      }
+    } else if (card.level === 'episode') {
+      // 話の場合: 次の章または話まで、または配列の終わりまでのシーンを取得
+      for (let i = idx + 1; i < structureData.length; i++) {
+        if (structureData[i].level === 'chapter' || structureData[i].level === 'episode') break;
+        result.push(structureData[i].id);
+      }
     }
+    // シーンの場合: シーンのみ（result にはすでに cardId が入っている）
+
+    return result;
+  }
+
+  function deleteStructureCard(cardId) {
+    const card = structureData.find(c => c.id === cardId);
+    if (!card) return;
+
+    const childIds = getCardWithChildren(cardId);
+    const childCount = childIds.length - 1;
+
+    let message = 'この構成カードを削除しますか？';
+    if (childCount > 0) {
+      message = `この${LEVEL_LABELS[card.level]}と、配下の${childCount}件のカードを削除しますか？`;
+    }
+
+    if (!confirm(message)) return;
+
+    // 配下のカードを含めて削除
+    structureData = structureData.filter(c => !childIds.includes(c.id));
+    saveStructureData();
+    renderStructureList();
   }
 
   // ========== 全展開/全折畳 ==========
@@ -10406,7 +10556,7 @@ function setupMemoInteractionGuard() {
 
   // ========== パネル制御関数 ==========
 
-  // パネル開閉トグル（メモパネルと同様の3段階切り替え）
+  // パネル開閉トグル（常に左側固定で開閉）
   function toggleStructurePanel() {
     const panel = document.getElementById('structure-panel');
     const checkbox = document.getElementById('check-structure-dock');
@@ -10414,27 +10564,20 @@ function setupMemoInteractionGuard() {
     if (!panel || !checkbox) return;
 
     const isOpen = panel.classList.contains('open');
-    const isDocked = checkbox.checked;
-
-    if (container) container.classList.remove('structure-right');
 
     if (!isOpen) {
-      // 閉じている → オーバーレイで開く
+      // 閉じている → 左側固定で開く
       panel.classList.add('open');
-      if (isDocked) {
-        checkbox.checked = false;
-        toggleStructureDock();
-      }
-    } else if (!isDocked) {
-      // オーバーレイで開いている → 固定表示に
       checkbox.checked = true;
-      toggleStructureDock();
-      panel.classList.add('open');
+      container.classList.add('structure-docked');
+      // 常に左側に表示
+      container.classList.remove('structure-right');
     } else {
-      // 固定表示 → 閉じる
-      checkbox.checked = false;
-      toggleStructureDock();
+      // 開いている → 閉じる
       panel.classList.remove('open');
+      checkbox.checked = false;
+      container.classList.remove('structure-docked');
+      container.classList.remove('structure-right');
     }
 
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -10480,11 +10623,23 @@ function setupMemoInteractionGuard() {
   // 左右入替
   function swapStructureSide() {
     const container = document.getElementById('main-container');
+    const checkbox = document.getElementById('check-structure-dock');
+    const panel = document.getElementById('structure-panel');
+
+    // dockedモードでなければ、まずdockedにする
+    if (!checkbox.checked && panel) {
+      panel.classList.add('open');
+      checkbox.checked = true;
+      container.classList.add('structure-docked');
+    }
+
     if (container) {
       container.classList.toggle('structure-right');
     }
+
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
     if (typeof updateDockSplitState === 'function') updateDockSplitState();
+    updateStructureButtonState();
   }
 
   // パネルを閉じる

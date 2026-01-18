@@ -10283,36 +10283,72 @@ function setupMemoInteractionGuard() {
     const card = structureData.find(c => c.id === cardId);
     if (!card) return;
 
-    let picker = document.getElementById('structure-color-picker');
+    // カスタムカラーピッカーUIを作成
+    let picker = document.getElementById('structure-card-color-popup');
     if (!picker) {
-      picker = document.createElement('input');
-      picker.type = 'color';
-      picker.id = 'structure-color-picker';
-      picker.style.position = 'fixed';
-      picker.style.left = '-9999px';
-      picker.style.top = '-9999px';
+      picker = document.createElement('div');
+      picker.id = 'structure-card-color-popup';
+      picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
       document.body.appendChild(picker);
     }
 
-    picker.value = card.color || '#6366f1';
-    if (structureColorPickerHandler) {
-      picker.removeEventListener('input', structureColorPickerHandler);
-    }
-    structureColorPickerHandler = () => {
-      card.color = picker.value;
+    const currentColor = card.color || '#6366f1';
+    const presetColors = ['#6366f1', '#8b5cf6', '#a78bfa', '#3b82f6', '#06b6d4', '#10b981', '#22c55e', '#eab308', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
+
+    const presetsHtml = presetColors.map(c =>
+      `<button class="structure-color-preset" data-color="${c}" style="width:24px; height:24px; background:${c}; border:1px solid #ccc; border-radius:4px; cursor:pointer;${c === currentColor ? ' outline:2px solid #2563eb;' : ''}"></button>`
+    ).join('');
+
+    picker.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:bold;">カードの色</span>
+        <button class="structure-picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <input type="color" id="structure-card-color-input" value="${currentColor}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px; cursor:pointer;">
+        <input type="text" id="structure-card-color-text" value="${currentColor}" style="width:80px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+      </div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">
+        ${presetsHtml}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="structure-picker-cancel">キャンセル</button>
+        <button class="btn btn-apply" id="structure-picker-apply">適用</button>
+      </div>
+    `;
+
+    picker.style.left = '50%';
+    picker.style.top = '50%';
+    picker.style.transform = 'translate(-50%, -50%)';
+    picker.style.display = 'block';
+
+    const colorInput = picker.querySelector('#structure-card-color-input');
+    const colorText = picker.querySelector('#structure-card-color-text');
+    colorInput.oninput = () => { colorText.value = colorInput.value; };
+    colorText.onchange = () => { colorInput.value = colorText.value; };
+
+    picker.querySelectorAll('.structure-color-preset').forEach(btn => {
+      btn.onclick = () => {
+        const c = btn.dataset.color;
+        colorInput.value = c;
+        colorText.value = c;
+        picker.querySelectorAll('.structure-color-preset').forEach(b => b.style.outline = '');
+        btn.style.outline = '2px solid #2563eb';
+      };
+    });
+
+    const closePopup = () => {
+      picker.style.display = 'none';
+    };
+
+    picker.querySelector('.structure-picker-close').onclick = closePopup;
+    picker.querySelector('#structure-picker-cancel').onclick = closePopup;
+    picker.querySelector('#structure-picker-apply').onclick = () => {
+      card.color = colorInput.value;
       saveStructureData();
       renderStructureList();
+      closePopup();
     };
-    picker.addEventListener('input', structureColorPickerHandler);
-    // メニューが閉じた後にピッカーを表示するためsetTimeoutを使用
-    setTimeout(() => {
-      picker.focus();
-      if (typeof picker.showPicker === 'function') {
-        picker.showPicker();
-      } else {
-        picker.click();
-      }
-    }, 0);
   }
 
   function resetStructureCardColor(cardId) {
@@ -10707,10 +10743,13 @@ function setupMemoInteractionGuard() {
 
     if (checkbox.checked) {
       container.classList.add('structure-docked');
+      // 固定表示時は常に左側に表示（右側設定をリセット）
+      container.classList.remove('structure-right');
       if (swapBtn) swapBtn.classList.add('is-active');
       if (pinBtn) pinBtn.classList.add('pinned');
     } else {
       container.classList.remove('structure-docked');
+      container.classList.remove('structure-right');
       if (swapBtn) swapBtn.classList.remove('is-active');
       if (pinBtn) pinBtn.classList.remove('pinned');
     }

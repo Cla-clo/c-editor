@@ -136,6 +136,49 @@
     .btn-sync:hover { background: #fef08a; }
     .btn-save { background: #2563eb; color: white; border: 1px solid #1d4ed8; }
     .btn-save:hover { background: #1d4ed8; color: white; }
+    .btn-text-file { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .btn-text-file:hover { background: #bfdbfe; }
+    .btn-project-file { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .btn-project-file:hover { background: #fde68a; }
+    .header-file-group {
+        display: inline-flex;
+        gap: 2px;
+        background: var(--pane-header-bg);
+        border-radius: 6px;
+        padding: 2px;
+        margin-left: 4px;
+    }
+    .header-file-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    .header-file-dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        min-width: 140px;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        padding: 4px 0;
+    }
+    .header-file-dropdown.open .header-file-dropdown-content {
+        display: block;
+    }
+    .header-file-dropdown-content .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .header-file-dropdown-content .dropdown-item:hover {
+        background: var(--pane-header-bg);
+    }
     .btn-reset-input {
         background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
         font-weight: bold; padding: 4px 8px;
@@ -154,7 +197,7 @@
     .btn-analysis:hover { background: #bfdbfe; }
     .btn-export { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-size: 0.7rem; padding: 2px 6px; }
     .btn-import { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; font-size: 0.7rem; padding: 2px 6px; }
-    #file-input, #settings-file-input { display: none; }
+    #file-input, #settings-file-input, #project-file-input { display: none; }
 
     .dropdown { position: relative; display: inline-block; }
     .dropdown-btn { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
@@ -2526,9 +2569,24 @@
             <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
         </button>
         <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
-        <button class="btn" onclick="openFileWithChoice()">📂 開く</button>
+        <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
+        <div class="header-file-group">
+            <div class="header-file-dropdown" id="text-file-dropdown">
+                <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
+                <div class="header-file-dropdown-content">
+                    <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
+                    <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
+                </div>
+            </div>
+            <div class="header-file-dropdown" id="project-file-dropdown">
+                <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
+                <div class="header-file-dropdown-content">
+                    <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
+                    <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
+                </div>
+            </div>
+        </div>
         <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
-        <button class="btn btn-save" onclick="showSaveDialog()">💾 保存</button>
     </div>
 </header>
 
@@ -6343,6 +6401,91 @@ if (typeof applyPaneHeightSettings === 'function') {
 
     function showSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'flex'; }
     function closeSaveDialog() { document.getElementById('save-dialog-overlay').style.display = 'none'; }
+
+    // ヘッダーファイルドロップダウン
+    function toggleTextFileDropdown() {
+        const dropdown = document.getElementById('text-file-dropdown');
+        const projectDropdown = document.getElementById('project-file-dropdown');
+        projectDropdown.classList.remove('open');
+        dropdown.classList.toggle('open');
+    }
+
+    function toggleProjectFileDropdown() {
+        const dropdown = document.getElementById('project-file-dropdown');
+        const textDropdown = document.getElementById('text-file-dropdown');
+        textDropdown.classList.remove('open');
+        dropdown.classList.toggle('open');
+    }
+
+    function closeAllFileDropdowns() {
+        document.querySelectorAll('.header-file-dropdown').forEach(d => d.classList.remove('open'));
+    }
+
+    // ドロップダウン外クリックで閉じる
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.header-file-dropdown')) {
+            closeAllFileDropdowns();
+        }
+    });
+
+    function showTextSaveOptions() {
+        showSaveDialog();
+    }
+
+    function openProjectFile() {
+        document.getElementById('project-file-input').click();
+    }
+
+    function handleProjectFileLoad(input) {
+        const file = input.files[0];
+        if (!file) return;
+        loadProjectFromFile(file);
+        input.value = '';
+    }
+
+    async function loadProjectFromFile(file) {
+        try {
+            const text = await file.text();
+            const project = JSON.parse(text);
+            if (!project.version) throw new Error('Invalid project file');
+
+            if (project.tabs) {
+                localStorage.setItem('cc_tabs', JSON.stringify(project.tabs));
+                if (project.currentTabId) localStorage.setItem('cc_current_tab_id', project.currentTabId);
+            }
+            if (project.memoTabs) {
+                localStorage.setItem('cc_memo_tabs', JSON.stringify(project.memoTabs));
+                if (project.currentMemoTabId) localStorage.setItem('cc_memo_current_tab_id', project.currentMemoTabId);
+            }
+            if (project.structure) {
+                localStorage.setItem('cc_structure_data', JSON.stringify(project.structure));
+            }
+            if (project.character) {
+                localStorage.setItem('cc_character_data', JSON.stringify(project.character));
+            }
+            if (project.world) {
+                localStorage.setItem('cc_world_data', JSON.stringify(project.world));
+            }
+            if (project.bookmarks) {
+                localStorage.setItem('cc_bookmarks', JSON.stringify(project.bookmarks));
+            }
+            if (project.settings) {
+                const s = project.settings;
+                if (s.paneWidths) {
+                    Object.entries(s.paneWidths).forEach(([k, v]) => {
+                        if (v) localStorage.setItem(`cc_${k === 'input' ? 'pane_input' : k === 'preview' ? 'pane_preview' : k}_width_px`, v);
+                    });
+                }
+                if (s.theme) localStorage.setItem('cc_theme', s.theme);
+                if (s.autoSave !== undefined) localStorage.setItem('cc_autosave_enabled', s.autoSave);
+                if (s.autoSaveInterval) localStorage.setItem('cc_autosave_interval', s.autoSaveInterval);
+            }
+            alert('プロジェクトを読み込みました。ページを再読み込みします。');
+            location.reload();
+        } catch (e) {
+            alert('プロジェクトファイルの読み込みに失敗しました: ' + e.message);
+        }
+    }
 
     // プロジェクト保存機能
     function openProjectSaveDialog() {

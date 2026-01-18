@@ -10556,7 +10556,7 @@ function setupMemoInteractionGuard() {
 
   // ========== パネル制御関数 ==========
 
-  // パネル開閉トグル（常に左側固定で開閉）
+  // パネル開閉トグル（メモパネルと同様の3段階切り替え、常に左側表示）
   function toggleStructurePanel() {
     const panel = document.getElementById('structure-panel');
     const checkbox = document.getElementById('check-structure-dock');
@@ -10564,20 +10564,28 @@ function setupMemoInteractionGuard() {
     if (!panel || !checkbox) return;
 
     const isOpen = panel.classList.contains('open');
+    const isDocked = checkbox.checked;
+
+    // 常に左側に表示（右側への移動はしない）
+    if (container) container.classList.remove('structure-right');
 
     if (!isOpen) {
-      // 閉じている → 左側固定で開く
+      // 閉じている → オーバーレイで開く
       panel.classList.add('open');
+      if (isDocked) {
+        checkbox.checked = false;
+        toggleStructureDock();
+      }
+    } else if (!isDocked) {
+      // オーバーレイで開いている → 固定表示に
       checkbox.checked = true;
-      container.classList.add('structure-docked');
-      // 常に左側に表示
-      container.classList.remove('structure-right');
+      toggleStructureDock();
+      panel.classList.add('open');
     } else {
-      // 開いている → 閉じる
-      panel.classList.remove('open');
+      // 固定表示 → 閉じる
       checkbox.checked = false;
-      container.classList.remove('structure-docked');
-      container.classList.remove('structure-right');
+      toggleStructureDock();
+      panel.classList.remove('open');
     }
 
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -10620,26 +10628,14 @@ function setupMemoInteractionGuard() {
     }
   }
 
-  // 左右入替
+  // 左右入替（メモや目次と同様の挙動）
   function swapStructureSide() {
     const container = document.getElementById('main-container');
-    const checkbox = document.getElementById('check-structure-dock');
-    const panel = document.getElementById('structure-panel');
-
-    // dockedモードでなければ、まずdockedにする
-    if (!checkbox.checked && panel) {
-      panel.classList.add('open');
-      checkbox.checked = true;
-      container.classList.add('structure-docked');
-    }
-
     if (container) {
       container.classList.toggle('structure-right');
     }
-
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
     if (typeof updateDockSplitState === 'function') updateDockSplitState();
-    updateStructureButtonState();
   }
 
   // パネルを閉じる

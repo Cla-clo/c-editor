@@ -194,7 +194,7 @@
         flex-wrap: wrap;
         gap: 6px;
     }
-    .ribbon-section[data-section]:not(.ribbon-home) { display: none; }
+    .ribbon-section[data-section]:not(.ribbon-home):not(.is-active) { display: none; }
     .ribbon-section.is-active { display: flex; }
     .ribbon-section + .ribbon-section {
         border-top: 1px solid var(--border-color);

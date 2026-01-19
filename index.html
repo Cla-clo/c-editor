@@ -6078,6 +6078,16 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     }
 
     let searchMatches = [], currentMatchIndex = -1;
+    let panelZIndexCounter = 210;
+    function bringPanelToFront(panel, isDocked) {
+      if (!panel) return;
+      if (isDocked) {
+        panel.style.zIndex = '';
+        return;
+      }
+      panel.style.zIndex = String(panelZIndexCounter++);
+    }
+    window.bringPanelToFront = bringPanelToFront;
     function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }
     function updateSearchInfo() { const i = document.getElementById('search-match-info'); if (searchMatches.length === 0) { i.innerText = '0 / 0'; i.style.color = '#999'; } else { i.innerText = `${currentMatchIndex + 1} / ${searchMatches.length}`; i.style.color = '#15803d'; } }
     function findNext() { if (searchMatches.length === 0) doSearch(); else { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; jumpToMatch(); updateSearchInfo(); } }
@@ -6138,6 +6148,13 @@ function toggleMemoPanel() {
     checkbox.checked = false;
     toggleMemoDock();
     panel.classList.remove('open');
+  }
+
+  const isDockedNow = checkbox.checked;
+  if (panel.classList.contains('open')) {
+    bringPanelToFront(panel, isDockedNow);
+  } else {
+    panel.style.zIndex = '';
   }
 
   if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -6469,6 +6486,13 @@ function toggleOutlinePanel() {
         checkbox.checked = false;
         toggleOutlineDock();
         panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+        if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+        panel.style.zIndex = '';
     }
 
     applyPaneWidthSettings();
@@ -10272,6 +10296,13 @@ function setupMemoInteractionGuard() {
       panel.style.display = 'none';
     }
 
+    const isDockedNow = checkbox && checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
+    }
+
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
     try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}
@@ -10305,6 +10336,13 @@ function setupMemoInteractionGuard() {
       if (checkbox) checkbox.checked = false;
       if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
       panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox && checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
     }
 
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
@@ -11208,7 +11246,7 @@ function setupMemoInteractionGuard() {
     const div = document.createElement('div');
     div.className = `structure-card level-${card.level}`;
     if (expandLevel > 0) div.classList.add('expanded');
-    if (expandLevel === 2) div.classList.add('fully-expanded');
+    if (expandLevel === 3) div.classList.add('fully-expanded');
     if (card.collapsed) div.classList.add('collapsed');
     if (card.color) {
       div.classList.add('has-custom-color');
@@ -11221,6 +11259,10 @@ function setupMemoInteractionGuard() {
     // ヘッダー部分
     const header = document.createElement('div');
     header.className = 'structure-card-header';
+    header.onclick = (e) => {
+      if (e.target.closest('button, input')) return;
+      toggleStructureExpand(card.id);
+    };
 
     const selection = document.createElement('input');
     selection.type = 'checkbox';
@@ -11251,7 +11293,8 @@ function setupMemoInteractionGuard() {
     const title = document.createElement('span');
     title.className = 'structure-title';
     title.textContent = card.title;
-    title.onclick = () => {
+    title.onclick = (e) => {
+      e.stopPropagation();
       if (card.tabId && window.inputTabs) {
         const tab = window.inputTabs.find(t => t.id === card.tabId);
         if (tab && typeof window.switchTab === 'function') {
@@ -11270,16 +11313,13 @@ function setupMemoInteractionGuard() {
     // 展開ボタン（3段階: 0→1→2→0）
     const expandBtn = document.createElement('span');
     expandBtn.style.cssText = 'cursor:pointer; font-size:0.7rem; color:var(--text-muted); margin-left:4px;';
-    const expandSymbols = ['∨', '⌄', '∧'];
-    const expandTitles = ['1行表示', '全て表示', '閉じる'];
+    const expandSymbols = ['▶', '▽', '▼', '◆'];
+    const expandTitles = ['名前のみ', 'タグのみ', 'タグ+プレビュー', 'すべて表示'];
     expandBtn.textContent = expandSymbols[expandLevel];
     expandBtn.title = expandTitles[expandLevel];
     expandBtn.onclick = (e) => {
       e.stopPropagation();
-      card.expandLevel = ((card.expandLevel || 0) + 1) % 3;
-      card.expanded = card.expandLevel > 0; // 互換性
-      saveStructureData();
-      renderStructureList();
+      toggleStructureExpand(card.id);
     };
     header.appendChild(expandBtn);
 
@@ -11306,15 +11346,6 @@ function setupMemoInteractionGuard() {
     moveGroup.appendChild(moveUp);
     moveGroup.appendChild(moveDown);
     header.appendChild(moveGroup);
-
-    header.addEventListener('dblclick', (e) => {
-      if (e.target.closest('button, input')) return;
-      // ダブルクリックで展開/折りたたみ（4段階）
-      card.expandLevel = ((card.expandLevel || 0) + 1) % 4;
-      card.expanded = card.expandLevel > 0;
-      saveStructureData();
-      renderStructureList();
-    });
 
     div.appendChild(header);
 
@@ -11418,7 +11449,7 @@ function setupMemoInteractionGuard() {
         const linkedCharsHtml = card.linkedCharacters.map(cid => {
           const char = charData.find(c => c.id === cid);
           if (!char) return '';
-          return `<span class="structure-linked-item structure-linked-character" onclick="showStructureLinkedPopup(event, 'character', ${cid})">👤 ${escapeHtml(char.name)}</span>`;
+          return `<span class="structure-linked-item structure-linked-character" onclick="event.stopPropagation(); goToLinkedPanel('character', ${cid})">👤 ${escapeHtml(char.name)}</span>`;
         }).filter(h => h).join('');
         if (linkedCharsHtml) {
           linkedSection.innerHTML += `<div class="structure-linked-label">登場人物</div><div class="structure-linked-items">${linkedCharsHtml}</div>`;
@@ -11430,7 +11461,7 @@ function setupMemoInteractionGuard() {
         const linkedWorldsHtml = card.linkedWorlds.map(wid => {
           const world = worldData.find(w => w.id === wid);
           if (!world) return '';
-          return `<span class="structure-linked-item structure-linked-world" onclick="showStructureLinkedPopup(event, 'world', ${wid})">🌍 ${escapeHtml(world.name)}</span>`;
+          return `<span class="structure-linked-item structure-linked-world" onclick="event.stopPropagation(); goToLinkedPanel('world', ${wid})">🌍 ${escapeHtml(world.name)}</span>`;
         }).filter(h => h).join('');
         if (linkedWorldsHtml) {
           linkedSection.innerHTML += `<div class="structure-linked-label" style="margin-top:6px;">世界観</div><div class="structure-linked-items">${linkedWorldsHtml}</div>`;
@@ -12148,6 +12179,16 @@ function setupMemoInteractionGuard() {
     closeStructureEditModal();
   }
 
+  function toggleStructureExpand(cardId) {
+    const card = structureData.find(c => c.id === cardId);
+    if (card) {
+      card.expandLevel = ((card.expandLevel || 0) + 1) % 4;
+      card.expanded = card.expandLevel > 0;
+      saveStructureData();
+      renderStructureList();
+    }
+  }
+
   function updateSummaryCount() {
     const textarea = document.getElementById('structure-edit-summary');
     const counter = document.getElementById('structure-summary-count');
@@ -12475,22 +12516,39 @@ function setupMemoInteractionGuard() {
           }
         }, 300);
       }
-    } else {
-      if (typeof window.toggleWorldPanel === 'function') {
-        const panel = document.getElementById('world-panel');
+      return;
+    }
+    if (type === 'structure') {
+      if (typeof window.toggleStructurePanel === 'function') {
+        const panel = document.getElementById('structure-panel');
         if (!panel || !panel.classList.contains('open')) {
-          window.toggleWorldPanel();
+          window.toggleStructurePanel();
         }
-        // 対象のカードをハイライトしてスクロール
         setTimeout(() => {
-          const card = document.querySelector(`#world-list .world-card[data-id="${itemId}"]`);
+          const card = document.querySelector(`#structure-list .structure-card[data-id="${itemId}"]`);
           if (card) {
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            card.style.boxShadow = '0 0 0 3px #34d399';
+            card.style.boxShadow = '0 0 0 3px #60a5fa';
             setTimeout(() => card.style.boxShadow = '', 2000);
           }
         }, 300);
       }
+      return;
+    }
+    if (typeof window.toggleWorldPanel === 'function') {
+      const panel = document.getElementById('world-panel');
+      if (!panel || !panel.classList.contains('open')) {
+        window.toggleWorldPanel();
+      }
+      // 対象のカードをハイライトしてスクロール
+      setTimeout(() => {
+        const card = document.querySelector(`#world-list .world-card[data-id="${itemId}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.style.boxShadow = '0 0 0 3px #34d399';
+          setTimeout(() => card.style.boxShadow = '', 2000);
+        }
+      }, 300);
     }
   }
 
@@ -12504,10 +12562,15 @@ function setupMemoInteractionGuard() {
   window.deleteAllStructureCards = deleteAllStructureCards;
   window.expandAllStructure = expandAllStructure;
   window.collapseAllStructure = collapseAllStructure;
+  window.toggleStructureExpand = toggleStructureExpand;
   window.toggleStructureFullscreen = toggleStructureFullscreen;
   window.exportStructureText = exportStructureText;
   window.toggleStructureTagSuggestions = toggleStructureTagSuggestions;
+  window.toggleStructureViewpointSuggestions = toggleStructureViewpointSuggestions;
+  window.setStructureViewpoint = setStructureViewpoint;
   window.addStructureTag = addStructureTag;
+  window.toggleStructureCharacterLink = toggleStructureCharacterLink;
+  window.toggleStructureWorldLink = toggleStructureWorldLink;
   window.showStructureLinkedPopup = showStructureLinkedPopup;
   window.closeLinkPopup = closeLinkPopup;
   window.goToLinkedPanel = goToLinkedPanel;
@@ -12542,6 +12605,13 @@ function setupMemoInteractionGuard() {
       checkbox.checked = false;
       toggleStructureDock();
       panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
     }
 
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -12883,14 +12953,14 @@ function setupMemoInteractionGuard() {
       const struct = structureData.find(s => s.id === sid);
       if (!struct) return '';
       const levelLabel = STRUCTURE_LEVEL_LABELS[struct.level] || struct.level || '';
-      return `<span class="card-linked-item card-linked-structure">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+      return `<span class="card-linked-item card-linked-structure" onclick="event.stopPropagation(); goToLinkedPanel('structure', ${sid})">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
 
     const linkedWorldsHtml = (card.linkedWorlds || []).map(wid => {
       const world = worldData.find(w => w.id === wid);
       if (!world) return '';
       const levelLabel = WORLD_LEVELS[world.level] || world.level || '';
-      return `<span class="card-linked-item card-linked-world">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+      return `<span class="card-linked-item card-linked-world" onclick="event.stopPropagation(); goToLinkedPanel('world', ${wid})">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
 
     const linkedSectionHtml = (linkedStructuresHtml || linkedWorldsHtml) ? `
@@ -13575,6 +13645,13 @@ function setupMemoInteractionGuard() {
       panel.classList.remove('open');
     }
 
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
+    }
+
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
     updateCharacterButtonState();
   }
@@ -13749,8 +13826,12 @@ function setupMemoInteractionGuard() {
   window.getCharacterData = function() { return characterData; };
   window.toggleCharacterAffiliationSuggestions = toggleCharacterAffiliationSuggestions;
   window.toggleCharacterFreetagSuggestions = toggleCharacterFreetagSuggestions;
+  window.toggleCharacterRoleSuggestions = toggleCharacterRoleSuggestions;
+  window.setCharacterRole = setCharacterRole;
   window.addCharacterAffiliationTag = addCharacterAffiliationTag;
   window.addCharacterFreeTag = addCharacterFreeTag;
+  window.toggleCharacterStructureLink = toggleCharacterStructureLink;
+  window.toggleCharacterWorldLink = toggleCharacterWorldLink;
   window.toggleCharacterPanel = toggleCharacterPanel;
   window.toggleCharacterDock = toggleCharacterDock;
   window.toggleCharacterDockPin = toggleCharacterDockPin;
@@ -13903,21 +13984,21 @@ function setupMemoInteractionGuard() {
       const char = characterData.find(c => c.id === cid);
       if (!char) return '';
       const roleLabel = ROLE_LABELS[char.role] || char.role || '';
-      return `<span class="card-linked-item card-linked-character">👤 ${escapeHtml(char.name)}${roleLabel ? `<span class="card-linked-badge">${roleLabel}</span>` : ''}</span>`;
+      return `<span class="card-linked-item card-linked-character" onclick="event.stopPropagation(); goToLinkedPanel('character', ${cid})">👤 ${escapeHtml(char.name)}${roleLabel ? `<span class="card-linked-badge">${roleLabel}</span>` : ''}</span>`;
     }).join('');
 
     const linkedStructuresHtml = (card.linkedStructures || []).map(sid => {
       const struct = structureData.find(s => s.id === sid);
       if (!struct) return '';
       const levelLabel = STRUCTURE_LEVEL_LABELS[struct.level] || struct.level || '';
-      return `<span class="card-linked-item card-linked-structure">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+      return `<span class="card-linked-item card-linked-structure" onclick="event.stopPropagation(); goToLinkedPanel('structure', ${sid})">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
 
     const linkedWorldsHtml = (card.linkedWorlds || []).map(wid => {
       const world = worldData.find(w => w.id === wid);
       if (!world) return '';
       const levelLabel = LEVEL_LABELS[world.level] || world.level || '';
-      return `<span class="card-linked-item card-linked-world">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+      return `<span class="card-linked-item card-linked-world" onclick="event.stopPropagation(); goToLinkedPanel('world', ${wid})">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
     }).join('');
 
     const linkedSectionHtml = (linkedCharactersHtml || linkedStructuresHtml || linkedWorldsHtml) ? `
@@ -14629,6 +14710,13 @@ function setupMemoInteractionGuard() {
       panel.classList.remove('open');
     }
 
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
+    }
+
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
     updateWorldButtonState();
   }
@@ -14800,8 +14888,13 @@ function setupMemoInteractionGuard() {
   window.initWorldFromReset = initWorldFromReset;
   window.getAllWorldTermTags = getAllWorldTermTags;
   window.getWorldData = function() { return worldData; };
+  window.toggleWorldLevelSuggestions = toggleWorldLevelSuggestions;
+  window.setWorldLevel = setWorldLevel;
   window.toggleWorldTermtagSuggestions = toggleWorldTermtagSuggestions;
   window.addWorldTermTag = addWorldTermTag;
+  window.toggleWorldCharacterLink = toggleWorldCharacterLink;
+  window.toggleWorldStructureLink = toggleWorldStructureLink;
+  window.toggleWorldWorldLink = toggleWorldWorldLink;
   window.toggleWorldPanel = toggleWorldPanel;
   window.toggleWorldDock = toggleWorldDock;
   window.toggleWorldDockPin = toggleWorldDockPin;
@@ -14962,24 +15055,6 @@ function setupMemoInteractionGuard() {
   window.executeImport = executeImport;
   window.exportMemoData = exportMemoData;
 
-  // 構成関連の関数をグローバルに公開
-  window.toggleStructureViewpointSuggestions = toggleStructureViewpointSuggestions;
-  window.setStructureViewpoint = setStructureViewpoint;
-  window.toggleStructureCharacterLink = toggleStructureCharacterLink;
-  window.toggleStructureWorldLink = toggleStructureWorldLink;
-
-  // 登場人物関連の関数をグローバルに公開
-  window.toggleCharacterRoleSuggestions = toggleCharacterRoleSuggestions;
-  window.setCharacterRole = setCharacterRole;
-  window.toggleCharacterStructureLink = toggleCharacterStructureLink;
-  window.toggleCharacterWorldLink = toggleCharacterWorldLink;
-
-  // 世界観関連の関数をグローバルに公開
-  window.toggleWorldLevelSuggestions = toggleWorldLevelSuggestions;
-  window.setWorldLevel = setWorldLevel;
-  window.toggleWorldCharacterLink = toggleWorldCharacterLink;
-  window.toggleWorldStructureLink = toggleWorldStructureLink;
-  window.toggleWorldWorldLink = toggleWorldWorldLink;
 })();
 </script>
 </body>

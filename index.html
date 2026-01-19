@@ -14920,6 +14920,25 @@ function setupMemoInteractionGuard() {
   window.closePanelImportDialog = closePanelImportDialog;
   window.executeImport = executeImport;
   window.exportMemoData = exportMemoData;
+
+  // 構成関連の関数をグローバルに公開
+  window.toggleStructureViewpointSuggestions = toggleStructureViewpointSuggestions;
+  window.setStructureViewpoint = setStructureViewpoint;
+  window.toggleStructureCharacterLink = toggleStructureCharacterLink;
+  window.toggleStructureWorldLink = toggleStructureWorldLink;
+
+  // 登場人物関連の関数をグローバルに公開
+  window.toggleCharacterRoleSuggestions = toggleCharacterRoleSuggestions;
+  window.setCharacterRole = setCharacterRole;
+  window.toggleCharacterStructureLink = toggleCharacterStructureLink;
+  window.toggleCharacterWorldLink = toggleCharacterWorldLink;
+
+  // 世界観関連の関数をグローバルに公開
+  window.toggleWorldLevelSuggestions = toggleWorldLevelSuggestions;
+  window.setWorldLevel = setWorldLevel;
+  window.toggleWorldCharacterLink = toggleWorldCharacterLink;
+  window.toggleWorldStructureLink = toggleWorldStructureLink;
+  window.toggleWorldWorldLink = toggleWorldWorldLink;
 })();
 </script>
 </body>

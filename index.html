@@ -169,10 +169,24 @@
         color: var(--text-muted);
         font-size: 0.8rem;
     }
+    .ribbon-menu-btn {
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .ribbon-menu-btn.active {
+        background: var(--panel-bg);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
     .ribbon-menu-item {
         padding: 2px 6px;
         border-radius: 4px;
-        color: inherit;
+        color: var(--text-muted);
     }
     .ribbon-section {
         display: flex;
@@ -180,6 +194,8 @@
         flex-wrap: wrap;
         gap: 6px;
     }
+    .ribbon-section[data-section]:not(.ribbon-home) { display: none; }
+    .ribbon-section.is-active { display: flex; }
     .ribbon-section + .ribbon-section {
         border-top: 1px solid var(--border-color);
         padding-top: 6px;
@@ -2834,6 +2850,7 @@
     wrapReaderViewFunctions();
     wrapRenderInputTabs();
     wrapUpdateInputStats();
+    initRibbonMenu();
     // 既に描画済みのタブへ右クリック/字数表示を反映させるため、1度だけ再描画
     try { if (typeof window.renderInputTabs === 'function') window.renderInputTabs(); } catch(e) {}
     loadTabBaselines();
@@ -2861,13 +2878,13 @@
             </button>
             <span class="app-title" id="app-title">ⓒエディタver.0.95</span>
             <nav class="ribbon-menu" aria-label="リボンメニュー">
-                <span class="ribbon-menu-item">ファイル</span>
-                <span class="ribbon-menu-item">編集</span>
-                <span class="ribbon-menu-item">表示</span>
-                <span class="ribbon-menu-item">作品</span>
-                <span class="ribbon-menu-item">ツール</span>
-                <span class="ribbon-menu-item">拡張</span>
-                <span class="ribbon-menu-item">ヘルプ</span>
+                <button class="ribbon-menu-btn" data-section-target="file">ファイル</button>
+                <button class="ribbon-menu-btn" data-section-target="edit">編集</button>
+                <button class="ribbon-menu-btn" data-section-target="view">表示</button>
+                <button class="ribbon-menu-btn" data-section-target="work">作品</button>
+                <button class="ribbon-menu-btn" data-section-target="tools">ツール</button>
+                <button class="ribbon-menu-btn" data-section-target="extensions">拡張</button>
+                <button class="ribbon-menu-btn" data-section-target="help">ヘルプ</button>
             </nav>
         </div>
         <button class="btn ribbon-toggle" id="btn-ribbon-toggle" onclick="toggleRibbon()">▴ たたむ</button>
@@ -6053,6 +6070,30 @@ function updateDockSplitState() {
         const controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
         const top = Math.round(headerHeight + controlsHeight + padding);
         document.documentElement.style.setProperty('--dock-top', `${top}px`);
+    }
+    function setActiveRibbonSection(section) {
+        const sections = document.querySelectorAll('.ribbon-section[data-section]');
+        const buttons = document.querySelectorAll('.ribbon-menu-btn[data-section-target]');
+        const isSame = document.querySelector(`.ribbon-section.is-active[data-section="${section}"]`);
+        sections.forEach((el) => el.classList.remove('is-active'));
+        buttons.forEach((btn) => btn.classList.remove('active'));
+        if (section && !isSame) {
+            const target = document.querySelector(`.ribbon-section[data-section="${section}"]`);
+            const btn = document.querySelector(`.ribbon-menu-btn[data-section-target="${section}"]`);
+            target?.classList.add('is-active');
+            btn?.classList.add('active');
+        }
+        if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+    }
+    function initRibbonMenu() {
+        const buttons = document.querySelectorAll('.ribbon-menu-btn[data-section-target]');
+        if (!buttons.length) return;
+        buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const section = btn.dataset.sectionTarget;
+                setActiveRibbonSection(section || '');
+            });
+        });
     }
     function toggleRibbon() {
         document.body.classList.toggle('ribbon-collapsed');

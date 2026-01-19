@@ -12505,6 +12505,8 @@ function setupMemoInteractionGuard() {
         const panel = document.getElementById('character-panel');
         if (!panel || !panel.classList.contains('open')) {
           window.toggleCharacterPanel();
+        } else if (window.bringPanelToFront) {
+          window.bringPanelToFront(panel, false);
         }
         // 対象のカードをハイライトしてスクロール
         setTimeout(() => {
@@ -12523,6 +12525,8 @@ function setupMemoInteractionGuard() {
         const panel = document.getElementById('structure-panel');
         if (!panel || !panel.classList.contains('open')) {
           window.toggleStructurePanel();
+        } else if (window.bringPanelToFront) {
+          window.bringPanelToFront(panel, false);
         }
         setTimeout(() => {
           const card = document.querySelector(`#structure-list .structure-card[data-id="${itemId}"]`);
@@ -12539,6 +12543,8 @@ function setupMemoInteractionGuard() {
       const panel = document.getElementById('world-panel');
       if (!panel || !panel.classList.contains('open')) {
         window.toggleWorldPanel();
+      } else if (window.bringPanelToFront) {
+        window.bringPanelToFront(panel, false);
       }
       // 対象のカードをハイライトしてスクロール
       setTimeout(() => {

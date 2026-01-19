@@ -3980,6 +3980,12 @@
   // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
   window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
 
+  // togglePanel仮定義（後で本物が上書きする）
+  window.togglePanel = window.togglePanel || function(id) {
+    const p = document.getElementById(id);
+    if (p) p.classList.toggle('open');
+  };
+
   // 構成関連の関数を仮定義
   window.toggleStructureViewpointSuggestions = window.toggleStructureViewpointSuggestions || function(){};
   window.setStructureViewpoint = window.setStructureViewpoint || function(){};

@@ -1703,6 +1703,50 @@
         margin-left: 0;
     }
 
+    body.character-fullscreen-mode header,
+    body.character-fullscreen-mode .controls-wrapper,
+    body.character-fullscreen-mode .pane-stack,
+    body.character-fullscreen-mode #memo-panel,
+    body.character-fullscreen-mode #search-panel,
+    body.character-fullscreen-mode #outline-panel,
+    body.character-fullscreen-mode #structure-panel,
+    body.character-fullscreen-mode #world-panel { display: none !important; }
+    body.character-fullscreen-mode #character-panel {
+        position: fixed !important; inset: 0 !important;
+        width: 100% !important; max-width: none !important;
+        transform: none !important; z-index: 9999 !important;
+        border: none !important; border-radius: 0 !important;
+        display: flex !important;
+    }
+    body.character-fullscreen-mode .character-content {
+        display: flex; flex-direction: column;
+    }
+    body.character-fullscreen-mode .character-list {
+        padding: 12px; flex: 1;
+    }
+
+    body.world-fullscreen-mode header,
+    body.world-fullscreen-mode .controls-wrapper,
+    body.world-fullscreen-mode .pane-stack,
+    body.world-fullscreen-mode #memo-panel,
+    body.world-fullscreen-mode #search-panel,
+    body.world-fullscreen-mode #outline-panel,
+    body.world-fullscreen-mode #structure-panel,
+    body.world-fullscreen-mode #character-panel { display: none !important; }
+    body.world-fullscreen-mode #world-panel {
+        position: fixed !important; inset: 0 !important;
+        width: 100% !important; max-width: none !important;
+        transform: none !important; z-index: 9999 !important;
+        border: none !important; border-radius: 0 !important;
+        display: flex !important;
+    }
+    body.world-fullscreen-mode .world-content {
+        display: flex; flex-direction: column;
+    }
+    body.world-fullscreen-mode .world-list {
+        padding: 12px; flex: 1;
+    }
+
     /* ========== 登場人物パネル ========== */
     #character-panel {
         position: fixed; top: var(--dock-top, 44px); left: 0; bottom: 0;
@@ -3235,6 +3279,7 @@
         <button class="btn" onclick="collapseAllCharacter()">全折畳</button>
         <button class="btn" onclick="deleteSelectedCharacterCards()">選択削除</button>
         <button class="btn" onclick="deleteAllCharacterCards()">全削除</button>
+        <button class="btn structure-fullscreen-btn" onclick="toggleCharacterFullscreen()">⛶</button>
     </div>
     <div class="character-content">
         <div class="character-list" id="character-list"></div>
@@ -3268,6 +3313,7 @@
         <button class="btn" onclick="collapseAllWorld()">全折畳</button>
         <button class="btn" onclick="deleteSelectedWorldCards()">選択削除</button>
         <button class="btn" onclick="deleteAllWorldCards()">全削除</button>
+        <button class="btn structure-fullscreen-btn" onclick="toggleWorldFullscreen()">⛶</button>
     </div>
     <div class="world-content">
         <div class="world-list" id="world-list"></div>
@@ -12857,6 +12903,7 @@ function setupMemoInteractionGuard() {
   function initCharacter() {
     loadCharacterData();
     renderCharacterList();
+    setupCharacterFullscreenListener();
   }
 
   function loadCharacterData() {
@@ -13668,6 +13715,29 @@ function setupMemoInteractionGuard() {
     updateCharacterButtonState();
   }
 
+  let characterFullscreenListenerAttached = false;
+  function setupCharacterFullscreenListener() {
+    if (characterFullscreenListenerAttached) return;
+    characterFullscreenListenerAttached = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('character-fullscreen-mode')) {
+        toggleCharacterFullscreen();
+      }
+    });
+  }
+
+  function toggleCharacterFullscreen() {
+    const panel = document.getElementById('character-panel');
+    if (!panel) return;
+    document.body.classList.remove('structure-fullscreen-mode', 'world-fullscreen-mode');
+    if (document.body.classList.contains('character-fullscreen-mode')) {
+      document.body.classList.remove('character-fullscreen-mode');
+      return;
+    }
+    panel.classList.add('open');
+    document.body.classList.add('character-fullscreen-mode');
+  }
+
   function toggleCharacterDock() {
     const checkbox = document.getElementById('check-character-dock');
     const container = document.getElementById('main-container');
@@ -13845,6 +13915,7 @@ function setupMemoInteractionGuard() {
   window.toggleCharacterStructureLink = toggleCharacterStructureLink;
   window.toggleCharacterWorldLink = toggleCharacterWorldLink;
   window.toggleCharacterPanel = toggleCharacterPanel;
+  window.toggleCharacterFullscreen = toggleCharacterFullscreen;
   window.toggleCharacterDock = toggleCharacterDock;
   window.toggleCharacterDockPin = toggleCharacterDockPin;
   window.swapCharacterSide = swapCharacterSide;
@@ -13890,6 +13961,7 @@ function setupMemoInteractionGuard() {
   function initWorld() {
     loadWorldData();
     renderWorldList();
+    setupWorldFullscreenListener();
   }
 
   function loadWorldData() {
@@ -14733,6 +14805,29 @@ function setupMemoInteractionGuard() {
     updateWorldButtonState();
   }
 
+  let worldFullscreenListenerAttached = false;
+  function setupWorldFullscreenListener() {
+    if (worldFullscreenListenerAttached) return;
+    worldFullscreenListenerAttached = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('world-fullscreen-mode')) {
+        toggleWorldFullscreen();
+      }
+    });
+  }
+
+  function toggleWorldFullscreen() {
+    const panel = document.getElementById('world-panel');
+    if (!panel) return;
+    document.body.classList.remove('structure-fullscreen-mode', 'character-fullscreen-mode');
+    if (document.body.classList.contains('world-fullscreen-mode')) {
+      document.body.classList.remove('world-fullscreen-mode');
+      return;
+    }
+    panel.classList.add('open');
+    document.body.classList.add('world-fullscreen-mode');
+  }
+
   function toggleWorldDock() {
     const checkbox = document.getElementById('check-world-dock');
     const container = document.getElementById('main-container');
@@ -14908,6 +15003,7 @@ function setupMemoInteractionGuard() {
   window.toggleWorldStructureLink = toggleWorldStructureLink;
   window.toggleWorldWorldLink = toggleWorldWorldLink;
   window.toggleWorldPanel = toggleWorldPanel;
+  window.toggleWorldFullscreen = toggleWorldFullscreen;
   window.toggleWorldDock = toggleWorldDock;
   window.toggleWorldDockPin = toggleWorldDockPin;
   window.swapWorldSide = swapWorldSide;

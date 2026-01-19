@@ -221,8 +221,18 @@
         gap: 4px;
     }
     .ribbon-toggle { white-space: nowrap; }
+    .ribbon-home-toggle {
+        padding: 2px 8px !important;
+        height: 24px !important;
+        min-width: 24px;
+        font-size: 0.75rem !important;
+        margin-left: auto;
+    }
     body.ribbon-collapsed .ribbon-section:not(.ribbon-home) { display: none; }
     body.ribbon-collapsed .ribbon-home { border-top: none; padding-top: 0; }
+    body.ribbon-ultra-collapsed .ribbon-row { display: none; }
+    body.ribbon-ultra-collapsed .ribbon-section:not(.ribbon-home) { display: none; }
+    body.ribbon-ultra-collapsed .ribbon-home { border-top: none; padding-top: 0; }
 
     .btn {
         background: var(--panel-bg); border: 1px solid var(--border-color); padding: 4px 10px;
@@ -259,7 +269,7 @@
         display: none;
         position: absolute;
         top: 100%;
-        right: 0;
+        left: 0;
         min-width: 140px;
         background: var(--panel-bg);
         border: 1px solid var(--border-color);
@@ -471,6 +481,12 @@
         background: var(--panel-bg); border: 1px solid var(--border-color);
         border-radius: 4px; padding: 1px 6px;
         cursor: text;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        vertical-align: middle;
     }
     .pane-total-stats {
         font-size: 0.7rem; color: var(--text-muted);
@@ -2890,7 +2906,7 @@
                 <button class="ribbon-menu-btn" data-section-target="file" onclick="setActiveRibbonSection('file')">ファイル</button>
                 <button class="ribbon-menu-btn" data-section-target="view" onclick="setActiveRibbonSection('view')">表示</button>
                 <button class="ribbon-menu-btn" data-section-target="work" onclick="setActiveRibbonSection('work')">作品</button>
-                <button class="ribbon-menu-btn" data-section-target="tools" onclick="togglePanel('settings-bar')">ツール</button>
+                <button class="ribbon-menu-btn" data-section-target="tools" onclick="setActiveRibbonSection('tools')">ツール</button>
                 <button class="ribbon-menu-btn" data-section-target="extensions" onclick="setActiveRibbonSection('extensions')">拡張</button>
                 <button class="ribbon-menu-btn" data-section-target="help" onclick="setActiveRibbonSection('help')">ヘルプ</button>
             </nav>
@@ -2901,7 +2917,6 @@
         <div class="ribbon-home-left">
             <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
             <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
-            <button class="btn btn-save" onclick="showTextSaveOptions()" title="保存">💾 保存</button>
             <span class="ribbon-separator">|</span>
             <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()" data-label="🔍 検索">
                 <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▾</span>
@@ -2923,6 +2938,7 @@
                 </div>
             </div>
         </div>
+        <button class="btn ribbon-home-toggle" id="btn-ribbon-home-toggle" onclick="toggleRibbon()" title="リボン展開/たたむ">▴</button>
     </div>
     <div class="ribbon-section ribbon-file" data-section="file">
         <div class="ribbon-group">
@@ -2974,6 +2990,13 @@
             <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
             <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
             <button class="btn btn-sync" id="btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-tools" data-section="tools">
+        <div class="ribbon-group">
+            <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="⚙️ 設定">
+                <span class="panel-label">⚙️ 設定</span><span class="panel-state-icon">▾</span>
+            </button>
         </div>
     </div>
     <div class="ribbon-section ribbon-extensions" data-section="extensions">
@@ -6125,18 +6148,45 @@ function updateDockSplitState() {
             if (document.body.classList.contains('ribbon-collapsed')) {
                 document.body.classList.remove('ribbon-collapsed');
             }
+            if (document.body.classList.contains('ribbon-ultra-collapsed')) {
+                document.body.classList.remove('ribbon-ultra-collapsed');
+            }
         }
         const toggleBtn = document.getElementById('btn-ribbon-toggle');
+        const homeToggleBtn = document.getElementById('btn-ribbon-home-toggle');
+        const isCollapsed = document.body.classList.contains('ribbon-collapsed');
+        const isUltra = document.body.classList.contains('ribbon-ultra-collapsed');
         if (toggleBtn) {
-            toggleBtn.textContent = document.body.classList.contains('ribbon-collapsed') ? '▾ 展開' : '▴ たたむ';
+            toggleBtn.textContent = (isCollapsed || isUltra) ? '▾ 展開' : '▴ たたむ';
+        }
+        if (homeToggleBtn) {
+            homeToggleBtn.textContent = (isCollapsed || isUltra) ? '▾' : '▴';
         }
         if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
     }
     function toggleRibbon() {
-        document.body.classList.toggle('ribbon-collapsed');
+        const isCollapsed = document.body.classList.contains('ribbon-collapsed');
+        const isUltraCollapsed = document.body.classList.contains('ribbon-ultra-collapsed');
         const toggleBtn = document.getElementById('btn-ribbon-toggle');
-        if (toggleBtn) {
-            toggleBtn.textContent = document.body.classList.contains('ribbon-collapsed') ? '▾ 展開' : '▴ たたむ';
+        const homeToggleBtn = document.getElementById('btn-ribbon-home-toggle');
+
+        if (isUltraCollapsed) {
+            // ultra-collapsed → expanded
+            document.body.classList.remove('ribbon-ultra-collapsed');
+            document.body.classList.remove('ribbon-collapsed');
+            if (toggleBtn) toggleBtn.textContent = '▴ たたむ';
+            if (homeToggleBtn) homeToggleBtn.textContent = '▴';
+        } else if (isCollapsed) {
+            // collapsed → ultra-collapsed
+            document.body.classList.remove('ribbon-collapsed');
+            document.body.classList.add('ribbon-ultra-collapsed');
+            if (toggleBtn) toggleBtn.textContent = '▾ 展開';
+            if (homeToggleBtn) homeToggleBtn.textContent = '▾';
+        } else {
+            // expanded → collapsed
+            document.body.classList.add('ribbon-collapsed');
+            if (toggleBtn) toggleBtn.textContent = '▾ たたむ';
+            if (homeToggleBtn) homeToggleBtn.textContent = '▾';
         }
         if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
     }

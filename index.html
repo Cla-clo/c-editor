@@ -3427,6 +3427,7 @@
         <div style="display:flex; gap:4px;">
             <button onclick="openStructureImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
             <button onclick="exportStructureData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+            <button onclick="exportStructureAsText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 TXT</button>
         </div>
     </div>
 </div>
@@ -3467,6 +3468,7 @@
         <div style="display:flex; gap:4px;">
             <button onclick="openCharacterImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
             <button onclick="exportCharacterData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+            <button onclick="exportCharacterAsText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 TXT</button>
         </div>
     </div>
 </div>
@@ -3505,6 +3507,7 @@
         <div style="display:flex; gap:4px;">
             <button onclick="openWorldImportDialog()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📂 開く</button>
             <button onclick="exportWorldData()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">💾 保存</button>
+            <button onclick="exportWorldAsText()" style="font-size:0.7rem; cursor:pointer; padding:2px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--panel-bg);">📄 TXT</button>
         </div>
     </div>
 </div>
@@ -6133,6 +6136,7 @@ function updateDockSplitState() {
     }
     window.setActiveRibbonSection = setActiveRibbonSection;
     window.toggleRibbon = toggleRibbon;
+    window.togglePanel = togglePanel;
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {
         if (e.target.closest('.control-panel') || e.target.closest('.btn') || e.target.closest('.dropdown')) return;
@@ -11716,13 +11720,13 @@ function setupMemoInteractionGuard() {
     const title = document.createElement('span');
     title.className = 'structure-title';
     title.textContent = card.title;
-    title.onclick = (e) => {
+    title.ondblclick = (e) => {
       e.stopPropagation();
-      if (card.tabId && window.inputTabs) {
-        const tab = window.inputTabs.find(t => t.id === card.tabId);
-        if (tab && typeof window.switchTab === 'function') {
-          window.switchTab(card.tabId);
-        }
+      if (typeof startInlineEdit === 'function') {
+        startInlineEdit(title, card.title, (newTitle) => {
+          card.title = newTitle;
+          saveStructureData();
+        });
       }
     };
     header.appendChild(title);
@@ -12171,6 +12175,58 @@ function setupMemoInteractionGuard() {
   let structureMenuClickHandler = null;
   let structureColorPickerHandler = null;
 
+  // コンテキストメニューの位置を画面内に収める
+  function adjustContextMenuPosition(menu, x, y) {
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'block';
+    // メニューの実際のサイズを取得
+    const rect = menu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    // 右端を超える場合は左に寄せる
+    if (rect.right > viewportWidth) {
+      menu.style.left = Math.max(0, viewportWidth - rect.width - 10) + 'px';
+    }
+    // 下端を超える場合は上に寄せる
+    if (rect.bottom > viewportHeight) {
+      menu.style.top = Math.max(0, viewportHeight - rect.height - 10) + 'px';
+    }
+  }
+  window.adjustContextMenuPosition = adjustContextMenuPosition;
+
+  // カード名のインライン編集機能
+  function startInlineEdit(titleElement, currentValue, onSave) {
+    if (titleElement.querySelector('input')) return; // 既に編集中
+    const originalText = titleElement.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentValue;
+    input.style.cssText = 'width:100%; padding:2px 4px; border:1px solid var(--border-color); border-radius:4px; font-size:inherit; font-weight:inherit; background:var(--panel-bg); color:var(--text-color);';
+    titleElement.textContent = '';
+    titleElement.appendChild(input);
+    input.focus();
+    input.select();
+
+    const finish = (save) => {
+      const newValue = input.value.trim();
+      if (save && newValue && newValue !== currentValue) {
+        onSave(newValue);
+        titleElement.textContent = newValue;
+      } else {
+        titleElement.textContent = originalText;
+      }
+    };
+
+    input.onblur = () => finish(true);
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    };
+    input.onclick = (e) => e.stopPropagation();
+  }
+  window.startInlineEdit = startInlineEdit;
+
   function showStructurePanelContextMenu(e) {
     if (typeof window.hideAllContextMenus === 'function') window.hideAllContextMenus();
     let menu = document.getElementById('structure-context-menu');
@@ -12199,9 +12255,7 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    adjustContextMenuPosition(menu, e.clientX, e.clientY);
 
     if (structureMenuClickHandler) {
       document.removeEventListener('click', structureMenuClickHandler);
@@ -12303,9 +12357,7 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    adjustContextMenuPosition(menu, e.clientX, e.clientY);
 
     if (structureMenuClickHandler) {
       document.removeEventListener('click', structureMenuClickHandler);
@@ -13241,6 +13293,32 @@ function setupMemoInteractionGuard() {
     URL.revokeObjectURL(url);
   }
 
+  function exportStructureAsText() {
+    if (structureData.length === 0) {
+      alert('エクスポートする構成データがありません');
+      return;
+    }
+    const LEVEL_LABELS = { chapter: '章', episode: '話', scene: 'シーン' };
+    const lines = [];
+    structureData.forEach(card => {
+      const levelLabel = LEVEL_LABELS[card.level] || card.level;
+      lines.push(`【${levelLabel}】${card.title}`);
+      if (card.summary) lines.push(`　概要: ${card.summary}`);
+      if (card.viewpoint) lines.push(`　視点: ${card.viewpoint}`);
+      if (card.tags && card.tags.length > 0) lines.push(`　タグ: ${card.tags.join(', ')}`);
+      lines.push('');
+    });
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `構成_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  window.exportStructureAsText = exportStructureAsText;
+
   function importStructureData(file, mode) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -13516,7 +13594,19 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleCharacterDragLeave);
     div.addEventListener('drop', handleCharacterDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showCharacterContextMenu(e, card.id); });
-    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) toggleCharacterExpand(card.id); });
+    div.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button, input')) return;
+      const nameEl = e.target.closest('.character-name');
+      if (nameEl && typeof startInlineEdit === 'function') {
+        e.stopPropagation();
+        startInlineEdit(nameEl, card.name, (newName) => {
+          card.name = newName;
+          saveCharacterData();
+        });
+      } else {
+        toggleCharacterExpand(card.id);
+      }
+    });
 
     return div;
   }
@@ -13812,9 +13902,13 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    if (typeof adjustContextMenuPosition === 'function') {
+      adjustContextMenuPosition(menu, e.clientX, e.clientY);
+    } else {
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.style.display = 'block';
+    }
 
     characterMenuClickHandler = () => hideCharacterContextMenu();
     setTimeout(() => document.addEventListener('click', characterMenuClickHandler), 0);
@@ -13888,9 +13982,13 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    if (typeof adjustContextMenuPosition === 'function') {
+      adjustContextMenuPosition(menu, e.clientX, e.clientY);
+    } else {
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.style.display = 'block';
+    }
 
     characterMenuClickHandler = () => hideCharacterContextMenu();
     setTimeout(() => document.addEventListener('click', characterMenuClickHandler), 0);
@@ -14335,6 +14433,32 @@ function setupMemoInteractionGuard() {
     URL.revokeObjectURL(url);
   }
 
+  function exportCharacterAsText() {
+    if (characterData.length === 0) {
+      alert('エクスポートする登場人物データがありません');
+      return;
+    }
+    const CHARACTER_ROLES = { protagonist: '主人公', heroine: 'ヒロイン', antagonist: '敵役', supporting: 'サブ', mob: 'モブ' };
+    const lines = [];
+    characterData.forEach(card => {
+      const roleLabel = CHARACTER_ROLES[card.role] || card.role;
+      lines.push(`【${roleLabel}】${card.name}${card.reading ? ` (${card.reading})` : ''}`);
+      if (card.description) lines.push(`　${card.description}`);
+      if (card.affiliationTags && card.affiliationTags.length > 0) lines.push(`　所属: ${card.affiliationTags.join(', ')}`);
+      if (card.freeTags && card.freeTags.length > 0) lines.push(`　タグ: ${card.freeTags.join(', ')}`);
+      lines.push('');
+    });
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `登場人物_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  window.exportCharacterAsText = exportCharacterAsText;
+
   function importCharacterData(file, mode) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -14646,7 +14770,19 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleWorldDragLeave);
     div.addEventListener('drop', handleWorldDrop);
     div.addEventListener('contextmenu', (e) => { e.preventDefault(); showWorldContextMenu(e, card.id); });
-    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) toggleWorldExpand(card.id); });
+    div.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button, input')) return;
+      const nameEl = e.target.closest('.world-name');
+      if (nameEl && typeof startInlineEdit === 'function') {
+        e.stopPropagation();
+        startInlineEdit(nameEl, card.name, (newName) => {
+          card.name = newName;
+          saveWorldData();
+        });
+      } else {
+        toggleWorldExpand(card.id);
+      }
+    });
 
     return div;
   }
@@ -14965,9 +15101,13 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    if (typeof adjustContextMenuPosition === 'function') {
+      adjustContextMenuPosition(menu, e.clientX, e.clientY);
+    } else {
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.style.display = 'block';
+    }
 
     worldMenuClickHandler = () => hideWorldContextMenu();
     setTimeout(() => document.addEventListener('click', worldMenuClickHandler), 0);
@@ -15041,9 +15181,13 @@ function setupMemoInteractionGuard() {
       };
     });
 
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.display = 'block';
+    if (typeof adjustContextMenuPosition === 'function') {
+      adjustContextMenuPosition(menu, e.clientX, e.clientY);
+    } else {
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.style.display = 'block';
+    }
 
     worldMenuClickHandler = () => hideWorldContextMenu();
     setTimeout(() => document.addEventListener('click', worldMenuClickHandler), 0);
@@ -15492,6 +15636,31 @@ function setupMemoInteractionGuard() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  function exportWorldAsText() {
+    if (worldData.length === 0) {
+      alert('エクスポートする世界観データがありません');
+      return;
+    }
+    const WORLD_LEVELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
+    const lines = [];
+    worldData.forEach(card => {
+      const levelLabel = WORLD_LEVELS[card.level] || card.level;
+      lines.push(`【${levelLabel}】${card.name}`);
+      if (card.description) lines.push(`　${card.description}`);
+      if (card.termTags && card.termTags.length > 0) lines.push(`　用語: ${card.termTags.join(', ')}`);
+      lines.push('');
+    });
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `世界観_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  window.exportWorldAsText = exportWorldAsText;
 
   function importWorldData(file, mode) {
     const reader = new FileReader();

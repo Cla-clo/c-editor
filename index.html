@@ -12321,18 +12321,23 @@ function setupMemoInteractionGuard() {
   }
 
   function toggleStructureViewpointSuggestions() {
+    console.log('[DEBUG] toggleStructureViewpointSuggestions called');
     const container = document.getElementById('structure-viewpoint-suggestions');
+    console.log('[DEBUG] container:', container);
     if (!container) return;
     if (container.style.display === 'none' || !container.style.display) {
       const viewpoints = getAllStructureViewpoints();
+      console.log('[DEBUG] viewpoints:', viewpoints);
       if (viewpoints.length === 0) {
         container.innerHTML = '<span class="no-tags">まだ視点がありません</span>';
       } else {
         container.innerHTML = viewpoints.map(v => `<span class="tag-item" onclick="setStructureViewpoint('${v.replace(/'/g, "\\'")}')">${v}</span>`).join('');
       }
       container.style.display = 'flex';
+      console.log('[DEBUG] container.style.display set to flex');
     } else {
       container.style.display = 'none';
+      console.log('[DEBUG] container hidden');
     }
   }
 
@@ -13027,9 +13032,15 @@ function setupMemoInteractionGuard() {
   }
 
   function toggleCharacterStructureLink(id) {
+    console.log('[DEBUG] toggleCharacterStructureLink called with id:', id);
     const container = document.getElementById('character-edit-structures');
+    console.log('[DEBUG] container:', container);
     const item = container?.querySelector(`[data-id="${id}"]`);
-    if (item) item.classList.toggle('selected');
+    console.log('[DEBUG] item:', item);
+    if (item) {
+      item.classList.toggle('selected');
+      console.log('[DEBUG] item classes after toggle:', item.className);
+    }
   }
 
   function populateCharacterWorldCheckboxes(selectedIds) {
@@ -13436,7 +13447,9 @@ function setupMemoInteractionGuard() {
   }
 
   function toggleCharacterRoleSuggestions() {
+    console.log('[DEBUG] toggleCharacterRoleSuggestions called');
     const container = document.getElementById('character-role-suggestions');
+    console.log('[DEBUG] container:', container);
     if (!container) return;
     if (container.style.display === 'none' || !container.style.display) {
       // プリセット: キー→日本語ラベルのマッピング
@@ -13461,10 +13474,13 @@ function setupMemoInteractionGuard() {
         ).join('');
       }
 
+      console.log('[DEBUG] html:', html);
       container.innerHTML = html;
       container.style.display = 'flex';
+      console.log('[DEBUG] container.style.display set to flex');
     } else {
       container.style.display = 'none';
+      console.log('[DEBUG] container hidden');
     }
   }
 
@@ -14513,7 +14529,9 @@ function setupMemoInteractionGuard() {
   }
 
   function toggleWorldLevelSuggestions() {
+    console.log('[DEBUG] toggleWorldLevelSuggestions called');
     const container = document.getElementById('world-level-suggestions');
+    console.log('[DEBUG] container:', container);
     if (!container) return;
     if (container.style.display === 'none' || !container.style.display) {
       // プリセット: キー→日本語ラベルのマッピング
@@ -14536,10 +14554,13 @@ function setupMemoInteractionGuard() {
         ).join('');
       }
 
+      console.log('[DEBUG] html:', html);
       container.innerHTML = html;
       container.style.display = 'flex';
+      console.log('[DEBUG] container.style.display set to flex');
     } else {
       container.style.display = 'none';
+      console.log('[DEBUG] container hidden');
     }
   }
 

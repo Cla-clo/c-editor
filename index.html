@@ -6125,6 +6125,13 @@ function updateDockSplitState() {
             const btn = document.querySelector(`.ribbon-menu-btn[data-section-target="${section}"]`);
             target?.classList.add('is-active');
             btn?.classList.add('active');
+            if (document.body.classList.contains('ribbon-collapsed')) {
+                document.body.classList.remove('ribbon-collapsed');
+            }
+        }
+        const toggleBtn = document.getElementById('btn-ribbon-toggle');
+        if (toggleBtn) {
+            toggleBtn.textContent = document.body.classList.contains('ribbon-collapsed') ? '▾ 展開' : '▴ たたむ';
         }
         if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
     }

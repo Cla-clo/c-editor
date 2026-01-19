@@ -3742,6 +3742,26 @@
 
   // エラー回避：未実装でも落ちないようにする（最初の<script>の先頭に置く）
   window.updateActiveTabTitle = window.updateActiveTabTitle || function () {};
+
+  // 構成関連の関数を仮定義
+  window.toggleStructureViewpointSuggestions = window.toggleStructureViewpointSuggestions || function(){};
+  window.setStructureViewpoint = window.setStructureViewpoint || function(){};
+  window.toggleStructureCharacterLink = window.toggleStructureCharacterLink || function(){};
+  window.toggleStructureWorldLink = window.toggleStructureWorldLink || function(){};
+
+  // 登場人物関連の関数を仮定義
+  window.toggleCharacterRoleSuggestions = window.toggleCharacterRoleSuggestions || function(){};
+  window.setCharacterRole = window.setCharacterRole || function(){};
+  window.toggleCharacterStructureLink = window.toggleCharacterStructureLink || function(){};
+  window.toggleCharacterWorldLink = window.toggleCharacterWorldLink || function(){};
+
+  // 世界観関連の関数を仮定義
+  window.toggleWorldLevelSuggestions = window.toggleWorldLevelSuggestions || function(){};
+  window.setWorldLevel = window.setWorldLevel || function(){};
+  window.toggleWorldCharacterLink = window.toggleWorldCharacterLink || function(){};
+  window.toggleWorldStructureLink = window.toggleWorldStructureLink || function(){};
+  window.toggleWorldWorldLink = window.toggleWorldWorldLink || function(){};
+
   window.updateMemoCharCount = function () {
     const memoArea = document.getElementById('memo-area');
     const countEl  = document.getElementById('memo-char-count');

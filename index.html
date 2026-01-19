@@ -112,14 +112,120 @@
     body.focus-mode .focus-exit-btn { display: inline-flex; }
 
     header {
-        background: var(--header-bg); padding: 8px 10px;
-        display: flex; justify-content: space-between; align-items: center;
-        flex-shrink: 0; min-height: 46px; border-bottom: 1px solid var(--border-color);
-        z-index: 100; flex-wrap: wrap; gap: 4px;
+        background: var(--header-bg);
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border-color);
+        z-index: 100;
+        gap: 6px;
     }
     body.scroll-mode header { position: sticky; top: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h1 { margin: 0; font-size: 1.0rem; color: var(--text-color); margin-right: 15px; }
     .header-left, .header-right { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .ribbon-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .ribbon-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+    }
+    .app-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .app-icon img { width: 18px; height: 18px; display: block; }
+    .app-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-color);
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .ribbon-menu {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+    .ribbon-menu-btn {
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .ribbon-menu-btn.active {
+        background: var(--panel-bg);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+    .ribbon-menu-item {
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: var(--text-muted);
+    }
+    .ribbon-section {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .ribbon-section[data-section]:not(.ribbon-home) { display: none; }
+    .ribbon-section.is-active { display: flex; }
+    .ribbon-section + .ribbon-section {
+        border-top: 1px solid var(--border-color);
+        padding-top: 6px;
+    }
+    .ribbon-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .ribbon-separator {
+        color: var(--text-muted);
+        margin: 0 4px;
+    }
+    .ribbon-home {
+        justify-content: space-between;
+        width: 100%;
+    }
+    .ribbon-home-left {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .ribbon-toggle { white-space: nowrap; }
+    .ribbon-expand-btn { display: none; white-space: nowrap; }
+    body.ribbon-collapsed .ribbon-row,
+    body.ribbon-collapsed .ribbon-section:not(.ribbon-home) { display: none; }
+    body.ribbon-collapsed .ribbon-home { border-top: none; padding-top: 0; }
+    body.ribbon-collapsed .ribbon-expand-btn { display: inline-flex; }
 
     .btn {
         background: var(--panel-bg); border: 1px solid var(--border-color); padding: 4px 10px;
@@ -2744,6 +2850,7 @@
     wrapReaderViewFunctions();
     wrapRenderInputTabs();
     wrapUpdateInputStats();
+    initRibbonMenu();
     // 既に描画済みのタブへ右クリック/字数表示を反映させるため、1度だけ再描画
     try { if (typeof window.renderInputTabs === 'function') window.renderInputTabs(); } catch(e) {}
     loadTabBaselines();
@@ -2763,77 +2870,123 @@
 </head>
 <body>
 
-<header>
-    <div class="header-left">
-        <h1>ⓒエディタver.0.95</h1>
-        <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
-        <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
+<header class="app-header">
+    <div class="ribbon-row">
+        <div class="ribbon-left">
+            <button class="app-icon" id="app-icon" title="アプリメニュー">
+                <img src="icons/favicon-32.png" alt="アプリアイコン">
+            </button>
+            <span class="app-title" id="app-title">ⓒエディタver.0.95</span>
+            <nav class="ribbon-menu" aria-label="リボンメニュー">
+                <button class="ribbon-menu-btn" data-section-target="file">ファイル</button>
+                <button class="ribbon-menu-btn" data-section-target="edit">編集</button>
+                <button class="ribbon-menu-btn" data-section-target="view">表示</button>
+                <button class="ribbon-menu-btn" data-section-target="work">作品</button>
+                <button class="ribbon-menu-btn" data-section-target="tools">ツール</button>
+                <button class="ribbon-menu-btn" data-section-target="extensions">拡張</button>
+                <button class="ribbon-menu-btn" data-section-target="help">ヘルプ</button>
+            </nav>
+        </div>
+        <button class="btn ribbon-toggle" id="btn-ribbon-toggle" onclick="toggleRibbon()">▴ たたむ</button>
+    </div>
+    <div class="ribbon-section ribbon-file" data-section="file">
+        <div class="ribbon-group">
+            <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
+            <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
+            <div class="header-file-group">
+                <div class="header-file-dropdown" id="text-file-dropdown">
+                    <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
+                    <div class="header-file-dropdown-content">
+                        <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
+                        <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
+                    </div>
+                </div>
+                <div class="header-file-dropdown" id="project-file-dropdown">
+                    <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
+                    <div class="header-file-dropdown-content">
+                        <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
+                        <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-home" data-section="home">
+        <div class="ribbon-home-left">
+            <button class="btn btn-undo" onclick="undoInput()" title="元に戻す">↩</button>
+            <button class="btn btn-undo" onclick="redoInput()" title="やり直し">↪</button>
+            <button class="btn btn-save" onclick="showTextSaveOptions()" title="保存">💾 保存</button>
+            <span class="ribbon-separator">|</span>
+            <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()" data-label="🔍 検索">
+                <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▾</span>
+            </button>
+            <span class="ribbon-separator">|</span>
+            <div class="dropdown">
+                <button class="btn dropdown-btn" onclick="toggleDropdown('insert-dropdown')">📝 挿入</button>
+                <div id="insert-dropdown" class="dropdown-content">
+                    <button onclick="insertText('――')">―― ダッシュ</button>
+                    <button onclick="insertText('……')">…… 三点リーダー</button>
+                    <button onclick="insertText('「」', 1)">「」 鉤括弧</button>
+                    <button onclick="insertText('『』', 1)">『』 二重鉤括弧</button>
+                    <button onclick="insertText('｜《》', 1)">｜《》 ルビ記法</button>
+                    <button onclick="insertText('《《》》', 2)">《《》》 傍点記法</button>
+                    <button onclick="insertText('__下線__', 2)">__下線__ 下線</button>
+                    <button onclick="insertText('==強調==', 2)">==強調== 強調表示</button>
+                    <button onclick="insertRubyToSelection()">🈂️ 選択文字にルビ</button>
+                    <button onclick="insertBoutenToSelection()">⚫ 選択文字に傍点</button>
+                </div>
+            </div>
+        </div>
+        <button class="btn ribbon-expand-btn" id="btn-ribbon-expand" onclick="toggleRibbon()">▾ 展開</button>
+    </div>
+    <div class="ribbon-section ribbon-edit" data-section="edit">
+        <div class="ribbon-group">
+            <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
+            <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-work" data-section="work">
+        <div class="ribbon-group">
+            <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成">
+                <span class="panel-label">📋 構成</span><span class="panel-state-icon">▾</span>
+            </button>
+            <button class="btn panel-toggle" id="btn-toggle-world" onclick="toggleWorldPanel()" data-label="🌍 世界観">
+                <span class="panel-label">🌍 世界観</span><span class="panel-state-icon">▾</span>
+            </button>
+            <button class="btn panel-toggle" id="btn-toggle-character" onclick="toggleCharacterPanel()" data-label="👤 人物">
+                <span class="panel-label">👤 人物</span><span class="panel-state-icon">▾</span>
+            </button>
+            <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
+                <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
+            </button>
+            <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
+                <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
+            </button>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-view" data-section="view">
+        <div class="ribbon-group">
+            <button class="btn btn-view" onclick="openReaderView()" title="全タブをまとめて閲覧（Escで戻る）">👁 閲覧</button>
+            <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
+            <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
+            <button class="btn btn-sync" id="btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-tools" data-section="tools">
+        <div class="ribbon-group">
+            <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="⚙️ 設定">
+                <span class="panel-label">⚙️ 設定</span><span class="panel-state-icon">▾</span>
+            </button>
+            <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
+        </div>
+    </div>
+    <div class="ribbon-section ribbon-extensions" data-section="extensions">
+        <span class="ribbon-menu-item">🚧 開発中</span>
+    </div>
+    <div class="ribbon-section ribbon-help" data-section="help">
         <button class="btn panel-toggle" id="btn-toggle-help" onclick="togglePanel('help-bar')" data-label="❓ 使い方">
             <span class="panel-label">❓ 使い方</span><span class="panel-state-icon">▾</span>
         </button>
-        <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="⚙️ 設定">
-            <span class="panel-label">⚙️ 設定</span><span class="panel-state-icon">▾</span>
-        </button>
-        <div class="dropdown">
-            <button class="btn dropdown-btn" onclick="toggleDropdown('insert-dropdown')">📝 挿入</button>
-            <div id="insert-dropdown" class="dropdown-content">
-                <button onclick="insertText('――')">―― ダッシュ</button>
-                <button onclick="insertText('……')">…… 三点リーダー</button>
-                <button onclick="insertText('「」', 1)">「」 鉤括弧</button>
-                <button onclick="insertText('『』', 1)">『』 二重鉤括弧</button>
-                <button onclick="insertText('｜《》', 1)">｜《》 ルビ記法</button>
-                <button onclick="insertText('《《》》', 2)">《《》》 傍点記法</button>
-                <button onclick="insertText('__下線__', 2)">__下線__ 下線</button>
-                <button onclick="insertText('==強調==', 2)">==強調== 強調表示</button>
-                <button onclick="insertRubyToSelection()">🈂️ 選択文字にルビ</button>
-                <button onclick="insertBoutenToSelection()">⚫ 選択文字に傍点</button>
-            </div>
-        </div>
-        <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
-        <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
-        <button class="btn btn-sync" id="btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
-        <button class="btn btn-view" onclick="openReaderView()" title="全タブをまとめて閲覧（Escで戻る）">👁 閲覧</button>
-        <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
-        <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
-    </div>
-    <div class="header-right">
-        <button class="btn panel-toggle" id="btn-toggle-search" onclick="toggleSearchPanel()" data-label="🔍 検索">
-            <span class="panel-label">🔍 検索</span><span class="panel-state-icon">▾</span>
-        </button>
-        <button class="btn panel-toggle" id="btn-toggle-memo" onclick="toggleMemoPanel()" data-label="📝 メモ">
-            <span class="panel-label">📝 メモ</span><span class="panel-state-icon">▾</span>
-        </button>
-        <button class="btn panel-toggle" id="btn-toggle-structure" onclick="toggleStructurePanel()" data-label="📋 構成">
-            <span class="panel-label">📋 構成</span><span class="panel-state-icon">▾</span>
-        </button>
-        <button class="btn panel-toggle" id="btn-toggle-character" onclick="toggleCharacterPanel()" data-label="👤 人物">
-            <span class="panel-label">👤 人物</span><span class="panel-state-icon">▾</span>
-        </button>
-        <button class="btn panel-toggle" id="btn-toggle-world" onclick="toggleWorldPanel()" data-label="🌍 世界観">
-            <span class="panel-label">🌍 世界観</span><span class="panel-state-icon">▾</span>
-        </button>
-        <button class="btn panel-toggle" id="btn-toggle-outline" onclick="toggleOutlinePanel()" data-label="📑 目次">
-            <span class="panel-label">📑 目次</span><span class="panel-state-icon">▾</span>
-        </button>
-        <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
-        <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
-        <div class="header-file-group">
-            <div class="header-file-dropdown" id="text-file-dropdown">
-                <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
-                <div class="header-file-dropdown-content">
-                    <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
-                    <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
-                </div>
-            </div>
-            <div class="header-file-dropdown" id="project-file-dropdown">
-                <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
-                <div class="header-file-dropdown-content">
-                    <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
-                    <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
-                </div>
-            </div>
-        </div>
-        <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
     </div>
 </header>
 
@@ -5917,6 +6070,34 @@ function updateDockSplitState() {
         const controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
         const top = Math.round(headerHeight + controlsHeight + padding);
         document.documentElement.style.setProperty('--dock-top', `${top}px`);
+    }
+    function setActiveRibbonSection(section) {
+        const sections = document.querySelectorAll('.ribbon-section[data-section]');
+        const buttons = document.querySelectorAll('.ribbon-menu-btn[data-section-target]');
+        const isSame = document.querySelector(`.ribbon-section.is-active[data-section="${section}"]`);
+        sections.forEach((el) => el.classList.remove('is-active'));
+        buttons.forEach((btn) => btn.classList.remove('active'));
+        if (section && !isSame) {
+            const target = document.querySelector(`.ribbon-section[data-section="${section}"]`);
+            const btn = document.querySelector(`.ribbon-menu-btn[data-section-target="${section}"]`);
+            target?.classList.add('is-active');
+            btn?.classList.add('active');
+        }
+        if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+    }
+    function initRibbonMenu() {
+        const buttons = document.querySelectorAll('.ribbon-menu-btn[data-section-target]');
+        if (!buttons.length) return;
+        buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const section = btn.dataset.sectionTarget;
+                setActiveRibbonSection(section || '');
+            });
+        });
+    }
+    function toggleRibbon() {
+        document.body.classList.toggle('ribbon-collapsed');
+        if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
     }
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {

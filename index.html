@@ -151,7 +151,7 @@
         cursor: pointer;
         flex-shrink: 0;
     }
-    .app-icon img { width: 18px; height: 18px; display: block; }
+    .app-icon img { width: 18px; height: 18px; display: block; border-radius: 4px; }
     .app-title {
         font-weight: 600;
         font-size: 0.95rem;
@@ -2888,37 +2888,14 @@
             <span class="app-title" id="app-title">ⓒエディタver.0.95</span>
             <nav class="ribbon-menu" aria-label="リボンメニュー">
                 <button class="ribbon-menu-btn" data-section-target="file" onclick="setActiveRibbonSection('file')">ファイル</button>
-                <button class="ribbon-menu-btn" data-section-target="edit" onclick="setActiveRibbonSection('edit')">編集</button>
                 <button class="ribbon-menu-btn" data-section-target="view" onclick="setActiveRibbonSection('view')">表示</button>
                 <button class="ribbon-menu-btn" data-section-target="work" onclick="setActiveRibbonSection('work')">作品</button>
-                <button class="ribbon-menu-btn" data-section-target="tools" onclick="setActiveRibbonSection('tools')">ツール</button>
+                <button class="ribbon-menu-btn" data-section-target="tools" onclick="togglePanel('settings-bar')">ツール</button>
                 <button class="ribbon-menu-btn" data-section-target="extensions" onclick="setActiveRibbonSection('extensions')">拡張</button>
                 <button class="ribbon-menu-btn" data-section-target="help" onclick="setActiveRibbonSection('help')">ヘルプ</button>
             </nav>
         </div>
         <button class="btn ribbon-toggle" id="btn-ribbon-toggle" onclick="toggleRibbon()">▴ たたむ</button>
-    </div>
-    <div class="ribbon-section ribbon-file" data-section="file">
-        <div class="ribbon-group">
-            <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
-            <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
-            <div class="header-file-group">
-                <div class="header-file-dropdown" id="text-file-dropdown">
-                    <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
-                    <div class="header-file-dropdown-content">
-                        <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
-                        <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
-                    </div>
-                </div>
-                <div class="header-file-dropdown" id="project-file-dropdown">
-                    <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
-                    <div class="header-file-dropdown-content">
-                        <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
-                        <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
     <div class="ribbon-section ribbon-home" data-section="home">
         <div class="ribbon-home-left">
@@ -2947,10 +2924,26 @@
             </div>
         </div>
     </div>
-    <div class="ribbon-section ribbon-edit" data-section="edit">
+    <div class="ribbon-section ribbon-file" data-section="file">
         <div class="ribbon-group">
-            <button class="btn" onclick="toggleLayoutAxis()">縦横切替</button>
-            <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">入替</button>
+            <input type="file" id="file-input" accept=".txt" onchange="loadFile(this)">
+            <input type="file" id="project-file-input" accept=".ccproj,.json" onchange="handleProjectFileLoad(this)">
+            <div class="header-file-group">
+                <div class="header-file-dropdown" id="text-file-dropdown">
+                    <button class="btn btn-text-file" onclick="toggleTextFileDropdown()" title="テキストファイル">📄 テキスト ▾</button>
+                    <div class="header-file-dropdown-content">
+                        <div class="dropdown-item" onclick="openFileWithChoice(); closeAllFileDropdowns();">📂 開く</div>
+                        <div class="dropdown-item" onclick="showTextSaveOptions(); closeAllFileDropdowns();">💾 保存</div>
+                    </div>
+                </div>
+                <div class="header-file-dropdown" id="project-file-dropdown">
+                    <button class="btn btn-project-file" onclick="toggleProjectFileDropdown()" title="プロジェクトファイル">📦 プロジェクト ▾</button>
+                    <div class="header-file-dropdown-content">
+                        <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
+                        <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="ribbon-section ribbon-work" data-section="work">
@@ -2974,18 +2967,13 @@
     </div>
     <div class="ribbon-section ribbon-view" data-section="view">
         <div class="ribbon-group">
+            <button class="btn" onclick="toggleLayoutAxis()">↕ 縦横切替</button>
+            <button class="btn" id="btn-layout-swap" onclick="toggleLayoutOrder()">⇄ 入替</button>
+            <span class="ribbon-separator">|</span>
             <button class="btn btn-view" onclick="openReaderView()" title="全タブをまとめて閲覧（Escで戻る）">👁 閲覧</button>
             <button class="btn btn-analysis" onclick="showAnalysis()">📊 分析</button>
             <button class="btn btn-focus" id="btn-focus" onclick="toggleFocusMode()">🧘 集中</button>
             <button class="btn btn-sync" id="btn-sync" onclick="syncPreviewPosition()">📲 同期</button>
-        </div>
-    </div>
-    <div class="ribbon-section ribbon-tools" data-section="tools">
-        <div class="ribbon-group">
-            <button class="btn panel-toggle" id="btn-toggle-settings" onclick="togglePanel('settings-bar')" data-label="⚙️ 設定">
-                <span class="panel-label">⚙️ 設定</span><span class="panel-state-icon">▾</span>
-            </button>
-            <button class="btn btn-reset-input" onclick="confirmResetInput()" title="入力を初期化します">💀</button>
         </div>
     </div>
     <div class="ribbon-section ribbon-extensions" data-section="extensions">
@@ -2999,7 +2987,7 @@
 </header>
 
 <div id="app-context-menu" class="context-menu" role="menu" aria-label="アプリメニュー">
-    <div class="context-menu-item" data-action="reset-all">🔄 全体初期化</div>
+    <div class="context-menu-item" data-action="reset-all">💀 全体初期化</div>
 </div>
 
 <div class="controls-wrapper">
@@ -6102,7 +6090,7 @@ function updateDockSplitState() {
             if (!item) return;
             const action = item.dataset.action;
             if (action === 'reset-all') {
-                resetAllSettings();
+                confirmResetInput();
             }
             menu.classList.remove('show');
         });

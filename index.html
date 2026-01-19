@@ -1312,6 +1312,72 @@
         border-color: #047857;
     }
 
+    .card-linked-section {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--border-color);
+        font-size: 0.75rem;
+    }
+    .card-linked-label {
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+    .card-linked-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .card-linked-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        border: 1px solid var(--border-color);
+        background: var(--panel-bg);
+        cursor: default;
+        white-space: nowrap;
+    }
+    .card-linked-badge {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+        border-radius: 6px;
+        background: rgba(0,0,0,0.06);
+        color: var(--text-muted);
+    }
+    .card-linked-character {
+        background: #fce7f3;
+        color: #be185d;
+        border-color: #f9a8d4;
+    }
+    .card-linked-world {
+        background: #d1fae5;
+        color: #065f46;
+        border-color: #6ee7b7;
+    }
+    .card-linked-structure {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-color: #93c5fd;
+    }
+    body.theme-dark .card-linked-character {
+        background: #831843;
+        color: #f9a8d4;
+        border-color: #be185d;
+    }
+    body.theme-dark .card-linked-world {
+        background: #064e3b;
+        color: #a7f3d0;
+        border-color: #047857;
+    }
+    body.theme-dark .card-linked-structure {
+        background: #1e3a8a;
+        color: #bfdbfe;
+        border-color: #3b82f6;
+    }
+
     /* リンク情報ポップアップ */
     .structure-link-popup {
         position: fixed;
@@ -3549,6 +3615,12 @@
             </div>
         </div>
         <div class="world-edit-field">
+            <label>関連する構成</label>
+            <div id="world-edit-structures" class="structure-link-select-container">
+                <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">構成パネルにカードを追加してください</div>
+            </div>
+        </div>
+        <div class="world-edit-field">
             <label>関連する世界観</label>
             <div id="world-edit-worlds" class="structure-link-select-container">
                 <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">他の世界観設定と関連付け</div>
@@ -3664,6 +3736,9 @@
 // パネル操作中フラグ（浮動パネルが意図せず閉じないようにする）
 window.memoInteracting = false;
 window.outlineInteracting = false;
+window.structureInteracting = false;
+window.characterInteracting = false;
+window.worldInteracting = false;
 
 function setupMemoInteractionGuard() {
   const memo = document.getElementById('memo-panel');
@@ -3698,6 +3773,57 @@ function setupOutlineInteractionGuard() {
   outline.addEventListener('pointerdown', on, { capture: true });
   outline.addEventListener('pointerup', off, { capture: true });
   outline.addEventListener('pointercancel', off, { capture: true });
+}
+
+function setupStructureInteractionGuard() {
+  const panel = document.getElementById('structure-panel');
+  if (!panel) return;
+
+  const on = () => { window.structureInteracting = true; };
+  const off = () => { window.structureInteracting = false; };
+
+  panel.addEventListener('pointerenter', on);
+  panel.addEventListener('pointerleave', off);
+  panel.addEventListener('focusin', on);
+  panel.addEventListener('focusout', off);
+  const delayedOff = () => setTimeout(off, 0);
+  panel.addEventListener('pointerdown', on, { capture: true });
+  panel.addEventListener('pointerup', delayedOff, { capture: true });
+  panel.addEventListener('pointercancel', delayedOff, { capture: true });
+}
+
+function setupCharacterInteractionGuard() {
+  const panel = document.getElementById('character-panel');
+  if (!panel) return;
+
+  const on = () => { window.characterInteracting = true; };
+  const off = () => { window.characterInteracting = false; };
+
+  panel.addEventListener('pointerenter', on);
+  panel.addEventListener('pointerleave', off);
+  panel.addEventListener('focusin', on);
+  panel.addEventListener('focusout', off);
+  const delayedOff = () => setTimeout(off, 0);
+  panel.addEventListener('pointerdown', on, { capture: true });
+  panel.addEventListener('pointerup', delayedOff, { capture: true });
+  panel.addEventListener('pointercancel', delayedOff, { capture: true });
+}
+
+function setupWorldInteractionGuard() {
+  const panel = document.getElementById('world-panel');
+  if (!panel) return;
+
+  const on = () => { window.worldInteracting = true; };
+  const off = () => { window.worldInteracting = false; };
+
+  panel.addEventListener('pointerenter', on);
+  panel.addEventListener('pointerleave', off);
+  panel.addEventListener('focusin', on);
+  panel.addEventListener('focusout', off);
+  const delayedOff = () => setTimeout(off, 0);
+  panel.addEventListener('pointerdown', on, { capture: true });
+  panel.addEventListener('pointerup', delayedOff, { capture: true });
+  panel.addEventListener('pointercancel', delayedOff, { capture: true });
 }
 
 // タブバー左右スクロール
@@ -3766,6 +3892,9 @@ function initTabScrollers() {
 // 起動時に1回だけセットアップ
 setupMemoInteractionGuard();
 setupOutlineInteractionGuard();
+setupStructureInteractionGuard();
+setupCharacterInteractionGuard();
+setupWorldInteractionGuard();
 initTabScrollers();
 
 	
@@ -5680,7 +5809,7 @@ function updateDockSplitState() {
     // Close non-docked memo/outline/structure/character/world/search on outside click
     document.addEventListener('click', e => {
         // パネル操作中（タブクリック等）に誤って閉じないようにする
-        if (window.memoInteracting || window.outlineInteracting) return;
+        if (window.memoInteracting || window.outlineInteracting || window.structureInteracting || window.characterInteracting || window.worldInteracting) return;
         // モーダルやダイアログ、コンテキストメニュー、色選択が開いている場合は閉じない
         if (e.target.closest('.modal-overlay') || e.target.closest('.save-dialog-overlay') || e.target.closest('.import-dialog-overlay')) return;
         if (e.target.closest('#structure-edit-modal') || e.target.closest('#character-edit-modal') || e.target.closest('#world-edit-modal')) return;
@@ -10374,7 +10503,7 @@ function setupMemoInteractionGuard() {
       }
 
       // Pane header right-click for header color
-      const header = e.target.closest('.pane-header, .memo-header, .outline-header, .structure-header');
+      const header = e.target.closest('.pane-header, .memo-header, .outline-header, .structure-header, .character-header, .world-header');
       if (header && !e.target.closest('#novel-title')) {
         e.preventDefault();
         showHeaderContextMenu(e, header);
@@ -10448,7 +10577,7 @@ function setupMemoInteractionGuard() {
       document.body.appendChild(menu);
     }
 
-    const paneId = header.closest('.pane, #memo-panel, #outline-panel, #structure-panel')?.id || '';
+    const paneId = header.closest('.pane, #memo-panel, #outline-panel, #structure-panel, #character-panel, #world-panel')?.id || '';
     menu.dataset.paneId = paneId;
 
     menu.innerHTML = `
@@ -10605,6 +10734,8 @@ function setupMemoInteractionGuard() {
       'outline-panel': '--pane-outline-head',
       'search-panel': '--pane-search-head',
       'structure-panel': '--pane-structure-head',
+      'character-panel': '--pane-character-head',
+      'world-panel': '--pane-world-head',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#f9fafb') : '#f9fafb';
@@ -10684,6 +10815,8 @@ function setupMemoInteractionGuard() {
       'outline-panel': '--pane-outline-bg',
       'search-panel': '--pane-search-bg',
       'structure-panel': '--pane-structure-bg',
+      'character-panel': '--pane-character-bg',
+      'world-panel': '--pane-world-bg',
     };
     const varName = paneMap[paneId] || '';
     const currentColor = varName ? (getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#ffffff') : '#ffffff';
@@ -12548,6 +12681,8 @@ function setupMemoInteractionGuard() {
         characterData = (parsed.data || []).map(card => ({
           ...card,
           selected: false,
+          linkedStructures: card.linkedStructures || [],
+          linkedWorlds: card.linkedWorlds || [],
           // expanded (boolean) から expandLevel (0,1,2) への移行対応
           expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
@@ -12581,6 +12716,8 @@ function setupMemoInteractionGuard() {
       role: role,
       affiliationTags: [],
       freeTags: [],
+      linkedStructures: [],
+      linkedWorlds: [],
       description: '',
       color: null,
       expandLevel: 0,
@@ -12632,6 +12769,32 @@ function setupMemoInteractionGuard() {
       ? card.freeTags.map(t => `<span class="character-free-tag">${escapeHtml(t)}</span>`).join('')
       : '';
 
+    const structureData = window.getStructureData ? window.getStructureData() : [];
+    const worldData = window.getWorldData ? window.getWorldData() : [];
+    const STRUCTURE_LEVEL_LABELS = { chapter: '章', episode: '話', scene: 'シーン' };
+    const WORLD_LEVELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
+
+    const linkedStructuresHtml = (card.linkedStructures || []).map(sid => {
+      const struct = structureData.find(s => s.id === sid);
+      if (!struct) return '';
+      const levelLabel = STRUCTURE_LEVEL_LABELS[struct.level] || struct.level || '';
+      return `<span class="card-linked-item card-linked-structure">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+    }).join('');
+
+    const linkedWorldsHtml = (card.linkedWorlds || []).map(wid => {
+      const world = worldData.find(w => w.id === wid);
+      if (!world) return '';
+      const levelLabel = WORLD_LEVELS[world.level] || world.level || '';
+      return `<span class="card-linked-item card-linked-world">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+    }).join('');
+
+    const linkedSectionHtml = (linkedStructuresHtml || linkedWorldsHtml) ? `
+      <div class="card-linked-section">
+        ${linkedStructuresHtml ? `<div class="card-linked-label">構成</div><div class="card-linked-items">${linkedStructuresHtml}</div>` : ''}
+        ${linkedWorldsHtml ? `<div class="card-linked-label" style="margin-top:6px;">世界観</div><div class="card-linked-items">${linkedWorldsHtml}</div>` : ''}
+      </div>
+    ` : '';
+
     // 展開レベルに応じたトグルアイコン
     const toggleSymbols = ['▶', '▽', '▼'];
     const toggleSymbol = toggleSymbols[Math.min(level, 2)];
@@ -12656,6 +12819,7 @@ function setupMemoInteractionGuard() {
         ${freeTagsHtml ? `<div class="character-field"><div class="character-field-label">🔖</div><div class="character-tags">${freeTagsHtml}</div></div>` : ''}
         ${descPreview ? `<div class="character-description-preview">${escapeHtml(descPreview)}</div>` : ''}
         ${card.description ? `<div class="character-field character-description"><div class="character-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${linkedSectionHtml}
         <div class="character-card-actions">
           <button onclick="openCharacterEditModal(${card.id})">✏️ 編集</button>
           <button onclick="duplicateCharacterCard(${card.id})">📋 複製</button>
@@ -13158,7 +13322,7 @@ function setupMemoInteractionGuard() {
   function toggleCharacterRoleSuggestions() {
     const container = document.getElementById('character-role-suggestions');
     if (!container) return;
-    if (container.style.display === 'none') {
+    if (container.style.display === 'none' || !container.style.display) {
       // プリセット: キー→日本語ラベルのマッピング
       const ROLE_PRESETS = [
         { key: 'protagonist', label: '主人公' },
@@ -13203,7 +13367,7 @@ function setupMemoInteractionGuard() {
   function toggleCharacterAffiliationSuggestions() {
     const container = document.getElementById('character-affiliation-suggestions');
     if (!container) return;
-    if (container.style.display === 'none') {
+    if (container.style.display === 'none' || !container.style.display) {
       const tags = getAllCharacterAffiliationTags();
       if (tags.length === 0) {
         container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
@@ -13219,7 +13383,7 @@ function setupMemoInteractionGuard() {
   function toggleCharacterFreetagSuggestions() {
     const container = document.getElementById('character-freetag-suggestions');
     if (!container) return;
-    if (container.style.display === 'none') {
+    if (container.style.display === 'none' || !container.style.display) {
       const tags = getAllCharacterFreeTags();
       if (tags.length === 0) {
         container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
@@ -13398,6 +13562,8 @@ function setupMemoInteractionGuard() {
             isNew: false,
             affiliationTags: card.affiliationTags || [],
             freeTags: card.freeTags || [],
+            linkedStructures: card.linkedStructures || [],
+            linkedWorlds: card.linkedWorlds || [],
             expandLevel: card.expandLevel || 0
           }));
           characterNextId = imported.nextId || (Math.max(...characterData.map(c => c.id), 0) + 1);
@@ -13411,6 +13577,8 @@ function setupMemoInteractionGuard() {
             isNew: false,
             affiliationTags: card.affiliationTags || [],
             freeTags: card.freeTags || [],
+            linkedStructures: card.linkedStructures || [],
+            linkedWorlds: card.linkedWorlds || [],
             expandLevel: card.expandLevel || 0
           }));
           characterData = [...characterData, ...newCards];
@@ -13507,6 +13675,9 @@ function setupMemoInteractionGuard() {
         worldData = (parsed.data || []).map(card => ({
           ...card,
           selected: false,
+          linkedCharacters: card.linkedCharacters || [],
+          linkedWorlds: card.linkedWorlds || [],
+          linkedStructures: card.linkedStructures || [],
           // expanded (boolean) から expandLevel (0,1,2) への移行対応
           expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
@@ -13538,6 +13709,9 @@ function setupMemoInteractionGuard() {
       name: WORLD_LEVELS[level] + (count + 1),
       level: level,
       termTags: [],
+      linkedCharacters: [],
+      linkedWorlds: [],
+      linkedStructures: [],
       description: '',
       color: null,
       expandLevel: 0,
@@ -13586,6 +13760,41 @@ function setupMemoInteractionGuard() {
       ? card.termTags.map(t => `<span class="world-term-tag">${escapeHtml(t)}</span>`).join('')
       : '';
 
+    const characterData = window.getCharacterData ? window.getCharacterData() : [];
+    const structureData = window.getStructureData ? window.getStructureData() : [];
+    const LEVEL_LABELS = { major: '大カテゴリ', middle: '中カテゴリ', detail: '詳細' };
+    const STRUCTURE_LEVEL_LABELS = { chapter: '章', episode: '話', scene: 'シーン' };
+    const ROLE_LABELS = { protagonist: '主人公', heroine: 'ヒロイン', antagonist: '敵役', supporting: 'サブ', mob: 'モブ' };
+
+    const linkedCharactersHtml = (card.linkedCharacters || []).map(cid => {
+      const char = characterData.find(c => c.id === cid);
+      if (!char) return '';
+      const roleLabel = ROLE_LABELS[char.role] || char.role || '';
+      return `<span class="card-linked-item card-linked-character">👤 ${escapeHtml(char.name)}${roleLabel ? `<span class="card-linked-badge">${roleLabel}</span>` : ''}</span>`;
+    }).join('');
+
+    const linkedStructuresHtml = (card.linkedStructures || []).map(sid => {
+      const struct = structureData.find(s => s.id === sid);
+      if (!struct) return '';
+      const levelLabel = STRUCTURE_LEVEL_LABELS[struct.level] || struct.level || '';
+      return `<span class="card-linked-item card-linked-structure">📋 ${escapeHtml(struct.title)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+    }).join('');
+
+    const linkedWorldsHtml = (card.linkedWorlds || []).map(wid => {
+      const world = worldData.find(w => w.id === wid);
+      if (!world) return '';
+      const levelLabel = LEVEL_LABELS[world.level] || world.level || '';
+      return `<span class="card-linked-item card-linked-world">🌍 ${escapeHtml(world.name)}${levelLabel ? `<span class="card-linked-badge">${levelLabel}</span>` : ''}</span>`;
+    }).join('');
+
+    const linkedSectionHtml = (linkedCharactersHtml || linkedStructuresHtml || linkedWorldsHtml) ? `
+      <div class="card-linked-section">
+        ${linkedCharactersHtml ? `<div class="card-linked-label">登場人物</div><div class="card-linked-items">${linkedCharactersHtml}</div>` : ''}
+        ${linkedStructuresHtml ? `<div class="card-linked-label" style="margin-top:6px;">構成</div><div class="card-linked-items">${linkedStructuresHtml}</div>` : ''}
+        ${linkedWorldsHtml ? `<div class="card-linked-label" style="margin-top:6px;">世界観</div><div class="card-linked-items">${linkedWorldsHtml}</div>` : ''}
+      </div>
+    ` : '';
+
     // 展開レベルに応じたトグルアイコン
     const toggleSymbols = ['▶', '▽', '▼'];
     const toggleSymbol = toggleSymbols[Math.min(expandLevel, 2)];
@@ -13608,6 +13817,7 @@ function setupMemoInteractionGuard() {
         ${termTagsHtml ? `<div class="world-field"><div class="world-field-label">🏷</div><div class="world-tags">${termTagsHtml}</div></div>` : ''}
         ${descPreview ? `<div class="world-description-preview">${escapeHtml(descPreview)}</div>` : ''}
         ${card.description ? `<div class="world-field world-description"><div class="world-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${linkedSectionHtml}
         <div class="world-card-actions">
           <button onclick="openWorldEditModal(${card.id})">✏️ 編集</button>
           <button onclick="duplicateWorldCard(${card.id})">📋 複製</button>
@@ -13689,6 +13899,7 @@ function setupMemoInteractionGuard() {
 
     // 関連する登場人物と世界観をチェックボックスで表示
     populateWorldCharacterCheckboxes(card.linkedCharacters || []);
+    populateWorldStructureCheckboxes(card.linkedStructures || []);
     populateWorldWorldCheckboxes(card.id, card.linkedWorlds || []);
 
     document.getElementById('world-edit-modal').classList.add('show');
@@ -13714,6 +13925,30 @@ function setupMemoInteractionGuard() {
 
   function toggleWorldCharacterLink(id) {
     const container = document.getElementById('world-edit-characters');
+    const item = container?.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle('selected');
+  }
+
+  function populateWorldStructureCheckboxes(selectedIds) {
+    const container = document.getElementById('world-edit-structures');
+    if (!container) return;
+
+    const structureData = window.getStructureData ? window.getStructureData() : [];
+    if (structureData.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">構成パネルにカードを追加してください</div>';
+      return;
+    }
+
+    const LEVEL_LABELS = { chapter: '章', episode: '話', scene: 'シーン' };
+    container.innerHTML = structureData.map(s => {
+      const selected = selectedIds.includes(s.id) ? 'selected' : '';
+      const levelLabel = LEVEL_LABELS[s.level] || s.level || '';
+      return `<span class="link-tag-item ${selected}" data-id="${s.id}" onclick="toggleWorldStructureLink(${s.id})">${escapeHtml(s.title)}${levelLabel ? `<span class="link-tag-badge">${levelLabel}</span>` : ''}</span>`;
+    }).join('');
+  }
+
+  function toggleWorldStructureLink(id) {
+    const container = document.getElementById('world-edit-structures');
     const item = container?.querySelector(`[data-id="${id}"]`);
     if (item) item.classList.toggle('selected');
   }
@@ -13778,6 +14013,13 @@ function setupMemoInteractionGuard() {
     if (charContainer) {
       const selectedChars = charContainer.querySelectorAll('.link-tag-item.selected');
       card.linkedCharacters = Array.from(selectedChars).map(el => parseInt(el.dataset.id));
+    }
+
+    // 関連する構成を取得（タグクリック形式）
+    const structureContainer = document.getElementById('world-edit-structures');
+    if (structureContainer) {
+      const selectedStructures = structureContainer.querySelectorAll('.link-tag-item.selected');
+      card.linkedStructures = Array.from(selectedStructures).map(el => parseInt(el.dataset.id));
     }
 
     // 関連する世界観を取得（タグクリック形式）
@@ -14140,7 +14382,7 @@ function setupMemoInteractionGuard() {
   function toggleWorldLevelSuggestions() {
     const container = document.getElementById('world-level-suggestions');
     if (!container) return;
-    if (container.style.display === 'none') {
+    if (container.style.display === 'none' || !container.style.display) {
       // プリセット: キー→日本語ラベルのマッピング
       const LEVEL_PRESETS = [
         { key: 'major', label: '大カテゴリ' },
@@ -14183,7 +14425,7 @@ function setupMemoInteractionGuard() {
   function toggleWorldTermtagSuggestions() {
     const container = document.getElementById('world-termtag-suggestions');
     if (!container) return;
-    if (container.style.display === 'none') {
+    if (container.style.display === 'none' || !container.style.display) {
       const tags = getAllWorldTermTags();
       if (tags.length === 0) {
         container.innerHTML = '<span class="no-tags">まだタグがありません</span>';
@@ -14351,6 +14593,9 @@ function setupMemoInteractionGuard() {
             selected: false,
             isNew: false,
             termTags: card.termTags || [],
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || [],
+            linkedStructures: card.linkedStructures || [],
             expandLevel: card.expandLevel || 0
           }));
           worldNextId = imported.nextId || (Math.max(...worldData.map(c => c.id), 0) + 1);
@@ -14363,6 +14608,9 @@ function setupMemoInteractionGuard() {
             selected: false,
             isNew: false,
             termTags: card.termTags || [],
+            linkedCharacters: card.linkedCharacters || [],
+            linkedWorlds: card.linkedWorlds || [],
+            linkedStructures: card.linkedStructures || [],
             expandLevel: card.expandLevel || 0
           }));
           worldData = [...worldData, ...newCards];

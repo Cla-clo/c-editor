@@ -6078,6 +6078,16 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
     }
 
     let searchMatches = [], currentMatchIndex = -1;
+    let panelZIndexCounter = 210;
+    function bringPanelToFront(panel, isDocked) {
+      if (!panel) return;
+      if (isDocked) {
+        panel.style.zIndex = '';
+        return;
+      }
+      panel.style.zIndex = String(panelZIndexCounter++);
+    }
+    window.bringPanelToFront = bringPanelToFront;
     function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }
     function updateSearchInfo() { const i = document.getElementById('search-match-info'); if (searchMatches.length === 0) { i.innerText = '0 / 0'; i.style.color = '#999'; } else { i.innerText = `${currentMatchIndex + 1} / ${searchMatches.length}`; i.style.color = '#15803d'; } }
     function findNext() { if (searchMatches.length === 0) doSearch(); else { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; jumpToMatch(); updateSearchInfo(); } }
@@ -6138,6 +6148,13 @@ function toggleMemoPanel() {
     checkbox.checked = false;
     toggleMemoDock();
     panel.classList.remove('open');
+  }
+
+  const isDockedNow = checkbox.checked;
+  if (panel.classList.contains('open')) {
+    bringPanelToFront(panel, isDockedNow);
+  } else {
+    panel.style.zIndex = '';
   }
 
   if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -6469,6 +6486,13 @@ function toggleOutlinePanel() {
         checkbox.checked = false;
         toggleOutlineDock();
         panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+        if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+        panel.style.zIndex = '';
     }
 
     applyPaneWidthSettings();
@@ -10272,6 +10296,13 @@ function setupMemoInteractionGuard() {
       panel.style.display = 'none';
     }
 
+    const isDockedNow = checkbox && checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
+    }
+
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
     try{ if (typeof window.updatePanelButtonStates==='function') window.updatePanelButtonStates(); }catch(e){}
     try{ if (typeof window.updateDockSplitState==='function') window.updateDockSplitState(); }catch(e){}
@@ -10305,6 +10336,13 @@ function setupMemoInteractionGuard() {
       if (checkbox) checkbox.checked = false;
       if (typeof window.toggleOutlineDock === 'function') window.toggleOutlineDock();
       panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox && checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
     }
 
     try{ if (typeof window.applyPaneWidthSettings==='function') window.applyPaneWidthSettings(); }catch(e){}
@@ -12569,6 +12607,13 @@ function setupMemoInteractionGuard() {
       panel.classList.remove('open');
     }
 
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
+    }
+
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
     if (typeof updatePanelButtonStates === 'function') updatePanelButtonStates();
     updateStructureButtonState();
@@ -13598,6 +13643,13 @@ function setupMemoInteractionGuard() {
       checkbox.checked = false;
       toggleCharacterDock();
       panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
     }
 
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -14656,6 +14708,13 @@ function setupMemoInteractionGuard() {
       checkbox.checked = false;
       toggleWorldDock();
       panel.classList.remove('open');
+    }
+
+    const isDockedNow = checkbox.checked;
+    if (panel.classList.contains('open')) {
+      if (window.bringPanelToFront) window.bringPanelToFront(panel, isDockedNow);
+    } else {
+      panel.style.zIndex = '';
     }
 
     if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();

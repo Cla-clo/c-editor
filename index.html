@@ -471,17 +471,19 @@
 
     .pane-header {
         background: var(--pane-header-bg); padding: 0 10px; color: var(--text-muted); height: 28px;
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex; justify-content: flex-start; align-items: center;
         border-bottom: 1px solid var(--border-color); flex-shrink: 0;
     }
-    .pane-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; }
+    .pane-title { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;}
+    .pane-header h2 { margin: 0; font-size: 0.8rem; font-weight: bold; flex: 1; min-width: 0; overflow: hidden;}
     .novel-title-name {
         font-weight: bold; color: var(--text-color);
         background: var(--panel-bg); border: 1px solid var(--border-color);
         border-radius: 4px; padding: 1px 6px;
         cursor: text;
-        max-width: 200px;
+        width: fit-content;
+		max-width: 100%;
+		min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -491,7 +493,7 @@
     .pane-total-stats {
         font-size: 0.7rem; color: var(--text-muted);
         background: var(--panel-bg); border: 1px solid var(--border-color);
-        border-radius: 999px; padding: 1px 6px; white-space: nowrap;
+        border-radius: 999px; padding: 1px 6px; white-space: nowrap; flex: 0 0 auto; margin-left: auto;
     }
 
     /* プレビュー上部（タイトル/タブバー）を羊皮紙っぽい色へ */
@@ -2911,7 +2913,7 @@
                 <button class="ribbon-menu-btn" data-section-target="help" onclick="setActiveRibbonSection('help')">ヘルプ</button>
             </nav>
         </div>
-        <button class="btn ribbon-toggle" id="btn-ribbon-toggle" onclick="toggleRibbon()">▴ たたむ</button>
+        <button class="btn ribbon-toggle" id="btn-ribbon-toggle" onclick="toggleRibbonContent()">▴ パネルをたたむ</button>
     </div>
     <div class="ribbon-section ribbon-home" data-section="home">
         <div class="ribbon-home-left">
@@ -2938,7 +2940,7 @@
                 </div>
             </div>
         </div>
-        <button class="btn ribbon-home-toggle" id="btn-ribbon-home-toggle" onclick="toggleRibbon()" title="リボン展開/たたむ">▴</button>
+        <button class="btn ribbon-home-toggle" id="btn-ribbon-home-toggle" onclick="toggleRibbon()" title="リボン展開/たたむ">▴ リボンをたたむ</button>
     </div>
     <div class="ribbon-section ribbon-file" data-section="file">
         <div class="ribbon-group">
@@ -6238,42 +6240,66 @@ function updateDockSplitState() {
         const isCollapsed = document.body.classList.contains('ribbon-collapsed');
         const isUltra = document.body.classList.contains('ribbon-ultra-collapsed');
         if (toggleBtn) {
-            toggleBtn.textContent = (isCollapsed || isUltra) ? '▾ 展開' : '▴ たたむ';
+            toggleBtn.textContent = (isCollapsed || isUltra) ? '▾ パネルを展開' : '▴ パネルをたたむ';
         }
         if (homeToggleBtn) {
-            homeToggleBtn.textContent = (isCollapsed || isUltra) ? '▾' : '▴';
+            homeToggleBtn.textContent = (isCollapsed || isUltra) ? '▾ リボンをたたむ' : '▴ リボンを表示';
         }
         if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
     }
-    function toggleRibbon() {
-        const isCollapsed = document.body.classList.contains('ribbon-collapsed');
-        const isUltraCollapsed = document.body.classList.contains('ribbon-ultra-collapsed');
-        const toggleBtn = document.getElementById('btn-ribbon-toggle');
-        const homeToggleBtn = document.getElementById('btn-ribbon-home-toggle');
+    function updateRibbonToggleLabels() {
+    const toggleBtn = document.getElementById('btn-ribbon-toggle');
+    const homeToggleBtn = document.getElementById('btn-ribbon-home-toggle');
+    const isCollapsed = document.body.classList.contains('ribbon-collapsed');
+    const isUltra = document.body.classList.contains('ribbon-ultra-collapsed');
 
-        if (isUltraCollapsed) {
-            // ultra-collapsed → expanded
-            document.body.classList.remove('ribbon-ultra-collapsed');
-            document.body.classList.remove('ribbon-collapsed');
-            if (toggleBtn) toggleBtn.textContent = '▴ たたむ';
-            if (homeToggleBtn) homeToggleBtn.textContent = '▴';
-        } else if (isCollapsed) {
-            // collapsed → ultra-collapsed
-            document.body.classList.remove('ribbon-collapsed');
-            document.body.classList.add('ribbon-ultra-collapsed');
-            if (toggleBtn) toggleBtn.textContent = '▾ 展開';
-            if (homeToggleBtn) homeToggleBtn.textContent = '▾';
-        } else {
-            // expanded → collapsed
-            document.body.classList.add('ribbon-collapsed');
-            if (toggleBtn) toggleBtn.textContent = '▾ たたむ';
-            if (homeToggleBtn) homeToggleBtn.textContent = '▾';
-        }
-        if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+    // 上段ボタン：展開部分の折りたたみ用
+    if (toggleBtn) {
+        toggleBtn.textContent = (isCollapsed || isUltra) ? '▾ パネルを展開' : '▴ パネルをたたむ';
     }
-    window.setActiveRibbonSection = setActiveRibbonSection;
-    window.toggleRibbon = toggleRibbon;
-    window.togglePanel = togglePanel;
+    // ホーム右端：リボン全体の折りたたみ用
+    if (homeToggleBtn) {
+        homeToggleBtn.textContent = isUltra ? '▾ リボンをたたむ' : '▴ リボンを表示';
+    }
+}
+
+// 上段（メニュー行）右端：展開部分だけ折りたたみ
+function toggleRibbonContent() {
+    // ultra の時は上段自体が消えるので基本押せないが、念のため無効化
+    if (document.body.classList.contains('ribbon-ultra-collapsed')) return;
+
+    document.body.classList.toggle('ribbon-collapsed');
+    updateRibbonToggleLabels();
+    if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+}
+
+// ホーム行右端：リボン全体を一発で折りたたみ（ultra）
+function toggleRibbonUltra() {
+    const isUltra = document.body.classList.contains('ribbon-ultra-collapsed');
+
+    if (isUltra) {
+        // 展開に戻す（フル展開に戻す）
+        document.body.classList.remove('ribbon-ultra-collapsed');
+        document.body.classList.remove('ribbon-collapsed');
+    } else {
+        // 一発でリボン全体を折りたたむ
+        document.body.classList.add('ribbon-ultra-collapsed');
+        document.body.classList.remove('ribbon-collapsed');
+    }
+
+    updateRibbonToggleLabels();
+    if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
+}
+
+// 既存コード互換（どこかで toggleRibbon() を呼んでても壊れないように）
+function toggleRibbon() {
+    toggleRibbonUltra();
+}
+
+window.toggleRibbonContent = toggleRibbonContent;
+window.toggleRibbonUltra = toggleRibbonUltra;
+window.toggleRibbon = toggleRibbon;
+
     // Close non-pinned panels on outside click
     document.addEventListener('click', e => {
         if (e.target.closest('.control-panel') || e.target.closest('.btn') || e.target.closest('.dropdown')) return;

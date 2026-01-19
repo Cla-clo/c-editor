@@ -3545,6 +3545,7 @@
                     <option value="1">レベル1（大）</option>
                     <option value="2">レベル2（中）</option>
                     <option value="3">レベル3（小）</option>
+                    <option value="4">レベル4（微）</option>
                 </select>
             </div>
             <div style="flex:2; min-width:180px;">
@@ -3607,6 +3608,7 @@
                     <option value="1">レベル1（大）</option>
                     <option value="2">レベル2（中）</option>
                     <option value="3">レベル3（小）</option>
+                    <option value="4">レベル4（微）</option>
                 </select>
             </div>
             <div style="flex:2; min-width:180px;">
@@ -11437,16 +11439,7 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragleave', handleDragLeave);
     div.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      if (!e.target.closest('button, input')) {
-        // 右クリックで展開レベルを逆方向に変更
-        const targetCard = structureData.find(c => c.id === card.id);
-        if (targetCard) {
-          targetCard.expandLevel = ((targetCard.expandLevel || 0) - 1 + 4) % 4;
-          targetCard.expanded = targetCard.expandLevel > 0;
-          saveStructureData();
-          renderStructureList();
-        }
-      }
+      showStructureContextMenu(e, card.id);
     });
 
     return div;
@@ -11718,6 +11711,8 @@ function setupMemoInteractionGuard() {
     const card = structureData.find(c => c.id === cardId);
     if (!card) return;
 
+    const expandLevel = card.expandLevel || 0;
+
     const moveTargets = getMoveTargetsForCard(card);
     const moveSection = moveTargets.length
       ? `
@@ -11730,7 +11725,12 @@ function setupMemoInteractionGuard() {
     menu.innerHTML = `
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
-      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
+      <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="expand-0" style="padding-left:24px;">▶ 名前のみ${expandLevel === 0 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-1" style="padding-left:24px;">▽ タグのみ${expandLevel === 1 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-2" style="padding-left:24px;">▼ タグ+プレビュー${expandLevel === 2 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-3" style="padding-left:24px;">◆ すべて表示${expandLevel === 3 ? ' ✓' : ''}</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="color">🎨 カード色を変更</div>
       <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
@@ -11751,7 +11751,17 @@ function setupMemoInteractionGuard() {
         if (action === 'toggle') {
           const target = structureData.find(c => c.id === cardId);
           if (target) {
-            target.expanded = !target.expanded;
+            target.expandLevel = ((target.expandLevel || 0) + 1) % 4;
+            target.expanded = target.expandLevel > 0;
+            saveStructureData();
+            renderStructureList();
+          }
+        }
+        if (action === 'expand-0' || action === 'expand-1' || action === 'expand-2' || action === 'expand-3') {
+          const target = structureData.find(c => c.id === cardId);
+          if (target) {
+            target.expandLevel = parseInt(action.split('-')[1]);
+            target.expanded = target.expandLevel > 0;
             saveStructureData();
             renderStructureList();
           }
@@ -12903,24 +12913,8 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragover', handleCharacterDragOver);
     div.addEventListener('dragleave', handleCharacterDragLeave);
     div.addEventListener('drop', handleCharacterDrop);
-    div.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      if (!e.target.closest('button, input')) {
-        // 右クリックで展開レベルを逆方向に変更
-        const targetCard = characterData.find(c => c.id === card.id);
-        if (targetCard) {
-          targetCard.expandLevel = ((targetCard.expandLevel || 0) - 1 + 4) % 4;
-          saveCharacterData();
-          renderCharacterList();
-        }
-      }
-    });
-    div.addEventListener('dblclick', (e) => {
-      if (!e.target.closest('button, input')) {
-        // ダブルクリックで展開レベルを順方向に変更
-        toggleCharacterExpand(card.id);
-      }
-    });
+    div.addEventListener('contextmenu', (e) => { e.preventDefault(); showCharacterContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) toggleCharacterExpand(card.id); });
 
     return div;
   }
@@ -13193,10 +13187,18 @@ function setupMemoInteractionGuard() {
       document.body.appendChild(menu);
     }
 
+    const currentCard = characterData.find(c => c.id === cardId);
+    const expandLevel = currentCard ? (currentCard.expandLevel || 0) : 0;
+
     menu.innerHTML = `
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
-      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
+      <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="expand-0" style="padding-left:24px;">▶ 名前のみ${expandLevel === 0 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-1" style="padding-left:24px;">▽ タグのみ${expandLevel === 1 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-2" style="padding-left:24px;">▼ タグ+プレビュー${expandLevel === 2 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-3" style="padding-left:24px;">◆ すべて表示${expandLevel === 3 ? ' ✓' : ''}</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="color">🎨 色を変更</div>
       <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
@@ -13218,7 +13220,15 @@ function setupMemoInteractionGuard() {
         if (action === 'duplicate') duplicateCharacterCard(cardId);
         if (action === 'toggle') {
           const target = characterData.find(c => c.id === cardId);
-          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 3; saveCharacterData(); renderCharacterList(); }
+          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 4; saveCharacterData(); renderCharacterList(); }
+        }
+        if (action === 'expand-0' || action === 'expand-1' || action === 'expand-2' || action === 'expand-3') {
+          const target = characterData.find(c => c.id === cardId);
+          if (target) {
+            target.expandLevel = parseInt(action.split('-')[1]);
+            saveCharacterData();
+            renderCharacterList();
+          }
         }
         if (action === 'move-up') moveCharacterCard(cardId, -1);
         if (action === 'move-down') moveCharacterCard(cardId, 1);
@@ -13918,24 +13928,8 @@ function setupMemoInteractionGuard() {
     div.addEventListener('dragover', handleWorldDragOver);
     div.addEventListener('dragleave', handleWorldDragLeave);
     div.addEventListener('drop', handleWorldDrop);
-    div.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      if (!e.target.closest('button, input')) {
-        // 右クリックで展開レベルを逆方向に変更
-        const targetCard = worldData.find(c => c.id === card.id);
-        if (targetCard) {
-          targetCard.expandLevel = ((targetCard.expandLevel || 0) - 1 + 4) % 4;
-          saveWorldData();
-          renderWorldList();
-        }
-      }
-    });
-    div.addEventListener('dblclick', (e) => {
-      if (!e.target.closest('button, input')) {
-        // ダブルクリックで展開レベルを順方向に変更
-        toggleWorldExpand(card.id);
-      }
-    });
+    div.addEventListener('contextmenu', (e) => { e.preventDefault(); showWorldContextMenu(e, card.id); });
+    div.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input')) toggleWorldExpand(card.id); });
 
     return div;
   }
@@ -14237,10 +14231,18 @@ function setupMemoInteractionGuard() {
       document.body.appendChild(menu);
     }
 
+    const currentCard = worldData.find(c => c.id === cardId);
+    const expandLevel = currentCard ? (currentCard.expandLevel || 0) : 0;
+
     menu.innerHTML = `
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
-      <div class="context-menu-item" data-action="toggle">↕ 詳細を開閉</div>
+      <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+      <div class="context-menu-item" data-action="expand-0" style="padding-left:24px;">▶ 名前のみ${expandLevel === 0 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-1" style="padding-left:24px;">▽ タグのみ${expandLevel === 1 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-2" style="padding-left:24px;">▼ タグ+プレビュー${expandLevel === 2 ? ' ✓' : ''}</div>
+      <div class="context-menu-item" data-action="expand-3" style="padding-left:24px;">◆ すべて表示${expandLevel === 3 ? ' ✓' : ''}</div>
       <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="color">🎨 色を変更</div>
       <div class="context-menu-item" data-action="reset-color">↩ 色をリセット</div>
@@ -14262,7 +14264,15 @@ function setupMemoInteractionGuard() {
         if (action === 'duplicate') duplicateWorldCard(cardId);
         if (action === 'toggle') {
           const target = worldData.find(c => c.id === cardId);
-          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 3; saveWorldData(); renderWorldList(); }
+          if (target) { target.expandLevel = ((target.expandLevel || 0) + 1) % 4; saveWorldData(); renderWorldList(); }
+        }
+        if (action === 'expand-0' || action === 'expand-1' || action === 'expand-2' || action === 'expand-3') {
+          const target = worldData.find(c => c.id === cardId);
+          if (target) {
+            target.expandLevel = parseInt(action.split('-')[1]);
+            saveWorldData();
+            renderWorldList();
+          }
         }
         if (action === 'move-up') moveWorldCard(cardId, -1);
         if (action === 'move-down') moveWorldCard(cardId, 1);

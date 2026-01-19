@@ -1703,6 +1703,22 @@
         margin-left: 0;
     }
 
+    body.memo-fullscreen-mode header,
+    body.memo-fullscreen-mode .controls-wrapper,
+    body.memo-fullscreen-mode .pane-stack,
+    body.memo-fullscreen-mode #search-panel,
+    body.memo-fullscreen-mode #outline-panel,
+    body.memo-fullscreen-mode #structure-panel,
+    body.memo-fullscreen-mode #character-panel,
+    body.memo-fullscreen-mode #world-panel { display: none !important; }
+    body.memo-fullscreen-mode #memo-panel {
+        position: fixed !important; inset: 0 !important;
+        width: 100% !important; max-width: none !important;
+        transform: none !important; z-index: 9999 !important;
+        border: none !important; border-radius: 0 !important;
+        display: flex !important;
+    }
+
     body.character-fullscreen-mode header,
     body.character-fullscreen-mode .controls-wrapper,
     body.character-fullscreen-mode .pane-stack,
@@ -3198,6 +3214,7 @@
 <button id="btn-memo-swap" class="btn panel-swap-btn" onclick="swapMemoSide()">左右入替</button>
 <button class="panel-pin-btn" id="btn-memo-pin" onclick="toggleMemoDockPin()" title="固定/浮動切り替え">📌</button>
 <input type="checkbox" id="check-memo-dock" class="dock-pin-checkbox" onchange="toggleMemoDock()">
+      <button class="btn structure-fullscreen-btn" onclick="toggleMemoFullscreen()">⛶</button>
       <button class="panel-close-btn" onclick="closeMemoPanel(true)" style="background:none; border:none; cursor:pointer;">✖</button>
     </div>
   </div>
@@ -3236,9 +3253,13 @@
         </div>
     </div>
     <div class="structure-toolbar">
-        <button class="btn" onclick="addStructureCard('chapter')">＋章</button>
-        <button class="btn" onclick="addStructureCard('episode')">＋話</button>
-        <button class="btn" onclick="addStructureCard('scene')">＋シーン</button>
+        <select id="structure-add-level" style="padding:4px 6px; border:1px solid var(--border-color); border-radius:6px; background:var(--panel-bg); color:var(--text-color); font-size:0.75rem;">
+            <option value="chapter">章</option>
+            <option value="episode">話</option>
+            <option value="scene">シーン</option>
+        </select>
+        <button class="btn" onclick="createStructureCardFromSelection()">＋新しいカード</button>
+        <button class="btn btn-update" onclick="refreshStructurePanel()">更新</button>
         <button class="btn" onclick="expandAllStructure()">全展開</button>
         <button class="btn" onclick="collapseAllStructure()">全折畳</button>
         <button class="btn" onclick="deleteSelectedStructureCards()">選択削除</button>
@@ -3270,11 +3291,15 @@
         </div>
     </div>
     <div class="character-toolbar">
-        <button class="btn" onclick="addCharacterCard('protagonist')">＋主人公</button>
-        <button class="btn" onclick="addCharacterCard('heroine')">＋ヒロイン</button>
-        <button class="btn" onclick="addCharacterCard('antagonist')">＋敵役</button>
-        <button class="btn" onclick="addCharacterCard('supporting')">＋サブ</button>
-        <button class="btn" onclick="addCharacterCard('mob')">＋モブ</button>
+        <select id="character-add-role" style="padding:4px 6px; border:1px solid var(--border-color); border-radius:6px; background:var(--panel-bg); color:var(--text-color); font-size:0.75rem;">
+            <option value="protagonist">主人公</option>
+            <option value="heroine">ヒロイン</option>
+            <option value="antagonist">敵役</option>
+            <option value="supporting">サブ</option>
+            <option value="mob">モブ</option>
+        </select>
+        <button class="btn" onclick="createCharacterCardFromSelection()">＋新しいカード</button>
+        <button class="btn btn-update" onclick="refreshCharacterPanel()">更新</button>
         <button class="btn" onclick="expandAllCharacter()">全展開</button>
         <button class="btn" onclick="collapseAllCharacter()">全折畳</button>
         <button class="btn" onclick="deleteSelectedCharacterCards()">選択削除</button>
@@ -3306,9 +3331,13 @@
         </div>
     </div>
     <div class="world-toolbar">
-        <button class="btn" onclick="addWorldCard('major')">＋大カテゴリ</button>
-        <button class="btn" onclick="addWorldCard('middle')">＋中カテゴリ</button>
-        <button class="btn" onclick="addWorldCard('detail')">＋詳細項目</button>
+        <select id="world-add-level" style="padding:4px 6px; border:1px solid var(--border-color); border-radius:6px; background:var(--panel-bg); color:var(--text-color); font-size:0.75rem;">
+            <option value="major">大カテゴリ</option>
+            <option value="middle">中カテゴリ</option>
+            <option value="detail">詳細項目</option>
+        </select>
+        <button class="btn" onclick="createWorldCardFromSelection()">＋新しいカード</button>
+        <button class="btn btn-update" onclick="refreshWorldPanel()">更新</button>
         <button class="btn" onclick="expandAllWorld()">全展開</button>
         <button class="btn" onclick="collapseAllWorld()">全折畳</button>
         <button class="btn" onclick="deleteSelectedWorldCards()">選択削除</button>
@@ -6140,6 +6169,91 @@ if (typeof adjustPaneHeightsOnVisibility === 'function') {
       panel.style.zIndex = String(panelZIndexCounter++);
     }
     window.bringPanelToFront = bringPanelToFront;
+    const PANEL_BG_CONFIG = {
+      structure: { panelId: 'structure-panel', storageKey: 'cc_panel_bg_structure' },
+      character: { panelId: 'character-panel', storageKey: 'cc_panel_bg_character' },
+      world: { panelId: 'world-panel', storageKey: 'cc_panel_bg_world' }
+    };
+    function normalizeColorToHex(color) {
+      if (!color) return '#ffffff';
+      if (color.startsWith('#')) return color;
+      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!match) return '#ffffff';
+      const toHex = (value) => {
+        const hex = Number(value).toString(16);
+        return hex.length === 1 ? `0${hex}` : hex;
+      };
+      return `#${toHex(match[1])}${toHex(match[2])}${toHex(match[3])}`;
+    }
+    function applyPanelBackground(panelType, color) {
+      const config = PANEL_BG_CONFIG[panelType];
+      if (!config) return;
+      const panel = document.getElementById(config.panelId);
+      if (!panel) return;
+      panel.style.background = color;
+      localStorage.setItem(config.storageKey, color);
+    }
+    function loadPanelBackground(panelType) {
+      const config = PANEL_BG_CONFIG[panelType];
+      if (!config) return;
+      const panel = document.getElementById(config.panelId);
+      if (!panel) return;
+      const saved = localStorage.getItem(config.storageKey);
+      if (saved) panel.style.background = saved;
+    }
+    function openPanelBackgroundColorPicker(panelType) {
+      const config = PANEL_BG_CONFIG[panelType];
+      if (!config) return;
+      const panel = document.getElementById(config.panelId);
+      if (!panel) return;
+      let picker = document.getElementById('panel-bg-color-popup');
+      if (!picker) {
+        picker = document.createElement('div');
+        picker.id = 'panel-bg-color-popup';
+        picker.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10001; padding:12px; min-width:220px;';
+        document.body.appendChild(picker);
+      }
+      const current = normalizeColorToHex(panel.style.backgroundColor || getComputedStyle(panel).backgroundColor);
+      picker.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-weight:bold;">背景色</span>
+          <button class="panel-bg-picker-close" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--text-muted);">✕</button>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+          <input type="color" id="panel-bg-color-input" value="${current}" style="width:50px; height:30px; border:1px solid var(--border-color); border-radius:4px; cursor:pointer;">
+          <input type="text" id="panel-bg-color-text" value="${current}" style="width:90px; padding:4px; border:1px solid var(--border-color); border-radius:4px;">
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button class="btn" id="panel-bg-cancel">キャンセル</button>
+          <button class="btn btn-save" id="panel-bg-apply">適用</button>
+        </div>
+      `;
+      picker.style.left = '50%';
+      picker.style.top = '50%';
+      picker.style.transform = 'translate(-50%, -50%)';
+      picker.style.display = 'block';
+
+      const input = picker.querySelector('#panel-bg-color-input');
+      const textInput = picker.querySelector('#panel-bg-color-text');
+      if (input && textInput) {
+        input.addEventListener('input', () => { textInput.value = input.value; });
+        textInput.addEventListener('input', () => { if (textInput.value.startsWith('#')) input.value = textInput.value; });
+      }
+      picker.querySelector('#panel-bg-apply')?.addEventListener('click', () => {
+        const value = textInput?.value || current;
+        applyPanelBackground(panelType, value);
+        picker.style.display = 'none';
+      });
+      picker.querySelector('#panel-bg-cancel')?.addEventListener('click', () => {
+        picker.style.display = 'none';
+      });
+      picker.querySelector('.panel-bg-picker-close')?.addEventListener('click', () => {
+        picker.style.display = 'none';
+      });
+    }
+    window.applyPanelBackground = applyPanelBackground;
+    window.loadPanelBackground = loadPanelBackground;
+    window.openPanelBackgroundColorPicker = openPanelBackgroundColorPicker;
     function doSearch() { const q = document.getElementById('search-input').value, t = inputArea.value; searchMatches = []; currentMatchIndex = -1; if (!q) { updateSearchInfo(); return; } const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), rx = new RegExp(esc, 'g'); let m; while ((m = rx.exec(t)) !== null) searchMatches.push({ start: m.index, end: m.index + m[0].length }); if (searchMatches.length > 0) { currentMatchIndex = 0; jumpToMatch(); } updateSearchInfo(); }
     function updateSearchInfo() { const i = document.getElementById('search-match-info'); if (searchMatches.length === 0) { i.innerText = '0 / 0'; i.style.color = '#999'; } else { i.innerText = `${currentMatchIndex + 1} / ${searchMatches.length}`; i.style.color = '#15803d'; } }
     function findNext() { if (searchMatches.length === 0) doSearch(); else { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; jumpToMatch(); updateSearchInfo(); } }
@@ -6215,6 +6329,31 @@ function toggleMemoPanel() {
   if (typeof updateDockTopOffset === 'function') updateDockTopOffset();
 }
 
+let memoFullscreenListenerAttached = false;
+function setupMemoFullscreenListener() {
+  if (memoFullscreenListenerAttached) return;
+  memoFullscreenListenerAttached = true;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('memo-fullscreen-mode')) {
+      toggleMemoFullscreen();
+    }
+  });
+}
+
+function toggleMemoFullscreen() {
+  const panel = document.getElementById('memo-panel');
+  if (!panel) return;
+  document.body.classList.remove('structure-fullscreen-mode', 'character-fullscreen-mode', 'world-fullscreen-mode');
+  if (document.body.classList.contains('memo-fullscreen-mode')) {
+    document.body.classList.remove('memo-fullscreen-mode');
+    return;
+  }
+  panel.classList.add('open');
+  document.body.classList.add('memo-fullscreen-mode');
+}
+
+setupMemoFullscreenListener();
+
 
 
 function closeMemoPanel(force = false) {
@@ -6227,6 +6366,7 @@ function closeMemoPanel(force = false) {
 
   const panel = document.getElementById('memo-panel');
   if (!panel) return;
+  document.body.classList.remove('memo-fullscreen-mode');
   panel.classList.remove('open');
 
   if (typeof applyPaneWidthSettings === 'function') applyPaneWidthSettings();
@@ -11137,6 +11277,8 @@ function setupMemoInteractionGuard() {
     loadStructureData();
     renderStructureList();
     setupStructureEventListeners();
+    setupStructurePanelContextMenu();
+    if (window.loadPanelBackground) window.loadPanelBackground('structure');
   }
 
   // ========== データ管理 ==========
@@ -11232,6 +11374,20 @@ function setupMemoInteractionGuard() {
     saveStructureData();
     renderStructureList();
     openEditModal(newCard.id);
+  }
+
+  function getStructureSelectedLevel() {
+    const select = document.getElementById('structure-add-level');
+    return select?.value || 'chapter';
+  }
+
+  function createStructureCardFromSelection() {
+    addStructureCard(getStructureSelectedLevel());
+  }
+
+  function refreshStructurePanel() {
+    loadStructureData();
+    renderStructureList();
   }
 
   function findLastIndex(arr, predicate) {
@@ -11800,6 +11956,51 @@ function setupMemoInteractionGuard() {
   let structureMenuClickHandler = null;
   let structureColorPickerHandler = null;
 
+  function showStructurePanelContextMenu(e) {
+    if (typeof window.hideAllContextMenus === 'function') window.hideAllContextMenus();
+    let menu = document.getElementById('structure-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'structure-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:200px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-item" data-action="bg-color">🎨 背景色の変更</div>
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'new-card') createStructureCardFromSelection();
+        if (action === 'bg-color' && window.openPanelBackgroundColorPicker) {
+          window.openPanelBackgroundColorPicker('structure');
+        }
+        hideStructureContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    if (structureMenuClickHandler) {
+      document.removeEventListener('click', structureMenuClickHandler);
+    }
+    structureMenuClickHandler = (ev) => {
+      if (!ev.target.closest('#structure-context-menu')) {
+        hideStructureContextMenu();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', structureMenuClickHandler);
+    }, 0);
+  }
+
   function showStructureContextMenu(e, cardId) {
     if (typeof window.hideAllContextMenus === 'function') window.hideAllContextMenus();
     let menu = document.getElementById('structure-context-menu');
@@ -11826,6 +12027,8 @@ function setupMemoInteractionGuard() {
       : '';
 
     menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
       <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
@@ -11849,6 +12052,7 @@ function setupMemoInteractionGuard() {
       item.onclick = (ev) => {
         ev.stopPropagation();
         const action = item.dataset.action;
+        if (action === 'new-card') createStructureCardFromSelection();
         if (action === 'edit') openEditModal(cardId);
         if (action === 'duplicate') duplicateStructureCard(cardId);
         if (action === 'toggle') {
@@ -11908,6 +12112,16 @@ function setupMemoInteractionGuard() {
       document.removeEventListener('click', structureMenuClickHandler);
       structureMenuClickHandler = null;
     }
+  }
+
+  function setupStructurePanelContextMenu() {
+    const list = document.getElementById('structure-list');
+    if (!list) return;
+    list.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.structure-card')) return;
+      e.preventDefault();
+      showStructurePanelContextMenu(e);
+    });
   }
 
   function openStructureCardColorPicker(cardId) {
@@ -12612,6 +12826,8 @@ function setupMemoInteractionGuard() {
 
   // ========== グローバル公開 ==========
   window.addStructureCard = addStructureCard;
+  window.createStructureCardFromSelection = createStructureCardFromSelection;
+  window.refreshStructurePanel = refreshStructurePanel;
   window.openEditModal = openEditModal;
   window.closeStructureEditModal = closeStructureEditModal;
   window.saveStructureCard = saveStructureCard;
@@ -12731,6 +12947,7 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('main-container');
     if (!panel) return;
 
+    document.body.classList.remove('structure-fullscreen-mode');
     if (force || !checkbox || !checkbox.checked) {
       panel.classList.remove('open');
       if (checkbox) checkbox.checked = false;
@@ -12904,6 +13121,8 @@ function setupMemoInteractionGuard() {
     loadCharacterData();
     renderCharacterList();
     setupCharacterFullscreenListener();
+    setupCharacterPanelContextMenu();
+    if (window.loadPanelBackground) window.loadPanelBackground('character');
   }
 
   function loadCharacterData() {
@@ -12961,6 +13180,20 @@ function setupMemoInteractionGuard() {
     saveCharacterData();
     renderCharacterList();
     openCharacterEditModal(newCard.id);
+  }
+
+  function getCharacterSelectedRole() {
+    const select = document.getElementById('character-add-role');
+    return select?.value || 'protagonist';
+  }
+
+  function createCharacterCardFromSelection() {
+    addCharacterCard(getCharacterSelectedRole());
+  }
+
+  function refreshCharacterPanel() {
+    loadCharacterData();
+    renderCharacterList();
   }
 
   function renderCharacterList() {
@@ -13336,6 +13569,42 @@ function setupMemoInteractionGuard() {
   }
 
   // コンテキストメニュー
+  function showCharacterPanelContextMenu(e) {
+    hideCharacterContextMenu();
+    let menu = document.getElementById('character-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'character-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:160px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-item" data-action="bg-color">🎨 背景色の変更</div>
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'new-card') createCharacterCardFromSelection();
+        if (action === 'bg-color' && window.openPanelBackgroundColorPicker) {
+          window.openPanelBackgroundColorPicker('character');
+        }
+        hideCharacterContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    characterMenuClickHandler = () => hideCharacterContextMenu();
+    setTimeout(() => document.addEventListener('click', characterMenuClickHandler), 0);
+  }
+
   function showCharacterContextMenu(e, cardId) {
     hideCharacterContextMenu();
     let menu = document.getElementById('character-context-menu');
@@ -13351,6 +13620,8 @@ function setupMemoInteractionGuard() {
     const expandLevel = currentCard ? (currentCard.expandLevel || 0) : 0;
 
     menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
       <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
@@ -13376,6 +13647,7 @@ function setupMemoInteractionGuard() {
       item.onclick = (ev) => {
         ev.stopPropagation();
         const action = item.dataset.action;
+        if (action === 'new-card') createCharacterCardFromSelection();
         if (action === 'edit') openCharacterEditModal(cardId);
         if (action === 'duplicate') duplicateCharacterCard(cardId);
         if (action === 'toggle') {
@@ -13416,6 +13688,16 @@ function setupMemoInteractionGuard() {
       document.removeEventListener('click', characterMenuClickHandler);
       characterMenuClickHandler = null;
     }
+  }
+
+  function setupCharacterPanelContextMenu() {
+    const list = document.getElementById('character-list');
+    if (!list) return;
+    list.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.character-card')) return;
+      e.preventDefault();
+      showCharacterPanelContextMenu(e);
+    });
   }
 
   function openCharacterColorPicker(cardId) {
@@ -13784,6 +14066,7 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('main-container');
     if (!panel) return;
 
+    document.body.classList.remove('character-fullscreen-mode');
     if (force || !checkbox || !checkbox.checked) {
       panel.classList.remove('open');
       if (checkbox) checkbox.checked = false;
@@ -13888,6 +14171,8 @@ function setupMemoInteractionGuard() {
 
   // グローバル公開
   window.addCharacterCard = addCharacterCard;
+  window.createCharacterCardFromSelection = createCharacterCardFromSelection;
+  window.refreshCharacterPanel = refreshCharacterPanel;
   window.openCharacterEditModal = openCharacterEditModal;
   window.closeCharacterEditModal = closeCharacterEditModal;
   window.saveCharacterCard = saveCharacterCard;
@@ -13962,6 +14247,8 @@ function setupMemoInteractionGuard() {
     loadWorldData();
     renderWorldList();
     setupWorldFullscreenListener();
+    setupWorldPanelContextMenu();
+    if (window.loadPanelBackground) window.loadPanelBackground('world');
   }
 
   function loadWorldData() {
@@ -14019,6 +14306,20 @@ function setupMemoInteractionGuard() {
     saveWorldData();
     renderWorldList();
     openWorldEditModal(newCard.id);
+  }
+
+  function getWorldSelectedLevel() {
+    const select = document.getElementById('world-add-level');
+    return select?.value || 'major';
+  }
+
+  function createWorldCardFromSelection() {
+    addWorldCard(getWorldSelectedLevel());
+  }
+
+  function refreshWorldPanel() {
+    loadWorldData();
+    renderWorldList();
   }
 
   function renderWorldList() {
@@ -14421,6 +14722,42 @@ function setupMemoInteractionGuard() {
   }
 
   // コンテキストメニュー
+  function showWorldPanelContextMenu(e) {
+    hideWorldContextMenu();
+    let menu = document.getElementById('world-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'world-context-menu';
+      menu.className = 'context-menu';
+      menu.style.cssText = 'position:fixed; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; padding:4px 0; min-width:160px;';
+      document.body.appendChild(menu);
+    }
+
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-item" data-action="bg-color">🎨 背景色の変更</div>
+    `;
+
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+      item.onclick = (ev) => {
+        ev.stopPropagation();
+        const action = item.dataset.action;
+        if (action === 'new-card') createWorldCardFromSelection();
+        if (action === 'bg-color' && window.openPanelBackgroundColorPicker) {
+          window.openPanelBackgroundColorPicker('world');
+        }
+        hideWorldContextMenu();
+      };
+    });
+
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.style.display = 'block';
+
+    worldMenuClickHandler = () => hideWorldContextMenu();
+    setTimeout(() => document.addEventListener('click', worldMenuClickHandler), 0);
+  }
+
   function showWorldContextMenu(e, cardId) {
     hideWorldContextMenu();
     let menu = document.getElementById('world-context-menu');
@@ -14436,6 +14773,8 @@ function setupMemoInteractionGuard() {
     const expandLevel = currentCard ? (currentCard.expandLevel || 0) : 0;
 
     menu.innerHTML = `
+      <div class="context-menu-item" data-action="new-card">＋新しいカード</div>
+      <div class="context-menu-separator" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
       <div class="context-menu-item" data-action="edit">✏️ 編集</div>
       <div class="context-menu-item" data-action="duplicate">📋 複製</div>
       <div class="context-menu-item" data-action="toggle">↕ 次の展開レベル</div>
@@ -14461,6 +14800,7 @@ function setupMemoInteractionGuard() {
       item.onclick = (ev) => {
         ev.stopPropagation();
         const action = item.dataset.action;
+        if (action === 'new-card') createWorldCardFromSelection();
         if (action === 'edit') openWorldEditModal(cardId);
         if (action === 'duplicate') duplicateWorldCard(cardId);
         if (action === 'toggle') {
@@ -14501,6 +14841,16 @@ function setupMemoInteractionGuard() {
       document.removeEventListener('click', worldMenuClickHandler);
       worldMenuClickHandler = null;
     }
+  }
+
+  function setupWorldPanelContextMenu() {
+    const list = document.getElementById('world-list');
+    if (!list) return;
+    list.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.world-card')) return;
+      e.preventDefault();
+      showWorldPanelContextMenu(e);
+    });
   }
 
   function openWorldColorPicker(cardId) {
@@ -14874,6 +15224,7 @@ function setupMemoInteractionGuard() {
     const container = document.getElementById('main-container');
     if (!panel) return;
 
+    document.body.classList.remove('world-fullscreen-mode');
     if (force || !checkbox || !checkbox.checked) {
       panel.classList.remove('open');
       if (checkbox) checkbox.checked = false;
@@ -14978,6 +15329,8 @@ function setupMemoInteractionGuard() {
 
   // グローバル公開
   window.addWorldCard = addWorldCard;
+  window.createWorldCardFromSelection = createWorldCardFromSelection;
+  window.refreshWorldPanel = refreshWorldPanel;
   window.openWorldEditModal = openWorldEditModal;
   window.closeWorldEditModal = closeWorldEditModal;
   window.saveWorldCard = saveWorldCard;

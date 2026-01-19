@@ -1337,8 +1337,14 @@
         font-size: 0.7rem;
         border: 1px solid var(--border-color);
         background: var(--panel-bg);
-        cursor: default;
+        cursor: pointer;
         white-space: nowrap;
+        transition: all 0.15s;
+    }
+    .card-linked-item:hover {
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+        color: #0369a1;
     }
     .card-linked-badge {
         font-size: 0.6rem;

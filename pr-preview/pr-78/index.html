@@ -2847,6 +2847,7 @@
     wrapReaderViewFunctions();
     wrapRenderInputTabs();
     wrapUpdateInputStats();
+    initRibbonMenu();
     // 既に描画済みのタブへ右クリック/字数表示を反映させるため、1度だけ再描画
     try { if (typeof window.renderInputTabs === 'function') window.renderInputTabs(); } catch(e) {}
     loadTabBaselines();

@@ -1113,7 +1113,7 @@
     }
     .save-dialog h3 { margin: 0 0 15px 0; color: var(--text-color); }
     .save-dialog-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    .save-dialog-buttons button { padding: 10px 20px; font-size: 1rem; }
+    .save-dialog-buttons button { padding: 10px 20px; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; }
 
     .autosave-toast {
         position: fixed; top: 16px; right: 16px; z-index: 1200;
@@ -3698,7 +3698,6 @@ window.__ccInitPanelDnDAndResizers = function(){
                     <div class="header-file-dropdown-content">
                         <div class="dropdown-item" onclick="openProjectFile(); closeAllFileDropdowns();">📂 開く</div>
                         <div class="dropdown-item" onclick="openProjectSaveDialog(); closeAllFileDropdowns();">💾 保存</div>
-                        <div class="dropdown-item" onclick="confirmStartNewProject(); closeAllFileDropdowns();">🆕 新規プロジェクト</div>
                     </div>
                 </div>
             </div>
@@ -4661,6 +4660,17 @@ window.__ccInitPanelDnDAndResizers = function(){
                 <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">世界観パネルに設定を追加してください</div>
             </div>
         </div>
+        <div class="character-edit-field">
+            <label>関連する用語</label>
+            <div id="character-edit-terms" class="structure-link-select-container"></div>
+        </div>
+        <div class="character-edit-field">
+            <label for="character-edit-tab">紐づけタブ</label>
+            <select id="character-edit-tab">
+                <option value="">（なし）</option>
+            </select>
+            <div class="character-edit-hint">カードからジャンプするタブを選択</div>
+        </div>
         <div class="character-edit-actions">
             <button class="btn" onclick="closeCharacterEditModal()">キャンセル</button>
             <button class="btn btn-save" onclick="saveCharacterCard()">保存</button>
@@ -4728,6 +4738,13 @@ window.__ccInitPanelDnDAndResizers = function(){
                 <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">他の世界観設定と関連付け</div>
             </div>
         </div>
+        <div class="world-edit-field">
+            <label for="world-edit-tab">紐づけタブ</label>
+            <select id="world-edit-tab">
+                <option value="">（なし）</option>
+            </select>
+            <div class="world-edit-hint">カードからジャンプするタブを選択</div>
+        </div>
         <div class="world-edit-actions">
             <button class="btn" onclick="closeWorldEditModal()">キャンセル</button>
             <button class="btn btn-save" onclick="saveWorldCard()">保存</button>
@@ -4756,6 +4773,13 @@ window.__ccInitPanelDnDAndResizers = function(){
     <div class="terms-edit-field">
       <label for="terms-edit-desc">説明</label>
       <textarea id="terms-edit-desc" rows="5" placeholder="説明を書いてください"></textarea>
+    </div>
+    <div class="terms-edit-field">
+      <label for="terms-edit-tab">紐づけタブ</label>
+      <select id="terms-edit-tab">
+        <option value="">（なし）</option>
+      </select>
+      <div class="terms-edit-hint">カードからジャンプするタブを選択</div>
     </div>
 
     <div class="terms-edit-field">
@@ -7053,7 +7077,7 @@ function applyDisplaySettings() {
     if (!c) return;
 
     // reset classes
-    ['memo','world','character','structure','outline','search'].forEach(k=>{
+    ['memo','world','character','structure','outline','search','terms'].forEach(k=>{
       c.classList.remove(k+'-right');
       c.classList.remove(k+'-left');
     });
@@ -11064,7 +11088,7 @@ function setupMemoInteractionGuard() {
     if (!applyBtn || applyBtn.dataset.bound==='1') return;
     applyBtn.dataset.bound='1';
     applyBtn.addEventListener('click', ()=>{
-      const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null},character:{bg:null,head:null},world:{bg:null,head:null}};
+    const out = {input:{bg:null,head:null},preview:{bg:null,head:null},memo:{bg:null,head:null},outline:{bg:null,head:null},structure:{bg:null,head:null},character:{bg:null,head:null},world:{bg:null,head:null},terms:{bg:null,head:null}};
       for (const k of ['input','preview','memo','outline','structure','character','world','terms']){
         const bg = (document.getElementById(`cc-pane-${k}-bg-t`)?.value||'').trim();
         const head = (document.getElementById(`cc-pane-${k}-head-t`)?.value||'').trim();
@@ -14209,6 +14233,19 @@ panel.style.width = '320px';
         }
       }
 
+      if (hasLinkedTerms) {
+        const termData = window.getTermsData ? window.getTermsData() : [];
+        const linkedTermsHtml = card.linkedTerms.map(tid => {
+          const term = termData.find(t => t.id === tid);
+          if (!term) return '';
+          const label = (term.category ? `${escapeHtml(term.category)} / ` : '') + escapeHtml(term.name || '');
+          return `<span class="structure-linked-item structure-linked-term" onclick="event.stopPropagation(); goToLinkedPanel('terms', ${tid})"><span class="structure-linked-icon">📚</span><span class="structure-linked-text">${label}</span></span>`;
+        }).filter(h => h).join('');
+        if (linkedTermsHtml) {
+          linkedSection.innerHTML += `<div class="structure-linked-label" style="margin-top:6px;">用語</div><div class="structure-linked-items">${linkedTermsHtml}</div>`;
+        }
+      }
+
       body.appendChild(linkedSection);
     }
 
@@ -15915,6 +15952,7 @@ if (swapBtn) swapBtn.classList.remove('is-active');
           linkedStructures: card.linkedStructures || [],
           linkedWorlds: card.linkedWorlds || [],
           linkedTerms: card.linkedTerms || [],
+          tabId: card.tabId ?? null,
           // expanded (boolean) から expandLevel (0,1,2) への移行対応
           expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
@@ -15950,9 +15988,11 @@ if (swapBtn) swapBtn.classList.remove('is-active');
       freeTags: [],
       linkedStructures: [],
       linkedWorlds: [],
+      linkedTerms: [],
       description: '',
       color: null,
       expandLevel: 0,
+      tabId: null,
       selected: false,
       isNew: true
     };
@@ -16044,6 +16084,14 @@ if (swapBtn) swapBtn.classList.remove('is-active');
       return `<span class="card-linked-item card-linked-term" onclick="event.stopPropagation(); goToLinkedPanel('terms', ${tid})">📚 ${label}</span>`;
     }).join('');
 
+    let tabLinkHtml = '';
+    if (card.tabId && window.inputTabs) {
+      const tab = window.inputTabs.find(t => t.id === card.tabId);
+      if (tab) {
+        tabLinkHtml = `<div class="character-field"><div class="character-field-label">📄</div><div style="color:#2563eb; cursor:pointer;" onclick="event.stopPropagation(); if(window.switchTab) window.switchTab(${card.tabId})">${escapeHtml(tab.name)}</div></div>`;
+      }
+    }
+
     const linkedSectionHtml = (linkedStructuresHtml || linkedWorldsHtml || linkedTermsHtml) ? `
       <div class="card-linked-section">
         ${linkedStructuresHtml ? `<div class="card-linked-label">構成</div><div class="card-linked-items">${linkedStructuresHtml}</div>` : ''}
@@ -16076,6 +16124,7 @@ if (swapBtn) swapBtn.classList.remove('is-active');
         ${freeTagsHtml ? `<div class="character-field"><div class="character-field-label">🔖</div><div class="character-tags">${freeTagsHtml}</div></div>` : ''}
         ${descPreview ? `<div class="character-description-preview">${escapeHtml(descPreview)}</div>` : ''}
         ${card.description ? `<div class="character-field character-description"><div class="character-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${tabLinkHtml}
         ${linkedSectionHtml}
         <div class="character-card-actions">
           <button onclick="openCharacterEditModal(${card.id})">✏️ 編集</button>
@@ -16213,6 +16262,20 @@ if (swapBtn) swapBtn.classList.remove('is-active');
     document.getElementById('character-edit-description').value = card.description || '';
     updateCharacterDescriptionCount();
 
+    const tabSelect = document.getElementById('character-edit-tab');
+    if (tabSelect) {
+      tabSelect.innerHTML = '<option value="">（なし）</option>';
+      if (window.inputTabs) {
+        window.inputTabs.forEach(tab => {
+          const opt = document.createElement('option');
+          opt.value = tab.id;
+          opt.textContent = tab.name;
+          if (card.tabId === tab.id) opt.selected = true;
+          tabSelect.appendChild(opt);
+        });
+      }
+    }
+
     // 関連する構成と世界観をチェックボックスで表示
     populateCharacterStructureCheckboxes(card.linkedStructures || []);
     populateCharacterWorldCheckboxes(card.linkedWorlds || []);
@@ -16330,6 +16393,8 @@ function toggleCharacterTermLink(termId){
     card.affiliationTags = document.getElementById('character-edit-affiliation').value.split(',').map(t => t.trim()).filter(t => t);
     card.freeTags = document.getElementById('character-edit-freetags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('character-edit-description').value.trim();
+    const tabId = document.getElementById('character-edit-tab')?.value || '';
+    card.tabId = tabId ? parseInt(tabId, 10) : null;
 
     // 関連する構成を取得（タグクリック形式）
     const structContainer = document.getElementById('character-edit-structures');
@@ -17244,6 +17309,7 @@ if (swapBtn) swapBtn.classList.remove('is-active');
           linkedWorlds: card.linkedWorlds || [],
           linkedTerms: card.linkedTerms || [],
           linkedStructures: card.linkedStructures || [],
+          tabId: card.tabId ?? null,
           // expanded (boolean) から expandLevel (0,1,2) への移行対応
           expandLevel: card.expandLevel !== undefined ? card.expandLevel : (card.expanded ? 2 : 0)
         }));
@@ -17278,9 +17344,11 @@ if (swapBtn) swapBtn.classList.remove('is-active');
       linkedCharacters: [],
       linkedWorlds: [],
       linkedStructures: [],
+      linkedTerms: [],
       description: '',
       color: null,
       expandLevel: 0,
+      tabId: null,
       selected: false,
       isNew: true
     };
@@ -17380,6 +17448,14 @@ if (swapBtn) swapBtn.classList.remove('is-active');
              `${cat}</span>`;
     }).join('');
 
+    let tabLinkHtml = '';
+    if (card.tabId && window.inputTabs) {
+      const tab = window.inputTabs.find(t => t.id === card.tabId);
+      if (tab) {
+        tabLinkHtml = `<div class="world-field"><div class="world-field-label">📄</div><div style="color:#2563eb; cursor:pointer;" onclick="event.stopPropagation(); if(window.switchTab) window.switchTab(${card.tabId})">${escapeHtml(tab.name)}</div></div>`;
+      }
+    }
+
 
     const linkedSectionHtml = (linkedCharactersHtml || linkedStructuresHtml || linkedWorldsHtml || linkedTermsHtml) ? `
       <div class="card-linked-section">
@@ -17412,6 +17488,7 @@ if (swapBtn) swapBtn.classList.remove('is-active');
         ${termTagsHtml ? `<div class="world-field"><div class="world-field-label">🏷</div><div class="world-tags">${termTagsHtml}</div></div>` : ''}
         ${descPreview ? `<div class="world-description-preview">${escapeHtml(descPreview)}</div>` : ''}
         ${card.description ? `<div class="world-field world-description"><div class="world-field-label">📝</div><div style="color:var(--text-color);">${escapeHtml(card.description)}</div></div>` : ''}
+        ${tabLinkHtml}
         ${linkedSectionHtml}
         <div class="world-card-actions">
           <button onclick="openWorldEditModal(${card.id})">✏️ 編集</button>
@@ -17546,6 +17623,20 @@ if (swapBtn) swapBtn.classList.remove('is-active');
     document.getElementById('world-edit-termtags').value = (card.termTags || []).join(', ');
     document.getElementById('world-edit-description').value = card.description || '';
     updateWorldDescriptionCount();
+
+    const tabSelect = document.getElementById('world-edit-tab');
+    if (tabSelect) {
+      tabSelect.innerHTML = '<option value="">（なし）</option>';
+      if (window.inputTabs) {
+        window.inputTabs.forEach(tab => {
+          const opt = document.createElement('option');
+          opt.value = tab.id;
+          opt.textContent = tab.name;
+          if (card.tabId === tab.id) opt.selected = true;
+          tabSelect.appendChild(opt);
+        });
+      }
+    }
 
     // 関連する登場人物と世界観をチェックボックスで表示
     populateWorldCharacterCheckboxes(card.linkedCharacters || []);
@@ -17682,6 +17773,8 @@ function toggleWorldTermLink(termId){
     card.level = levelValue || '未設定';
     card.termTags = document.getElementById('world-edit-termtags').value.split(',').map(t => t.trim()).filter(t => t);
     card.description = document.getElementById('world-edit-description').value.trim();
+    const tabId = document.getElementById('world-edit-tab')?.value || '';
+    card.tabId = tabId ? parseInt(tabId, 10) : null;
 
     // 関連する登場人物を取得（タグクリック形式）
     const charContainer = document.getElementById('world-edit-characters');
@@ -18727,6 +18820,7 @@ window.openMemoImportDialog = function() { showImportDialog('memo', '📂 メモ
           linkedCharacters: t.linkedCharacters || [],
           linkedWorlds: t.linkedWorlds || [],
           linkedStructures: t.linkedStructures || [],
+          tabId: t.tabId ?? null,
           selected: false,
           expandLevel: (typeof t.expandLevel === 'number' ? t.expandLevel : 1),
           bgColor: t.bgColor || ''
@@ -18803,12 +18897,15 @@ window.openMemoImportDialog = function() { showImportDialog('memo', '📂 メモ
       lvBadge.textContent = lvIcons[term.expandLevel] || '◆';
       lvBadge.title = '展開レベル（クリックで変更）';
       lvBadge.style.cursor = 'pointer';
-      lvBadge.onclick = (ev) => {
-        ev.stopPropagation();
+      const advanceExpandLevel = () => {
         const curLv = Number.isInteger(term.expandLevel) ? term.expandLevel : (term.expandLevel ? 3 : 0);
         term.expandLevel = (curLv + 1) % 4;
         saveTermsData();
         renderTermsList();
+      };
+      lvBadge.onclick = (ev) => {
+        ev.stopPropagation();
+        advanceExpandLevel();
       };
       left.appendChild(lvBadge);
 const nameSpan = document.createElement('span');
@@ -18847,6 +18944,10 @@ const nameSpan = document.createElement('span');
       head.style.alignItems = 'center';
       head.appendChild(left);
       head.appendChild(right);
+      head.onclick = (ev) => {
+        if (ev.target.closest('button, input')) return;
+        advanceExpandLevel();
+      };
 
       card.appendChild(head);
 
@@ -18859,10 +18960,7 @@ const nameSpan = document.createElement('span');
 
       // Double click toggles expand
       card.ondblclick = () => {
-        const curLv = Number.isInteger(term.expandLevel) ? term.expandLevel : (term.expandLevel ? 3 : 0);
-        term.expandLevel = (curLv + 1) % 4;
-        saveTermsData();
-        renderTermsList();
+        advanceExpandLevel();
       };
 const meta = document.createElement('div');
       meta.className = 'terms-card-meta';
@@ -18873,6 +18971,16 @@ const meta = document.createElement('div');
       desc.className = 'terms-card-desc';
       desc.textContent = term.desc || '';
       card.appendChild(desc);
+
+      if (term.tabId && window.inputTabs) {
+        const tab = window.inputTabs.find(t => t.id === term.tabId);
+        if (tab) {
+          const tabField = document.createElement('div');
+          tabField.className = 'terms-card-desc';
+          tabField.innerHTML = `<span style="color:#2563eb; cursor:pointer;" onclick="event.stopPropagation(); if(window.switchTab) window.switchTab(${term.tabId})">📄 ${escapeHtml(tab.name)}</span>`;
+          card.appendChild(tabField);
+        }
+      }
 
       const linkedWrap = document.createElement('div');
       linkedWrap.className = 'terms-linked-section';
@@ -18988,6 +19096,20 @@ window.openTermEditModal = function(id){
     document.getElementById('terms-edit-category').value = term?.category || '';
     document.getElementById('terms-edit-desc').value = term?.desc || '';
 
+    const tabSelect = document.getElementById('terms-edit-tab');
+    if (tabSelect) {
+      tabSelect.innerHTML = '<option value="">（なし）</option>';
+      if (window.inputTabs) {
+        window.inputTabs.forEach(tab => {
+          const opt = document.createElement('option');
+          opt.value = tab.id;
+          opt.textContent = tab.name;
+          if (term?.tabId === tab.id) opt.selected = true;
+          tabSelect.appendChild(opt);
+        });
+      }
+    }
+
     // category suggestions
     try{ populateTermsCategoryDatalist(); }catch(e){}
     const sug = document.getElementById('terms-category-suggestions');
@@ -19023,6 +19145,8 @@ window.openTermEditModal = function(id){
     const name = (document.getElementById('terms-edit-name').value || '').trim();
     const category = (document.getElementById('terms-edit-category').value || '').trim();
     const desc = (document.getElementById('terms-edit-desc').value || '').trim();
+    const tabIdValue = (document.getElementById('terms-edit-tab')?.value || '').trim();
+    const tabId = tabIdValue ? parseInt(tabIdValue, 10) : null;
     if(!name){
       alert('用語名を入力してください');
       return;
@@ -19041,6 +19165,7 @@ loadTermsData();
         t.name = name;
         t.category = category;
         t.desc = desc;
+        t.tabId = tabId;
         t.linkedCharacters = selChars.slice();
         t.linkedWorlds = selWorlds.slice();
         t.linkedStructures = selStructs.slice();
@@ -19049,6 +19174,7 @@ loadTermsData();
       const newTerm = {
         id: termsNextId++,
         name, category, desc,
+        tabId,
         linkedCharacters: selChars.slice(),
         linkedWorlds: selWorlds.slice(),
         linkedStructures: selStructs.slice(),
@@ -19122,6 +19248,7 @@ loadTermsData();
             name: t.name || '',
             category: t.category || '',
             desc: t.desc || '',
+            tabId: t.tabId ?? null,
             linkedStructures: Array.isArray(t.linkedStructures) ? t.linkedStructures : [],
             linkedCharacters: Array.isArray(t.linkedCharacters) ? t.linkedCharacters : [],
             linkedWorlds: Array.isArray(t.linkedWorlds) ? t.linkedWorlds : []
@@ -19137,6 +19264,7 @@ loadTermsData();
               name: t.name || '',
               category: t.category || '',
               desc: t.desc || '',
+              tabId: t.tabId ?? null,
               linkedStructures: Array.isArray(t.linkedStructures) ? t.linkedStructures : [],
               linkedCharacters: Array.isArray(t.linkedCharacters) ? t.linkedCharacters : [],
               linkedWorlds: Array.isArray(t.linkedWorlds) ? t.linkedWorlds : []
